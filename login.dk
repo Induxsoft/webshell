@@ -1,0 +1,130 @@
+#include "dkli.dkh"
+#!
+module "login"
+{
+	qname=@_qname
+
+	message=""
+	method=toupper(@@(@http_context,"request/headers/REQUEST_METHOD"))
+	success=url_encode("./?ids=@ids") //@@(@http_context,"request/get/success")
+
+	if method=="POST"
+	{
+		uid=@@(@http_context,"request/post/user")
+		pwd=@@(@http_context,"request/post/pwd")
+		success=@@(@http_context,"request/post/success")
+
+		if success==""{success=url_encode("./?ids=@ids")}
+		do dbr.setHashUnicode(@true)
+	
+		ref db=dbr.login(qname, uid,pwd)
+
+		token=dbr.getSID(db)
+		url=url_dcode(success)
+		url=replace(url,"@token",token)
+		url=replace(url,"@ids",token)
+
+		@http_context<"response/headers/Location">:url
+
+		return
+
+		exception
+		{
+			message=last_error()
+		}
+	}
+
+	#$
+	div(class="container-fluid")
+	{
+		#$
+		div(class="container" style="width:30rem")
+		{
+			div(class=" p-4 d-flex justify-content-center pb-4 card" )
+			{
+
+				div(class="w-100")
+				{
+					form(method="POST" action="" onsubmit="return access.validate();")
+					{
+						label("for"="user"){"Usuario:"}
+						input(class="form-control" type="text" name="user" id="user")br{}
+
+						label("for"="pwd"){"Contraseña:"}
+						input(class="form-control" type="password" name="pwd" id="pwd" placeholder="")br{}
+						label(style="color: #000;"){input(type="checkbox" id="checkpwd" onchange="access.showpwd(this)")$" Mostrar contraseña"}br{}
+						input(type="hidden" name="dkl_render" value="true")
+						input(type="hidden" name="success" value="#<success>")
+						div(class="error" style="width:20rem;display:flex")
+						{
+							label(id="error" style="color:red;" value=""){$"#<message>"}
+						}
+						
+						div(class="module-click" style="padding-top:20px")
+						{
+							button(class="btn btn-success" id="btnlogin" style="width:30%;height:40px;justify-content: center;"){"Ingresar"}
+						}
+					}
+					
+					
+				}
+			}
+			
+			script
+			{$'
+				var access={
+					setError:function(error)
+					{
+						var er=document.querySelector("#error");
+						if(er)
+							er.innerHTML=error;
+						// setTimeout(1000,er.innerHTML="");
+					},
+					redirect:function(url)
+					{
+						window.location.href=url;
+					},
+					validate:function()
+					{
+						var user=document.querySelector("#user");
+						var pwd=document.querySelector("#pwd");
+
+						if(user.value=="")
+						{
+							access.setError("Debe ingresar un usuario");
+							return false;
+						}
+						/* if(pwd.value=="")
+						{
+							access.setError("Debe ingresar una contraseña");
+							return false;
+						} */
+						return true;
+					},
+					setError:function(error="")
+					{
+						var er=document.querySelector("#error");
+						if(er)
+							er.innerHTML=error;
+						setTimeout(function(){
+							er.innerHTML="";
+						}, 4000);
+						
+					},
+					showpwd:function(e)
+					{
+						var pwd=document.querySelector("#pwd");
+						if(e.checked)
+						{
+							pwd.setAttribute("type","");
+						}else{
+							pwd.setAttribute("type","password");
+						}
+					}
+				}
+				setTimeout(access.setError, 4000);
+			'}
+		}
+	}
+	
+}

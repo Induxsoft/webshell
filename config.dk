@@ -1,0 +1,6 @@
+#include "dkli.dkh"
+#!
+module "config.dk"
+{
+	@_qname = "miconexion@grupoapps"
+}

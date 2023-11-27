@@ -1,0 +1,23 @@
+#include "dkli.dkh"
+#set "meta-xml-declaration" "<!DOCTYPE html>\r\n"
+#!
+module "webShell"
+{
+    #$
+    nav(class="")
+    {
+        div(class="")
+        {
+            div(class="")
+            {
+                span{$"Usuario"}
+                a(href="./?logout=true" class=""){$"Cerrar sesión"}
+            }
+        }
+    }
+
+    main
+    {
+        iframe(id="_main_view" src="/cxc/" style="min-width:100%;height:95vh;"){$""}
+    }
+}

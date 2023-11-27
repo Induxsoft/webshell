@@ -1,0 +1,16 @@
+#include "dkli.dkh"
+#!
+module "logout"
+{
+	ids=@@(@http_context,"request/get/ids")
+
+	if trim(ids)==""{ids=@@(@http_context,"$session/user/ids")}
+		
+	url=@@(@http_context,"request/get/url")
+
+	ref db=dbr.reconnect(@_qname,ids)
+
+	do dbr.logout(db)
+
+	@http_context<"response/headers/location"> : "./"
+}
