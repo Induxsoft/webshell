@@ -2,11 +2,9 @@
 #!
 module "login"
 {
-	qname=@_qname
-
-	message=""
 	method=toupper(@@(@http_context,"request/headers/REQUEST_METHOD"))
 	success=url_encode("./?ids=@ids") //@@(@http_context,"request/get/success")
+	message=""
 
 	if method=="POST"
 	{
@@ -17,7 +15,7 @@ module "login"
 		if success==""{success=url_encode("./?ids=@ids")}
 		do dbr.setHashUnicode(@true)
 	
-		ref db=dbr.login(qname, uid,pwd)
+		ref db=dbr.login(@_qname, uid,pwd)
 
 		token=dbr.getSID(db)
 		url=url_dcode(success)

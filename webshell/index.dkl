@@ -1,0 +1,24 @@
+#include "dkli.dkh"
+#set "meta-xml-declaration" "<!DOCTYPE html>\r\n"
+#!
+module "index"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    @_qname = "miconexion@grupoapps"
+
+    #$
+    body
+    {
+        #!
+        if @@(@http_context,"$session/user/ids")=="" { include "login.dk" }
+        else 
+        {
+            if @@(@http_context,"$request/get/ids")!="" { @http_context<"response/headers/location"> : "./" }
+            if @@(@http_context,"$request/get/logout")!="" { include "logout.dk" }
+            else { include "top_screen.dk" }
+        }
+    }
+}
