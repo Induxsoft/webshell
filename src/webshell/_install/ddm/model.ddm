@@ -23,7 +23,7 @@ model ""
         @"title" string(255) required
         @"icon96x96" string(1024) required
         @"src" string(1024) required
-        @"_blank": bool
+        @"_blank" bool
         @"appid" ref : "sys_app_catalog"
         @"cat" ref :"sys_app_category"
     }

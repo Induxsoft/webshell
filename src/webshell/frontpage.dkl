@@ -1,0 +1,35 @@
+#include "dkli.dkh"
+#!
+module "front"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+
+    ref database = @@(@http_context,"&session/idp/database")
+    ref shortcuts = dbr.list(database,"SELECT title, icon96x96, src, _blank FROM sys_app_shortcut",@null)
+
+    #$
+    div(class="container")
+    {
+        div(class="card-group")
+        {
+            #! go foreach.lobj(value:app) with(shortcuts)
+            {
+                _blank = ifstr(parse.bool(@@(app,'#_blank')),"_blank","_self")
+                #$
+                div(class="card border-0" style="width:100px;")
+                {
+                    figure(class="figure text-center p-2 m-0")
+                    {
+                        a(href="#<@@(app,'src')>" class="text-decoration-none" _target="#<_blank>")
+                        {
+                            img(class="figure-img img-fluid" src="#<@@(app,'$icon96x96')>" alt="#<@@(app,'$title')>" title="#<@@(app,'$title')>"){$""}
+                            figcaption(class="figure-caption"){$"#<@@(app,'$title')>"}
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
