@@ -1,0 +1,8 @@
+#include "dkli.dkh"
+#!
+program
+{
+    @CSS_WEBSHELL = "/$/webshell/css/webshell.css"
+    @JS_IFRAME_RESIZER = "/$/webshell/js/iframeResizer.min.js"
+    @ICON_V12 = "/$/webshell/img/icons/v12.png"
+}

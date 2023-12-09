@@ -3,12 +3,28 @@
 #!
 module "webShell"
 {
+    #include "config.dk"
     #$
-    nav(class="navbar navbar-light bg-light my-1")
+    link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
+    nav(class="navbar navbar-light bg-white my-1 border-bottom sticky-top")
     {
         div(class="container-fluid")
         {
-            span(class="flex-grow-1"){$""}
+            div(class="flex-grow-1 d-flex gap-2 align-items-center")
+            {
+                a(href="/"){
+                    img(src="#<@ICON_V12>"){$""}
+                    // svg(xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-house-door-fill" viewBox="0 0 16 16") {
+                    //     path(d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5")
+                    // }
+                }
+                small(class="text-logo"){$"Induxsoft V12 / Empresa de ejemplo S de RL de CV"}
+            }
+            button(class="btn btn-sm border-0"){
+                svg(xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 16") {
+                    path(d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z")
+                }
+            }
             div(class="d-flex align-items-center justify-content-start px-2 gap-1")
             {
                 b{$"#<@@(@http_context,'$session/user/name')>"}
@@ -27,6 +43,10 @@ module "webShell"
 
     main
     {
-        iframe(id="_main_view" src="/webshell/frontpage.dkl" style="min-width:100%;height:95vh;"){$""}
+        iframe(id="_main_view" src="/packs/webshell/frontpage.dkl"){$""}
     }
+    script(src="#<@JS_IFRAME_RESIZER>")
+    script{$'
+        iFrameResize({ log: true }, "#_main_view");
+    '}
 }
