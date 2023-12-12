@@ -50,7 +50,7 @@ module "webShell"
 
     main
     {
-        iframe(id="_main_view" src="/packs/webshell/frontpage.dkl"){$""}
+        iframe(id="_main_view" src="/webshell/frontpage.dkl"){$""}
     }
 
     div(class="fixed-bottom text-center border-top py-1 footer")

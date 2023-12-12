@@ -7,7 +7,11 @@ module "index"
     #include "serialize.dkh"
     #include "dbr.dkh"
 
-    @_qname = "miconexion@grupoapps"
+    @_qname = @@(@http_context,"$session/idp/qname")
+    if @_qname == "" {
+        do errordet(@false)
+        do rise_error(99,"Conexión no establecida. Use la herramienta connectv12 para establecer el nombre cualificado de conexión para este sitio V12.")
+    }
 
     #$
     body
