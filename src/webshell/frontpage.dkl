@@ -12,13 +12,13 @@ module "front"
     #$
     div(class="container")
     {
-        div(class="card-group")
+        div(class="d-flex flex-wrap gap-2")
         {
             #! go foreach.lobj(value:app) with(shortcuts)
             {
                 _blank = ifstr(parse.bool(@@(app,'#_blank')),"_blank","_self")
                 #$
-                div(class="card border-0" style="width:100px;")
+                div(class="card border-0")
                 {
                     figure(class="figure text-center p-2 m-0")
                     {

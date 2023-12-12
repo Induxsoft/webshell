@@ -6,7 +6,7 @@ module "webShell"
     #include "config.dk"
     #$
     link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
-    nav(class="navbar navbar-light bg-white my-1 border-bottom sticky-top")
+    nav(class="navbar border-bottom sticky-top m-0")
     {
         div(class="container-fluid")
         {
@@ -20,22 +20,29 @@ module "webShell"
                 }
                 small(class="text-logo"){$"Induxsoft V12 / Empresa de ejemplo S de RL de CV"}
             }
-            button(class="btn btn-sm border-0"){
-                svg(xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 16") {
-                    path(d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z")
+            a(href="/" class="btn btn-sm border-0 color-inherit"){
+                svg(xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-house-door-fill" viewBox="0 0 16 16") {
+                    path(d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5")
                 }
             }
-            div(class="d-flex align-items-center justify-content-start px-2 gap-1")
+            button(class="btn btn-sm border-0 color-inherit"){
+                svg(xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lightning-fill" viewBox="0 0 16 16") {
+                    path(d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641z")
+                }
+            }
+            button(class="btn btn-sm border-0 color-inherit"){
+                svg(xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-question-lg" viewBox="0 0 16 16") {
+                    path("fill-rule"="evenodd" d="M4.475 5.458c-.284 0-.514-.237-.47-.517C4.28 3.24 5.576 2 7.825 2c2.25 0 3.767 1.36 3.767 3.215 0 1.344-.665 2.288-1.79 2.973-1.1.659-1.414 1.118-1.414 2.01v.03a.5.5 0 0 1-.5.5h-.77a.5.5 0 0 1-.5-.495l-.003-.2c-.043-1.221.477-2.001 1.645-2.712 1.03-.632 1.397-1.135 1.397-2.028 0-.979-.758-1.698-1.926-1.698-1.009 0-1.71.529-1.938 1.402-.066.254-.278.461-.54.461h-.777ZM7.496 14c.622 0 1.095-.474 1.095-1.09 0-.618-.473-1.092-1.095-1.092-.606 0-1.087.474-1.087 1.091S6.89 14 7.496 14")
+                }
+            }
+            div(class="d-flex align-items-center px-2 gap-2")
             {
-                b{$"#<@@(@http_context,'$session/user/name')>"}
-                a(href="./?logout=true" class=""){
-                    span(class="p-0"){$'
-                    <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" fill="currentColor" class="bi bi-box-arrow-right" viewBox="0 0 16 16">
+                small{$"#<@@(@http_context,'$session/user/name')>"}
+                a(href="./?logout=true" class="color-inherit") {
+                    $'<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-box-arrow-right" viewBox="0 0 16 16">
                         <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z"/>
                         <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
-                    </svg>
-                    '}
-                    $""
+                    </svg>'
                 }
             }
         }
@@ -45,6 +52,12 @@ module "webShell"
     {
         iframe(id="_main_view" src="/packs/webshell/frontpage.dkl"){$""}
     }
+
+    div(class="fixed-bottom text-center border-top py-1 footer")
+    {
+        small{$"V12 Copyright(c) Induxsoft 2024 | Powered by Devkron"}
+    }
+
     script(src="#<@JS_IFRAME_RESIZER>")
     script{$'
         iFrameResize({ log: true }, "#_main_view");
