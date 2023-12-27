@@ -5,27 +5,72 @@ module "front"
     #include "functions.dkh"
     #include "serialize.dkh"
     #include "dbr.dkh"
+    #include "config.dk"
 
     ref database = @@(@http_context,"&session/idp/database")
-    ref shortcuts = dbr.list(database,"SELECT title, icon96x96, src, _blank FROM sys_app_shortcut",@null)
+    ref categories = dbr.list(database, "SELECT id, title FROM sys_app_category ORDER BY id;", @null)
+    ref shortcuts = dbr.list(database,"SELECT title, icon96x96, src, _blank, IFNULL(cat,'__without__') catid FROM sys_app_shortcut ORDER BY id;",@null)
+
+    function order_categories(shortcuts,categories)
+    {
+        new without_category {
+            @"id":"__without__"
+            @"title": "Sin categorizar"
+        }
+        do list.add(categories, without_category)
+
+        for i = 0; i < list.count(categories)
+        {
+            ref category = list.obj(categories, i)
+            ref catshort = list.create()
+            for j = 0; j < list.count(shortcuts)
+            {
+                ref shortcut = list.obj(shortcuts, j)
+                if @@(shortcut, "$catid") == @@(category, "$id")
+                {
+                    do list.add(catshort, shortcut)
+                }
+            }
+            category<"shortcuts*">: catshort
+        }
+        return categories
+    }
+
+    ref cat_list = order_categories(shortcuts, categories)
 
     #$
-    div(class="container")
+    div(class="container-fuid pb-5")
     {
-        div(class="d-flex flex-wrap gap-2")
+        link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
+        div(class="p-2")
         {
-            #! go foreach.lobj(value:app) with(shortcuts)
+            #! for i = 0; i < list.count(cat_list)
             {
-                _blank = ifstr(parse.bool(@@(app,'#_blank')),"_blank","_self")
-                #$
-                div(class="card border-0")
+                ref category = list.obj(cat_list, i)
+                ref short_list = @@(category, "&shortcuts")
+
+                if @show_empty_categories || list.count(short_list) > 0
                 {
-                    figure(class="figure text-center p-2 m-0")
+                    #$ div(class="category-container mb-4")
                     {
-                        a(href="#<@@(app,'src')>" class="text-decoration-none" _target="#<_blank>")
+                        div(class="category-title p-2 mb-2"){ $"#<@@(category,'$title')>" }
+                        div(class="category-shortcuts")
                         {
-                            img(class="figure-img img-fluid" src="#<@@(app,'$icon96x96')>" alt="#<@@(app,'$title')>" title="#<@@(app,'$title')>"){$""}
-                            figcaption(class="figure-caption"){$"#<@@(app,'$title')>"}
+                            #! for j = 0; j < list.count(short_list)
+                            {
+                                ref shortcut = list.obj(short_list, j)
+                                _blank = ifstr(parse.bool(@@(shortcut,'#_blank')),"_blank","_self")
+                                
+                                #$ figure(class="shortcut-container figure p-2 m-0")
+                                {
+                                    a(href="#<@@(shortcut,'src')>" class="text-decoration-none" _target="#<_blank>")
+                                    {
+                                        img(class="figure-img img-fluid" src="#<@@(shortcut,'$icon96x96')>" alt="#<@@(shortcut,'$title')>" title="#<@@(shortcut,'$title')>"){$""}
+                                        figcaption(class="figure-caption"){$"#<@@(shortcut,'$title')>"}
+                                    }
+                                }
+                            }
+                            $""
                         }
                     }
                 }
