@@ -58,9 +58,16 @@ module "webShell"
         iframe(id="_main_view" src="/webshell/frontpage.dkl"){$""}
     }
 
-    div(class="fixed-bottom text-center border-top py-1 footer")
+    div(class="fixed-bottom text-center border-top py-1 footer d-flex")
     {
-        small{$"V12 Copyright(c) Induxsoft 2024 | Powered by Devkron"}
+        div(class="flex-grow-1")
+        {
+            small{$"V12 Copyright(c) Induxsoft 2024 | Powered by Devkron"}
+        }
+        div(class="pe-4")
+        {
+            small(id="c_view_info"){$""}
+        }
     }
 
     script(src="#<@JS_IFRAME_RESIZER>")
