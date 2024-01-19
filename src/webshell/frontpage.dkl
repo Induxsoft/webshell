@@ -6,10 +6,14 @@ module "front"
     #include "serialize.dkh"
     #include "dbr.dkh"
     #include "config.dk"
+    #include "dbr.apps.dkl"
 
     ref database = @@(@http_context,"&session/idp/database")
-    ref categories = dbr.list(database, "SELECT id, title FROM sys_app_category ORDER BY id;", @null)
-    ref shortcuts = dbr.list(database,"SELECT title, icon96x96, src, _blank, IFNULL(cat,'__without__') catid FROM sys_app_shortcut ORDER BY id;",@null)
+    // ref categories = dbr.list(database, "SELECT id, title FROM sys_app_category ORDER BY id;", @null)
+    // ref shortcuts = dbr.list(database,"SELECT title, icon96x96, src, _blank, IFNULL(cat,'__without__') catid FROM sys_app_shortcut ORDER BY id;",@null)
+
+    ref categories = dbr.apps.categories(database)
+    ref shortcuts = dbr.apps.shortcuts(database,"")
 
     function order_categories(shortcuts,categories)
     {
@@ -26,7 +30,7 @@ module "front"
             for j = 0; j < list.count(shortcuts)
             {
                 ref shortcut = list.obj(shortcuts, j)
-                if @@(shortcut, "$catid") == @@(category, "$id")
+                if @@(shortcut, "$category") == @@(category, "$id")
                 {
                     do list.add(catshort, shortcut)
                 }
@@ -61,11 +65,11 @@ module "front"
                                 ref shortcut = list.obj(short_list, j)
                                 _blank = ifstr(parse.bool(@@(shortcut,'#_blank')),"_blank","_self")
                                 
-                                #$ figure(class="shortcut-container figure p-2 m-0")
+                                #$ figure(class="shortcut-container figure p-2 m-0" title="#<@@(shortcut,'$info')>")
                                 {
                                     a(href="#<@@(shortcut,'src')>" class="text-decoration-none" _target="#<_blank>")
                                     {
-                                        img(class="figure-img img-fluid" src="#<@@(shortcut,'$icon96x96')>" alt="#<@@(shortcut,'$title')>" title="#<@@(shortcut,'$title')>"){$""}
+                                        img(class="figure-img img-fluid" src="#<@@(shortcut,'$icon96x96')>" alt="#<@@(shortcut,'$title')>"){$""}
                                         figcaption(class="figure-caption"){$"#<@@(shortcut,'$title')>"}
                                     }
                                 }
