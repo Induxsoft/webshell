@@ -1,0 +1,23 @@
+#include "dkli.dkh"
+#!
+module "model"
+{
+    #include "dbr.apps.dkl"
+
+    @table_name = "sys_app_item_action"
+
+    function list(&db, &params)
+    {
+        ref res = list.create()
+        if @@(params,"#top_screen") == 1 {
+            ref res = dbr.apps.itemactions(db, "*", "*", @@(params,"s"), 1)
+        }
+        else {
+            ref res = dbr.apps.itemactions(db, @@(params,"itemtype"), @@(params,"acttype"), @@(params,"s"), @@(params,"#req"))
+        }
+
+        return res
+    }
+
+    point @list to list
+}
