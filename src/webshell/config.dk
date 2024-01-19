@@ -7,7 +7,7 @@ program
     @JS_TOP_SCREEN = "/$/webshell/js/top_screen.js"
     @ICON_V12 = "/$/webshell/img/icons/v12_2.png"
 
-    @URL_ACTIONS = "/webshell/action/" 
+    @URL_ACTIONS = "/!/webshell/action/" 
 
     @show_empty_categories = @false
 }
