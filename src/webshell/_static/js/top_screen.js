@@ -20,7 +20,7 @@ var top_screen =
     },
     select_action(data)
     {
-        if (this.iframe_view) this.iframe_view.src = data.href;
+        if (data && this.iframe_view) this.iframe_view.src = data.href;
     }
 }
 
