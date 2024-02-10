@@ -24,6 +24,69 @@ model ""
         @"ref_varcat" ref:"varcategory" // Categoría de variable
         @"userenable" bool // Si es true, la variable puede establecerse por usuario
     }
+    // Registro de notificaciones
+    entity "sys_notif" : "TableModel"
+    {
+        @"sndrid" string(50) required
+        @"title" string(50) required
+        @"img" string(1024) //Url a una imagen ilustrativa
+        @"body" string(1024) 
+        @"href" string(1024)
+        @"target" int // 0 o NULL-En el marco, 1-Nueva pestaña, 2-Pestaña actual
+        @"start" datetime
+        @"end" datetime
+        
+        index "sys_notif_sndr"
+        {
+            field "sndrid"
+        }
+        index "sys_notif_start"
+        {
+            field "start"
+        }
+    }
+    // Usuarios con notificación
+    entity "sys_notif_usr" : "TableModel"
+    {
+        @"notif" ref : "sys_notif" required
+        @"user" ref : "tuser" required
+        @"readed" bool
+        
+        index "sys_notif_usr"
+        {
+            field "user"
+        }
+        
+        index "sys_notif_usr_uniq" unique
+        {
+            field "notif"
+            field "user"
+        }
+    }
+    // Usuarios
+    entity "tuser"
+    {
+        @"sys_pk" int key required autoincrement
+        @"sys_guid" string(32) unique required
+        @"sys_dtcreated" datetime
+        @"sys_timestamp" datetime required
+        @"sys_info" string(32)
+        @"sys_user" string(32)
+        @"sys_lastuser" string(32)
+        @"sys_exported" bool
+        @"sys_dtexported" datetime
+        @"sys_recver" int
+        @"sys_deleted" bool
+        @"sys_lock" int
+
+        @"locked" bool 
+        @"message" string(255) 
+        @"notes" memo 
+        @"pwd" string(32) 
+        @"userid" string(120) unique required
+        @"username" string(120) required
+        @"pwdmd5" string(64) 
+    }
     // Información de la aplicación
     entity "sys_app_catalog"
     {
