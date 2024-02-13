@@ -29,9 +29,18 @@ module "Controller configs"
     //    //Si es la ruta indicada esto es @true pero no se modifica _entities_type
     // }
 
+	ref get = @@(@http_context,"&request/get")
+
+	if @@(get,"$_program") == "notif" && @@(get,"$_entity_id") == "go"
+	{
+		get<"_entity_id">: @@(get,"$_view")
+		get<"_view">: "check_redir"
+	}
+
 	//No modifique a menos que sepa lo que está haciendo
 	do crudl.routes.pattern("/_program/")
 	do crudl.routes.entity("/action/","action")
+	do crudl.routes.entity("/notif/","notif")
 
 	@dbmvc_path="crudl/"
 	@auto_crud=@true

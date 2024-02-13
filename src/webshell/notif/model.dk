@@ -1,0 +1,38 @@
+#include "dkli.dkh"
+#!
+module "model"
+{
+    #include "dbr.notif.dkl"
+
+    @table_name = "sys_notif"
+
+    function notif.list(&db, &params)
+    {
+        @__dbr.notif.no.readed = 10
+        return dbr.notif.list(db)
+    }
+
+    function notif.update(&db, &params, &data)
+    {
+        do set_read_notify(db, params)
+        return @true
+    }
+
+    function notif.check_redir(&db, &params)
+    {
+        do set_read_notify(db, params)
+        ref notif = dbr.rec(db, "SELECT href FROM sys_notif WHERE sys_guid = @_entity_id", params)
+        @http_context<"response/headers/location">: @@(notif, "$href")
+    }
+
+    function set_read_notify(&db, &params)
+    {
+        notif_id = @@(params, "$_entity_id")
+        if notif_id == "" { do rise_error(0, "Se esperaba el id de la notificación") }
+        if not(dbr.notif.readed(db,notif_id)) { do rise_error(0, "No fué posible marcar la notificación como leída, verifique la url.") }
+    }
+
+    point @list to notif.list
+    point @update to notif.update
+    point @create to notif.update
+}

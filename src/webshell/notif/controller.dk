@@ -1,0 +1,13 @@
+#include "dkli.dkh"
+#!
+module "controller"
+{
+    switch @@(@http_context,"$request/get/_view")
+    {
+        case "check_redir"
+        {
+            point @read to notif.check_redir
+            break
+        }
+    }
+}

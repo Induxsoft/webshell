@@ -1,10 +1,11 @@
-/* COLORS */
+/* =============== COLORES */
 :root {
     --bg-main-color: #000;
     --text-main-color: #FFF;
     --light-gray-color: #F5F5F5;
 }
 
+/* =============== GENERAL */
 *{
     margin: 0;
     padding: 0;
@@ -37,6 +38,13 @@ iframe{
     background-color: var(--bg-main-color) !important;
     color: var(--text-main-color) !important;
 }
+.disable-element {
+    pointer-events: none !important;
+    opacity: .5;
+}
+
+/* =============== ACCESOS DIRECTOS */
+
 .category-title {
     background-color: var(--light-gray-color);
     font-weight: 500;
@@ -61,6 +69,37 @@ iframe{
 .figure-caption {
     word-break: break-word;
     text-align: center;
+}
+
+/* NOTIFICACIONES */
+#notis_container {
+    width: 25rem;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+.notify-not-readed_ {
+    background-color: rgba(0, 128, 255, 0.1);
+}
+.dropdown-item:hover {
+    background-color: rgba(102, 177, 253, 0.1) !important;
+}
+#btn_notis {
+    position: relative;
+}
+#notis_num {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 1px solid #000;
+    border-radius: 50%;
+    background-color: rgb(200, 0, 0);
+    color: #FFF;
+}
+.notify-desc {
+    white-space: break-spaces;
+    display: block;
 }
 
 @media screen and (max-width: 768px)
