@@ -63,7 +63,10 @@ module "webShell"
 
     main
     {
-        iframe(id="_main_view" src="/webshell/frontpage.dkl"){$""}
+        #! url = ifstr(@url_go=="", "/webshell/frontpage.dkl", @url_go)
+
+        #$ iframe(id="_main_view" src="#<url>"){$""}
+
         "input-key"(
             id="ik_actions"
             "data-key"="id"
