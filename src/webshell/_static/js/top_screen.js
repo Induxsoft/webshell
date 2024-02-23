@@ -15,6 +15,8 @@ var top_screen =
         this.iframe_view = document.querySelector('#_main_view');
         this.set_ik_action_events();
         this.set_interval_refresh_notifs();
+
+        if (!this.requesting) { this.get_notif(); }
     },
 
     // =============== ACCIONES
