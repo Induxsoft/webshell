@@ -10,6 +10,9 @@ program
     @URL_ACTIONS = "/!/webshell/action/"
     @URL_NOTIF = "/!/webshell/notif/"
     @URL_NOTIF_GO = "/!/webshell/notif/go/"
+    
+    @HREF_HELP = "https://docs.induxsoft.net/es/productos/v12/"
+    @FOOTER_LEGEND = "V12 Copyright(c) Induxsoft 2024 | Powered by Devkron"
 
     @show_empty_categories = @false
 }

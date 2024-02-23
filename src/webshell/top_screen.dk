@@ -12,20 +12,31 @@ module "webShell"
     #include "_lib/lib.dk"
 
     ref database = @@(@http_context,"&session/idp/database")
-    title_bar = dbr.vars.get(database, "FXCA099")
+    title_bar = dbr.vars.get(database,"FXCA099")
     ref notis = dbr.notif.list(database)
 
     notif_frq = dbr.vars.getd(database, "sys_notif_freq_refresh", "60")
     count_nts = list.count(notis)
     notis_num = ifstr(count_nts < 1, "", ifstr(count_nts > 5, "+5", str(count_nts)))
 
-    background = dbr.vars.get(database, "webshell_nav_background_color")
-    color = dbr.vars.get(database, "webshell_nav_text_color")
+    webshell_logo = dbr.vars.getd(database,"webshell_logo",@ICON_V12)
+    webshell_title = dbr.vars.getd(database,"webshell_title",title_bar)
+    webshell_hide_home = parse.bool(dbr.vars.getd(database,"webshell_hide_home",@false))
+    webshell_hide_actfnd = parse.bool(dbr.vars.getd(database,"webshell_hide_actfnd",@false))
+    webshell_hide_notif = parse.bool(dbr.vars.getd(database,"webshell_hide_notif",@false))
+    webshell_hide_help = parse.bool(dbr.vars.getd(database,"webshell_hide_help",@false))
+    webshell_help_url = dbr.vars.getd(database,"webshell_help_url",@HREF_HELP)
+    webshell_footer_text = dbr.vars.getd(database,"webshell_footer_text",@FOOTER_LEGEND)
+
+    webshell_navfoot_background = dbr.vars.get(database,"webshell_nav_background_color")
+    webshell_navfoot_color = dbr.vars.get(database,"webshell_nav_text_color")
 
     navfoot_style = ""
-    if trim(background) != "" { navfoot_style = navfoot_style + "background-color:#<background> !important;" }
-    if trim(color) != "" { navfoot_style = navfoot_style + "color:#<color> !important;" }
+    if trim(webshell_navfoot_background) != "" { navfoot_style = navfoot_style + "background-color:#<webshell_navfoot_background> !important;" }
+    if trim(webshell_navfoot_color) != "" { navfoot_style = navfoot_style + "color:#<webshell_navfoot_color> !important;" }
     navfoot_style = ftext(navfoot_style)
+
+    function d_none(var) { return ifstr(var,"d-none","") }
 
     #$
     link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
@@ -35,16 +46,12 @@ module "webShell"
         {
             div(class="flex-grow-1 d-flex gap-2 align-items-center")
             {
-                a(href="/"){ img(src="#<@ICON_V12>"){$""} }
-                small(class="text-logo"){$"Induxsoft V12 / #<title_bar>"}
+                a(href="/"){ img(src="#<webshell_logo>"){$""} }
+                small(class="text-logo"){$"Induxsoft V12 / #<webshell_title>"}
             }
-            a(href="/" class="btn btn-sm border-0 color-inherit" title="Inicio"){
-                $"#<@ICON_HOUSE_DOOR>"
-            }
-            button(class="btn btn-sm border-0 color-inherit" title="Acciones" id="btn_navbar_lightning"){
-                $"#<@ICON_LIGHTNING>"
-            }
-            div(class="btn-group")
+            a(href="/" class="btn btn-sm border-0 color-inherit #<d_none(webshell_hide_home)>" title="Inicio") {$"#<@ICON_HOUSE_DOOR>"}
+            button(class="btn btn-sm border-0 color-inherit #<d_none(webshell_hide_actfnd)>" title="Acciones" id="btn_navbar_lightning") {$"#<@ICON_LIGHTNING>"}
+            div(class="btn-group #<d_none(webshell_hide_notif)>")
             {
                 button(class="btn btn-sm border-0 color-inherit " title="Notificaciones" id="btn_notis" "data-bs-toggle"="dropdown" "data-bs-auto-close"="outside"){
                     $"#<@ICON_BELL>"
@@ -56,9 +63,8 @@ module "webShell"
                 }
             }
             #$
-            button(class="btn btn-sm border-0 color-inherit" title="Ayuda"){
-                $"#<@ICON_QUESTION>"
-            }
+            a(href="#<webshell_help_url>" target="_blank" class="btn btn-sm border-0 color-inherit #<d_none(webshell_hide_help)>" title="Ayuda") {$"#<@ICON_QUESTION>"}
+            
             div(class="d-flex align-items-center px-2 gap-2")
             {
                 small{$"#<@@(@http_context,'$session/user/name')>"}
@@ -95,7 +101,7 @@ module "webShell"
     {
         div(class="flex-grow-1")
         {
-            small{$"V12 Copyright(c) Induxsoft 2024 | Powered by Devkron"}
+            small{$"#<webshell_footer_text>"}
         }
         div(class="pe-4")
         {
