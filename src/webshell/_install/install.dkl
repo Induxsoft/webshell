@@ -32,7 +32,9 @@ program "instalador"
     model_file = path.concat(path_ddm, model_name)
 
     // Archivos de datos iniciales (Orden de instalación)
-    ref files_to_import = from.json('[]')
+    ref files_to_import = from.json('[
+        "globalvar.csv",
+    ]')
 	// Lista de permisos iniciales
     ref permissions_to_import = from.json('[]')
 

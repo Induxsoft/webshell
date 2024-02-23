@@ -19,9 +19,17 @@ module "webShell"
     count_nts = list.count(notis)
     notis_num = ifstr(count_nts < 1, "", ifstr(count_nts > 5, "+5", str(count_nts)))
 
+    background = dbr.vars.get(database, "webshell_nav_background_color")
+    color = dbr.vars.get(database, "webshell_nav_text_color")
+
+    navfoot_style = ""
+    if trim(background) != "" { navfoot_style = navfoot_style + "background-color:#<background> !important;" }
+    if trim(color) != "" { navfoot_style = navfoot_style + "color:#<color> !important;" }
+    navfoot_style = ftext(navfoot_style)
+
     #$
     link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
-    nav(class="navbar border-bottom sticky-top m-0")
+    nav(class="navbar border-bottom sticky-top m-0" style="#<navfoot_style>")
     {
         div(class="container-fluid")
         {
@@ -83,7 +91,7 @@ module "webShell"
         ){$""}
     }
 
-    div(class="fixed-bottom text-center border-top py-1 footer d-flex")
+    div(class="fixed-bottom text-center border-top py-1 footer d-flex" style="#<navfoot_style>")
     {
         div(class="flex-grow-1")
         {

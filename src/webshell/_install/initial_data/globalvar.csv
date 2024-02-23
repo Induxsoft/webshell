@@ -1,0 +1,3 @@
+"sys_guid","sys_dtcreated","sys_timestamp","sys_info","sys_user","sys_lastuser","sys_exported","sys_dtexported","sys_recver","sys_deleted","sys_lock","varname","vardefault","varvalue","varcaption","varhelp","vartype","varinput","ref_varcat","userenable"
+"4B5F9B7D0E594BCAA6AF0B2C2A381080","2024-02-22 23:59:59","2024-02-22 23:59:59",\N,\N,\N,\N,\N,"0",\N,\N,"webshell_nav_background_color","","","Color de fondo (navbar y footer)","string con el código de color para el fondo de la navbar y footer","string","","5","0"
+"35E21AC5D42742AAA8BB0CD9C9E9401F","2024-02-22 23:59:59","2024-02-22 23:59:59",\N,\N,\N,\N,\N,"0",\N,\N,"webshell_nav_text_color","","","Color de texto (navbar y footer)","string con el código de color para los textos de la navbar y footer","string","","5","0"
