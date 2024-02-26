@@ -69,7 +69,7 @@ module "front"
                                 {
                                     a(href="#<@@(shortcut,'src')>" class="text-decoration-none" _target="#<_blank>")
                                     {
-                                        img(class="figure-img img-fluid" src="#<@@(shortcut,'$icon96x96')>" alt="#<@@(shortcut,'$title')>"){$""}
+                                        img(class="figure-img img-fluid" src="#<@@(shortcut,'$icon96x96')>" alt="#<@@(shortcut,'$title')>" style="width:96px; height:96px; aspect-ratio:1/1;"){$""}
                                         figcaption(class="figure-caption"){$"#<@@(shortcut,'$title')>"}
                                     }
                                 }

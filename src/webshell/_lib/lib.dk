@@ -23,12 +23,12 @@ module "lib"
                     small(class="notify-desc mb-2"){$"#<body>"}
                     div(class="notify-controls d-flex gap-2")
                     {
-                        button(class="btn btn-sm px-2 btn-primary rounded-0" title="Marcar como leido" onclick="top_screen.set_readed_notify('#<n_id>', event)"){$"Marcar como Leído"}
+                        button(class="btn btn-sm px-2 btn-primary" title="Marcar como leido" onclick="top_screen.set_readed_notify('#<n_id>', event)"){$"Marcar como Leído"}
                         #! if href != "" 
                         {
                             nwhref = @URL_NOTIF_GO+n_id+"/"
                             target = ifstr(trgt==0,'',ifstr(trgt==1,'_blank','_self'))
-                            #$ button(class="btn btn-sm px-2 btn-link border-primary rounded-0" title="Navegar hacia la url" onclick="top_screen.go_to('#<nwhref>','#<target>',event)"){$"Ver más"}
+                            #$ button(class="btn btn-sm px-2 btn-link border-primary" title="Navegar hacia la url" onclick="top_screen.go_to('#<nwhref>','#<target>',event)"){$"Ver más"}
                         }
                     }
                 }
