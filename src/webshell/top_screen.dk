@@ -13,6 +13,8 @@ module "webShell"
 
     ref database = @@(@http_context,"&session/idp/database")
     title_bar = dbr.vars.get(database,"FXCA099")
+    title_bar="Induxsoft V12 / "+title_bar
+    
     ref notis = dbr.notif.list(database)
 
     notif_frq = dbr.vars.getd(database, "sys_notif_freq_refresh", "60")
@@ -47,7 +49,7 @@ module "webShell"
             div(class="flex-grow-1 d-flex gap-2 align-items-center")
             {
                 a(href="/"){ img(src="#<webshell_logo>"){$""} }
-                small(class="text-logo"){$"Induxsoft V12 / #<webshell_title>"}
+                small(class="text-logo"){$"#<webshell_title>"}
             }
             a(href="/" class="btn btn-sm border-0 color-inherit #<d_none(webshell_hide_home)>" title="Inicio") {$"#<@ICON_HOUSE_DOOR>"}
             button(class="btn btn-sm border-0 color-inherit #<d_none(webshell_hide_actfnd)>" title="Acciones" id="btn_navbar_lightning") {$"#<@ICON_LIGHTNING>"}
