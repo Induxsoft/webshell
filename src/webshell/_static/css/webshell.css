@@ -14,7 +14,7 @@
 body {
     height: 100vh;
 }
-main{
+.main{
     /*height: pantalla - (header + footer) */
     height: calc(100vh - (3.31rem + 2.06rem));
     width: 100%;

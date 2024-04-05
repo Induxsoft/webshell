@@ -42,7 +42,7 @@ module "webShell"
 
     #$
     link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
-    nav(class="navbar border-bottom sticky-top m-0" style="#<navfoot_style>")
+    nav(class="navbar border-bottom sticky-top m-0" style="#<navfoot_style>" id="nav_main")
     {
         div(class="container-fluid")
         {
@@ -80,6 +80,15 @@ module "webShell"
     main
     {
         #! url = ifstr(@url_go=="", "/webshell/frontpage.dkl", @url_go)
+        
+        ref split=split(url,"?")
+        url_path=""
+        params_url=""
+        if @count(split)>1
+        {
+            url_path=list.str(split,0)
+            params_url="?"+list.str(split,1)
+        }
 
         #$ iframe(id="_main_view" src="#<url>"){$""}
 
@@ -99,7 +108,7 @@ module "webShell"
         ){$""}
     }
 
-    div(class="fixed-bottom text-center border-top py-1 footer d-flex" style="#<navfoot_style>")
+    div(class="fixed-bottom text-center border-top py-1 footer d-flex" style="#<navfoot_style>" id="nav_footer")
     {
         div(class="flex-grow-1")
         {
@@ -116,6 +125,22 @@ module "webShell"
         top_screen.url_notif = "#<@URL_NOTIF>";
         top_screen.url_notif_go = "#<@URL_NOTIF_GO>";
         top_screen.notif_frq = "#<notif_frq>";
+        
+        //resuelve la url, para pasar todos los párametros a la vista, definidos en la url
+        try
+        {
+            const iframe = document.getElementById("_main_view");
+            if(iframe)
+            {
+                var frame = iframe.contentDocument || iframe.contentWindow.document;
+                if("#<params_url>"!="") frame.location.href="#<url_path+params_url>";
+            }
+        }
+        catch(e)
+        {
+            console.error(e);
+        }
+        
     '}
     script(src="#<@JS_IFRAME_RESIZER>")
     script{$'iFrameResize({ log: true }, "#_main_view");'}
