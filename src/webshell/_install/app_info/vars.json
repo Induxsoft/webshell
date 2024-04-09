@@ -14,7 +14,7 @@
                 "vartype": "string",
                 "varinput": 
                 {
-                    "control": "text"
+                    "control": "intcolor"
                 }
             },
             {
@@ -26,7 +26,7 @@
                 "vartype": "string",
                 "varinput": 
                 {
-                    "control": "text"
+                    "control": "intcolor"
                 }
             },
             {
