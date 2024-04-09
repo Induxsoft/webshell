@@ -71,10 +71,20 @@
                 "varvalue": "false",
                 "varcaption": "Ocultar botón home",
                 "varhelp":"",
-                "vartype": "string",
+                "vartype": "bool",
                 "varinput": 
                 {
-                    "control": "text"
+                    "control": "select",
+                    "source":{
+                        "type":"list",
+                        "values":[
+                            {"val":"true", "text":"Si"},
+                            {"val":"false", "text":"No"}
+                        ],
+                        "showfield":"text",
+                        "keyfield":"val"
+                    }
+					
                 }
             },
             {
@@ -83,10 +93,20 @@
                 "varvalue": "false",
                 "varcaption": "Ocultar el botón del 'action finder'",
                 "varhelp":"",
-                "vartype": "string",
+                "vartype": "bool",
                 "varinput": 
                 {
-                    "control": "text"
+                    "control": "select",
+                    "source":{
+                        "type":"list",
+                        "values":[
+                            {"val":"true", "text":"Si"},
+                            {"val":"false", "text":"No"}
+                        ],
+                        "showfield":"text",
+                        "keyfield":"val"
+                    }
+					
                 }
             },
             {
@@ -95,10 +115,20 @@
                 "varvalue": "false",
                 "varcaption": "Ocultar el icono de notificaciones",
                 "varhelp":"",
-                "vartype": "string",
+                "vartype": "bool",
                 "varinput": 
                 {
-                    "control": "text"
+                    "control": "select",
+                    "source":{
+                        "type":"list",
+                        "values":[
+                            {"val":"true", "text":"Si"},
+                            {"val":"false", "text":"No"}
+                        ],
+                        "showfield":"text",
+                        "keyfield":"val"
+                    }
+					
                 }
             },
             {
@@ -107,10 +137,20 @@
                 "varvalue": "false",
                 "varcaption": "Ocultar el botón de ayuda",
                 "varhelp":"",
-                "vartype": "string",
+                "vartype": "bool",
                 "varinput": 
                 {
-                    "control": "text"
+                    "control": "select",
+                    "source":{
+                        "type":"list",
+                        "values":[
+                            {"val":"true", "text":"Si"},
+                            {"val":"false", "text":"No"}
+                        ],
+                        "showfield":"text",
+                        "keyfield":"val"
+                    }
+					
                 }
             },
             {
