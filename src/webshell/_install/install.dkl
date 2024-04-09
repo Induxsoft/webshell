@@ -34,7 +34,6 @@ program "instalador"
 
     // Archivos de datos iniciales (Orden de instalación)
     ref files_to_import = from.json('[
-        "globalvar.csv",
     ]')
 	// Lista de permisos iniciales
     ref permissions_to_import = from.json('[]')
