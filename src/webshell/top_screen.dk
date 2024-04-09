@@ -32,7 +32,10 @@ module "webShell"
     webshell_hide_actfnd = parse.bool(dbr.vars.getd(database,"webshell_hide_actfnd",@false))
     webshell_hide_notif = parse.bool(dbr.vars.getd(database,"webshell_hide_notif",@false))
     webshell_hide_help = parse.bool(dbr.vars.getd(database,"webshell_hide_help",@false))
+    
     webshell_help_url = dbr.vars.getd(database,"webshell_help_url",@HREF_HELP)
+    if trim(webshell_help_url)==""{webshell_help_url=@HREF_HELP}
+
     webshell_footer_text = dbr.vars.getd(database,"webshell_footer_text",@FOOTER_LEGEND)
 
     if trim(webshell_footer_text)==""{webshell_footer_text=@FOOTER_LEGEND}
