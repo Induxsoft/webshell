@@ -122,7 +122,6 @@ iframe{
 @media screen and (max-width: 768px)
 {
     .category-shortcuts {
-        grid-template-columns: repeat(auto-fill, 5rem);
         gap: .7rem;
     }
 }
