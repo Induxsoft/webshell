@@ -85,6 +85,7 @@ module "webShell"
                 }
             }
         }
+        div(id="loading_line"){$""}
     }
 
     main
@@ -120,6 +121,10 @@ module "webShell"
 
     div(class="fixed-bottom text-center border-top py-1 footer d-flex" style="#<navfoot_style>" id="nav_footer")
     {
+        div(class="ps-4")
+        {
+            small(id="language_info"){$""}
+        }
         div(class="flex-grow-1")
         {
             small{$"#<webshell_footer_text>"}

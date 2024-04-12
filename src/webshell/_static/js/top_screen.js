@@ -13,10 +13,14 @@ var top_screen =
         this.ik_actions = document.querySelector('#ik_actions');
         this.btn_navbar_lightning = document.querySelector('#btn_navbar_lightning');
         this.iframe_view = document.querySelector('#_main_view');
+        this.language_info = document.querySelector('#language_info');
+        
         this.set_ik_action_events();
         this.set_interval_refresh_notifs();
+        this.set_loading_operation();
 
         if (!this.requesting) { this.get_notif(); }
+        if (language_info) language_info.textContent = (new Intl.NumberFormat()).resolvedOptions().locale;
     },
 
     // =============== ACCIONES
@@ -124,6 +128,32 @@ var top_screen =
             "POST", false
         );
     },
+
+    // =============== LOADING ANIMATION
+    set_loading_operation()
+    {
+        if (!this.iframe_view) return;
+        const loading_line = document.querySelector('#loading_line');
+        
+        this.iframe_view.onload = () =>
+        {    
+            //Asegurar que no haya animación
+            loading_line.classList.remove('loading');
+            
+            const f=this.iframe_view.contentWindow.onbeforeunload;
+            
+            this.iframe_view.contentWindow.onbeforeunload = (e) => 
+            {
+                if (f)
+                {
+                    var r=f(e);
+                    if (r || e.defaultPrevented) return r;
+                }
+                //Ahora sí, poner la animación
+                loading_line.classList.add('loading');
+            }
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{

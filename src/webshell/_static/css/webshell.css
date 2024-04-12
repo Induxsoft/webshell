@@ -101,6 +101,23 @@ iframe{
     white-space: break-spaces;
     display: block;
 }
+.loading {
+    width: 100%;
+    height: 5px;
+    position: absolute;
+    bottom: 0;
+    overflow: hidden;
+    background-color: rgba(255, 255, 255, .5);
+    &::before{
+        content: "";
+        position: absolute;
+        left: -15%;
+        height: 5px;
+        width: 15%;
+        background-color: #FFF;
+        animation: loading 2s ease-in-out infinite;
+    }
+}
 
 @media screen and (max-width: 768px)
 {
@@ -108,4 +125,9 @@ iframe{
         grid-template-columns: repeat(auto-fill, 5rem);
         gap: .7rem;
     }
+}
+
+@keyframes loading {
+    0% { left: -15%; }
+    100% { left: 100%; }
 }
