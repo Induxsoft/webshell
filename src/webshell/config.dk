@@ -4,6 +4,7 @@ program
 {
     @CSS_WEBSHELL = "/$/webshell/css/webshell.css"
     @JS_IFRAME_RESIZER = "/$/webshell/js/iframeresizer.min.js"
+    @JS_IFRAME_RESIZER_CONTENT = "/$/webshell/js/iframeresizer.contentwindow.min.js"
     @JS_TOP_SCREEN = "/$/webshell/js/top_screen.js"
     @ICON_V12 = "/$/webshell/img/icons/v12_2.png"
 

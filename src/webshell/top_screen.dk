@@ -157,6 +157,9 @@ module "webShell"
         }
         
     '}
-    script(src="#<@JS_IFRAME_RESIZER>")
-    script{$'iFrameResize({ log: true }, "#_main_view");'}
+    script(src="#<@JS_IFRAME_RESIZER>"){$""}
+    script(src="#<@JS_IFRAME_RESIZER_CONTENT>")
+    script{$'
+        let _iframe = iFrameResize({ log: true, scrolling: true, sizeHeight: true, autoResize:true }, "#_main_view");
+    '}
 }
