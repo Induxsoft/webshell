@@ -88,7 +88,7 @@ module "webShell"
         div(id="loading_line"){$""}
     }
 
-    main
+    main(id="main-sec")
     {
         #! url = ifstr(@url_go=="", "/webshell/frontpage.dkl", @url_go)
         
@@ -141,12 +141,15 @@ module "webShell"
         top_screen.url_notif_go = "#<@URL_NOTIF_GO>";
         top_screen.notif_frq = "#<notif_frq>";
         
-        //resuelve la url, para pasar todos los párametros a la vista, definidos en la url
+        const navbar = document.getElementById("nav_main");
+        const main = document.getElementById("main-sec");
+        const footer = document.getElementById("nav_footer");
+        const iframe = document.getElementById("_main_view");
+        
         try
         {
-            const iframe = document.getElementById("_main_view");
-            if(iframe)
-            {
+            //resuelve la url, para pasar todos los párametros a la vista, definidos en la url
+            if(iframe) {
                 var frame = iframe.contentDocument || iframe.contentWindow.document;
                 if("#<params_url>"!="") frame.location.href="#<url_path+params_url>";
             }
@@ -155,11 +158,18 @@ module "webShell"
         {
             console.error(e);
         }
-        
+
+        window.addEventListener("resize", function(event) {
+            let height = (window.innerHeight - (navbar.scrollHeight + footer.scrollHeight));
+            main.style.height = height+"px";
+        }, true);
     '}
-    script(src="#<@JS_IFRAME_RESIZER>"){$""}
-    script(src="#<@JS_IFRAME_RESIZER_CONTENT>")
-    script{$'
-        let _iframe = iFrameResize({ log: true, scrolling: true, sizeHeight: true, autoResize:true }, "#_main_view");
-    '}
+
+    #!
+    exception
+    {
+        data=last_error()
+        data=data+"\r\n"+dump_functions()
+        do rise_error(599,data)
+    }
 }

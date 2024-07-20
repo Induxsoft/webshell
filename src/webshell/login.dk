@@ -33,42 +33,50 @@ module "login"
 	}
 
 	#$
-	div(class="container-fluid")
+	div(class="container")
 	{
-		#$
-		div(class="container" style="width:30rem")
+		form(method="POST" action="./" onsubmit="return access.validate();")
 		{
-			div(class=" p-4 d-flex justify-content-center pb-4 card" )
+			input(type="hidden" name="dkl_render" value="true")
+
+			div(class="row justify-content-center")
 			{
-
-				div(class="w-100")
+				div(class="col-lg-5 col-md-8 col-sm-10 border py-2")
 				{
-					form(method="POST" action="" onsubmit="return access.validate();")
+					div(class="row gx-2")
 					{
-						label("for"="user"){"Usuario:"}
-						input(class="form-control" type="text" name="user" id="user")br{}
-
-						label("for"="pwd"){"Contraseña:"}
-						input(class="form-control" type="password" name="pwd" id="pwd" placeholder="")br{}
-						label(style="color: #000;"){input(type="checkbox" id="checkpwd" onchange="access.showpwd(this)")$" Mostrar contraseña"}br{}
-						input(type="hidden" name="dkl_render" value="true")
-						input(type="hidden" name="success" value="#<success>")
-						div(class="error" style="width:20rem;display:flex")
+						div(class="col-12")
 						{
-							label(id="error" style="color:red;" value=""){$"#<message>"}
+							label(class="form-label fw-bold" "for"="user"){$"Usuario:"}
+							input(class="form-control" type="text" name="user" id="user")
 						}
-						
-						div(class="module-click" style="padding-top:20px")
+						div(class="col-12")
 						{
-							button(class="btn btn-success" id="btnlogin" style="width:30%;height:40px;justify-content: center;"){"Ingresar"}
+							label(class="form-label fw-bold" "for"="pwd"){$"Contraseña:"}
+							input(class="form-control" type="password" name="pwd" id="pwd" placeholder="")
+
+							div(class="form-check")
+							{
+								input(class="form-check-input" type="checkbox" name="" value="" id="checkpwd" onchange="access.showpwd(this)")
+								label(class="form-check-label" "for"="checkpwd"){$"Mostrar contraseña"}
+							}
 						}
 					}
-					
-					
+
+					input(type="hidden" name="success" value="#<success>")
+					div(class="error") { label(id="error" style="color:red;" value=""){$"#<message>"} }
+
+					div(class="text-start mt-2")
+					{
+						button(class="btn btn-success" type="submit" id="btnlogin"){$"Ingresar"}
+					}
 				}
 			}
-			
-			script
+		}
+
+		div
+		{
+			script(type="text/javascript")
 			{$'
 				var access={
 					setError:function(error)
