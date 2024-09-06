@@ -8,26 +8,57 @@
             {
                 "varname": "webshell_nav_background_color",
                 "vardefault": "",
-                "varvalue": "",
+                "varvalue": "#000000",
                 "varcaption": "Color de fondo (navbar y footer)",
                 "varhelp":"string con el código de color para el fondo de la navbar y footer",
                 "vartype": "string",
-                "varinput": 
-                {
-                    "control": "intcolor"
-                }
+                "varinput": { "control": "intcolor" }
             },
             {
                 "varname": "webshell_nav_text_color",
                 "vardefault": "",
-                "varvalue": "",
+                "varvalue": "#FFFFFF",
                 "varcaption": "Color de texto (navbar y footer)",
                 "varhelp":"string con el código de color para los textos de la navbar y footer",
                 "vartype": "string",
-                "varinput": 
-                {
-                    "control": "intcolor"
+                "varinput": { "control": "intcolor"
                 }
+            },
+            {
+                "varname": "webshell_secbg_color",
+                "vardefault": "",
+                "varvalue": "#FAFAFA",
+                "varcaption": "Color de fondo en segundo plano",
+                "varhelp":"string con el código de color para el fondo en segundo plano de las vistas",
+                "vartype": "string",
+                "varinput": { "control": "intcolor" }
+            },
+            {
+                "varname": "webshell_url_secbg_img",
+                "vardefault": "",
+                "varvalue": "",
+                "varcaption": "Imagen de fondo en segundo plano",
+                "varhelp":"URL de una imagen para el fondo en segundo plano de las vistas",
+                "vartype": "string",
+                "varinput": { "control": "text" }
+            },
+            {
+                "varname": "webshell_login_css",
+                "vardefault": "",
+                "varvalue": "",
+                "varcaption": "Estilos CSS para la vista de inicio",
+                "varhelp":"Estilos CSS para la vista de inicio",
+                "vartype": "string",
+                "varinput": { "control": "textarea" }
+            },
+            {
+                "varname": "webshell_login_img",
+                "vardefault": "",
+                "varvalue": "",
+                "varcaption": "Logotipo para la vista de inicio",
+                "varhelp":"URL de una imagen para mostrarse en la vista de inicio",
+                "vartype": "string",
+                "varinput": { "control": "text" }
             }
         ]
     }

@@ -6,6 +6,11 @@ module "index"
     #include "functions.dkh"
     #include "serialize.dkh"
     #include "dbr.dkh"
+    #include "dbr.vars.dkl"
+    #include "dbr.notif.dkl"
+    #include "config.dk"
+    #include "_lib/lib.dk"
+    #include "_lib/icons.dk"
 
     @_qname = @@(@http_context,"$session/idp/qname")
     if @_qname == "" {

@@ -1,10 +1,16 @@
 #include "dkli.dkh"
+#set "meta-xml-declaration" "<!DOCTYPE html>\r\n"
 #!
 module "login"
 {
+	ref tmpdb = dbr.open(@@(@http_context,"$session/idp/qname"))
+
 	method=toupper(@@(@http_context,"request/headers/REQUEST_METHOD"))
 	success=url_encode("./?ids=@ids") //@@(@http_context,"request/get/success")
 	message=""
+	
+	login_css = dbr.vars.getd(tmpdb,"webshell_login_css","")
+	login_img = dbr.vars.getd(tmpdb,"webshell_login_img","")
 
 	if method=="POST"
 	{
@@ -32,16 +38,19 @@ module "login"
 		}
 	}
 
+	do dbr.close(tmpdb)
+
 	#$
-	div(class="container")
+	style{$'#<login_css>'}
+	div(class="container" id="div-login")
 	{
-		form(method="POST" action="./" onsubmit="return access.validate();")
+		form(method="POST" action="./" id="form-login" onsubmit="return access.validate();")
 		{
 			input(type="hidden" name="dkl_render" value="true")
 
 			div(class="row justify-content-center")
 			{
-				div(class="col-lg-5 col-md-8 col-sm-10 border py-2")
+				div(class="col-lg-5 col-md-8 col-sm-10 border py-2" id="div-login-ctrls")
 				{
 					div(class="row gx-2")
 					{
@@ -73,6 +82,17 @@ module "login"
 				}
 			}
 		}
+
+		#!
+		if login_img != ""
+		{
+			#$
+			figure(class="figure w-100 p-2 m-0" title="" id="fig-login") {
+				img(class="figure-img img-fluid mx-auto d-block" src="#<login_img>" alt="Logotipo" id="img-login"){$""}
+				// figcaption(class="figure-caption"){$""}
+			}
+		}
+		#$
 
 		div
 		{
