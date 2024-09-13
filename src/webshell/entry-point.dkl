@@ -7,13 +7,19 @@ module "Controller configs"
 	#include "dbr.dkh"
 	#include "crudl/crudl.dk"
 
-	if @@(@http_context,"$session/user/ids") == "" {
-		@http_context<"response/headers/location"> : "/"
+	@base_path="webshell"
+	@path_root="" // Establezca una ruta de ser necesario
+
+	if @@(@http_context,"$session/user/ids")=="" && @@(@http_context,"$request/get/_program")!="print-view" {
+		include "webshell/lost.dk"
 		return
 	}
 
-	@base_path="webshell"
-	@path_root="" // Establezca una ruta de ser necesario
+	if @@(@http_context,"$request/get/_program")=="print-view"
+	{
+		include "webshell/print-view/print.dk"
+		return
+	}
 	
 	// Enmascaramiento de enrutamiento (Ejemplos)
 	// Definición de patrones de rutas con base en parámetros GET (request/get)
@@ -33,8 +39,8 @@ module "Controller configs"
 
 	if @@(get,"$_program") == "notif" && @@(get,"$_entity_id") == "go"
 	{
-		get<"_entity_id">: @@(get,"$_view")
-		get<"_view">: "check_redir"
+		get<"_entity_id"> : @@(get,"$_view")
+		get<"_view"> : "check_redir"
 	}
 
 	//No modifique a menos que sepa lo que está haciendo

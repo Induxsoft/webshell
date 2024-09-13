@@ -1,16 +1,36 @@
 #include "dkli.dkh"
-#set "meta-xml-declaration" "<!DOCTYPE html>\r\n"
 #!
 module "webShell"
 {
     ref database = @@(@http_context,"&session/idp/database")
+    open_database = @false
+    
+    codeblock ""
+    {
+        if @isPrintView
+        {
+            qname = trim(@@(@http_context,"$session/idp/qname"))
+            if isnull(database) || not(dbr.is_open(database)) {
+                ref database:dbr.open(qname)
+                open_database = @true
+            }
+            do dbr.rec(database,"select 1 as success;",@null)
+            exception
+            {
+                do clear_exceptions()
+                ref database:dbr.open(qname)
+                open_database = @true
+            }
+        }
+    }
+
     title_bar = dbr.vars.get(database,"FXCA099")
     if trim(title_bar)==""{title_bar="Nombre Comercial de Prueba"}
-
     title_bar="Induxsoft V12 / "+title_bar
     
-    ref notis = dbr.notif.list(database)
-
+    if @isPrintView { ref notis = list.create() }
+    else { ref notis = dbr.notif.list(database) }
+    
     notif_frq = dbr.vars.getd(database, "sys_notif_freq_refresh", "60")
     count_nts = list.count(notis)
     notis_num = ifstr(count_nts < 1, "", ifstr(count_nts > 5, "+5", str(count_nts)))
@@ -42,6 +62,8 @@ module "webShell"
 
     function d_none(var) { return ifstr(var,"d-none","") }
 
+    if @isPrintView && open_database { do dbr.close(database) }
+
     #$
     link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
     nav(class="navbar border-bottom sticky-top m-0" style="#<navfoot_style>" id="nav_main")
@@ -53,37 +75,42 @@ module "webShell"
                 a(href="/"){ img(src="#<webshell_logo>"){$""} }
                 small(class="text-logo"){$"#<webshell_title>"}
             }
-            a(href="/" class="btn btn-sm border-0 color-inherit #<d_none(webshell_hide_home)>" title="Inicio") {$"#<@ICON_HOUSE_DOOR>"}
-            button(class="btn btn-sm border-0 color-inherit #<d_none(webshell_hide_actfnd)>" title="Acciones" id="btn_navbar_lightning") {$"#<@ICON_LIGHTNING>"}
-            div(class="btn-group #<d_none(webshell_hide_notif)>")
-            {
-                button(class="btn btn-sm border-0 color-inherit " title="Notificaciones" id="btn_notis" "data-bs-toggle"="dropdown" "data-bs-auto-close"="outside"){
-                    $"#<@ICON_BELL>"
-                    div(id="notis_num" class="#<ifstr(notis_num=='','d-none','')>"){ small(id="notis_num_text"){$"#<notis_num>"} }
-                }
-                ul(class="dropdown-menu dropdown-menu-lg-end" "aria-labelledby"="dropdownMenuClickableInside" id="notis_container")
+            #!
+            if not(@isPrintView) {
+                #$
+                a(href="/" class="btn btn-sm border-0 color-inherit #<d_none(webshell_hide_home)>" title="Inicio") {$"#<@ICON_HOUSE_DOOR>"}
+                button(class="btn btn-sm border-0 color-inherit #<d_none(webshell_hide_actfnd)>" title="Acciones" id="btn_navbar_lightning") {$"#<@ICON_LIGHTNING>"}
+                div(class="btn-group #<d_none(webshell_hide_notif)>")
                 {
-                    #! do print_notis(notis)
+                    button(class="btn btn-sm border-0 color-inherit " title="Notificaciones" id="btn_notis" "data-bs-toggle"="dropdown" "data-bs-auto-close"="outside"){
+                        $"#<@ICON_BELL>"
+                        div(id="notis_num" class="#<ifstr(notis_num=='','d-none','')>"){ small(id="notis_num_text"){$"#<notis_num>"} }
+                    }
+                    ul(class="dropdown-menu dropdown-menu-lg-end" "aria-labelledby"="dropdownMenuClickableInside" id="notis_container")
+                    {
+                        #
+                        do print_notis(notis)
+                        #$
+                    }
+                }
+                a(href="#<webshell_help_url>" target="_blank" class="btn btn-sm border-0 color-inherit #<d_none(webshell_hide_help)>" title="Ayuda") {$"#<@ICON_QUESTION>"}
+                div(class="d-flex align-items-center px-2 gap-2")
+                {
+                    small{$"#<@@(@http_context,'$session/user/name')>"}
+                    a(href="./?logout=true" class="color-inherit" title="Salir") {
+                        $"#<@ICON_BOX_ARROW_RIGHT>"
+                    }
                 }
             }
             #$
-            a(href="#<webshell_help_url>" target="_blank" class="btn btn-sm border-0 color-inherit #<d_none(webshell_hide_help)>" title="Ayuda") {$"#<@ICON_QUESTION>"}
-            
-            div(class="d-flex align-items-center px-2 gap-2")
-            {
-                small{$"#<@@(@http_context,'$session/user/name')>"}
-                a(href="./?logout=true" class="color-inherit" title="Salir") {
-                    $"#<@ICON_BOX_ARROW_RIGHT>"
-                }
-            }
         }
         div(id="loading_line"){$""}
     }
 
     main(id="main-sec")
     {
-        #! url = ifstr(@url_go=="", "/webshell/frontpage.dkl", @url_go)
-        
+        #!
+        url = ifstr(@url_go=="", "/webshell/frontpage.dkl", @url_go)
         ref split=split(url,"?")
         url_path=""
         params_url=""
@@ -92,8 +119,9 @@ module "webShell"
             url_path=list.str(split,0)
             params_url="?"+list.str(split,1)
         }
+        #$
 
-        #$ iframe(id="_main_view" src="#<url>"){$""}
+        iframe(id="_main_view" src="#<url>"){$""}
 
         "input-key"(
             id="ik_actions"

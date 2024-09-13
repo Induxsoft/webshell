@@ -1,0 +1,67 @@
+#include "dkli.dkh"
+#set "meta-xml-declaration" "<!DOCTYPE html>\r\n"
+#!
+module "print-view"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "uielements.v12.dkl"
+
+    @_entities_type = @@(@http_context,"$request/get/_entities_type")
+    @_entity_id = @@(@http_context,"$request/get/_entity_id")
+    
+    content = ""
+    codeblock ""
+    {
+        if @_entity_id == "" { do rise_error(511,"No se proporcionó un identificador.") }
+        fpath = path.concat("data/print-view-files/",@_entity_id+".html")
+        if not(file.exists(fpath)) { do rise_error(404,"El recurso solicitado no existe.\r\nLos enlaces cuentan con una vigencia de 15 días.") }
+        content = file.rtext(fpath)
+
+        exception
+        {
+            code = last_error_code()
+            error = last_error()
+            
+            content = "<h1>Error</h1><br><pre><code>"+error+"</code></pre>"
+            do clear_exceptions()
+        }
+    }
+
+    new nav_config
+    {
+        @"title": @_entity_id
+        @"buttons*": @null
+        @"urlexit": "/"
+    }
+
+    #$
+    html(lang="es-MX")
+    {
+        head
+        {
+            meta(charset="UTF-8")
+            meta(name="viewport" content="width=device-width, initial-scale=1.0")
+            title{$"print-view"}
+        }
+    
+        body
+        {
+            #$ div(id="view")
+            {
+                section(class="container-fluid" id="top_area")
+                {
+                    #!
+                    do uie.printV12FormBar(nav_config)
+                    #$
+                }
+                div(class="container-lg bg-light w-100 p-2" style="overflow-y:auto;") {
+                    div(class="" style="box-shadow: inset 0 -3em 3em rgba(0,0,0,0.1), 0.3em 0.3em 1em rgba(0, 0, 0, 0.3);") {
+                        section(class="bg-white p-1" id="section-to-print"){$"#<content>"}
+                    }
+                }
+                section(class="container-fluid" id="bottom_area"){$""}
+            }
+        }
+    }
+}

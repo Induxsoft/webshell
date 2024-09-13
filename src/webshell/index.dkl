@@ -24,11 +24,13 @@ module "index"
         exception { @url_go = "" }
     }
 
+    @isPrintView = contains(@url_go,"/!/webshell/print-view/")
+
     #$
     body
     {
         #!
-        if @@(@http_context,"$session/user/ids")=="" { include "login.dk" }
+        if @@(@http_context,"$session/user/ids")=="" && not(@isPrintView) { include "login.dk" }
         else 
         {
             if @@(@http_context,"$request/get/ids")!="" { @http_context<"response/headers/location"> : "./" }

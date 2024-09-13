@@ -1,0 +1,58 @@
+#include "dkli.dkh"
+#!
+module "save-view"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+
+    http_cors::
+	{
+		@http_context<"response/headers/Access-Control-Allow-Origin"> : "*"
+        @http_context<"response/headers/Access-Control-Allow-Methods"> : "*"
+        @http_context<"response/headers/Access-Control-Allow-Headers"> : "*"
+	}
+
+    set_response::&r
+    {
+        @http_context<"response/headers/Content-Type"> : "application/json;charset=utf-8"
+        @http_context<"response/output"> : "text"
+        @http_context<"response/text"> : to.json(r)
+    }
+    
+    do http_cors()
+    new response { @"success": @true }
+
+    ref getData = ifnull(@@(@http_context,"&request/get"),record.create())
+    ref postData = ifnull(@@(@http_context,"&request/post"),record.create())
+    if list.count(list.create_from_fields(postData)) < 1 {
+        ref postData:from.json(field.dstr(@http_context,"request/post_string","{}"))
+    }
+
+	content = @@(postData,"$doc")
+    fname = uuid()
+    dpath = "data/print-view-files/"
+    fpath = path.concat(dpath,fname+".html")
+    
+    do dir.ensure(dpath)
+    do file.wtext(fpath,content)
+
+    using response
+    {
+        member @"data"
+        {
+            @"id": fname
+            @"url": "/?go="+url_encode("/!/webshell/print-view/"+fname+"/")
+        }
+    }
+    do set_response(response)
+    
+    exception
+    {
+        using response
+        {
+            @"success": @false
+            @"message": last_error()
+        }
+        do set_response(response)
+    }
+}
