@@ -25,12 +25,13 @@ module "index"
     }
 
     @isPrintView = contains(@url_go,"/!/webshell/print-view/")
+    @hasSession = (@@(@http_context,"$session/user/ids") != "")
 
     #$
     body
     {
         #!
-        if @@(@http_context,"$session/user/ids")=="" && not(@isPrintView) { include "login.dk" }
+        if not(@hasSession) && not(@isPrintView) { include "login.dk" }
         else 
         {
             if @@(@http_context,"$request/get/ids")!="" { @http_context<"response/headers/location"> : "./" }

@@ -44,8 +44,13 @@ module "print-view"
     new nav_config
     {
         @"title": @_entity_id
-        @"urlexit": "/"
+        @"urlexit": "javascript:window.close()"
         @"buttons*": @buttons
+
+        member @"hidden"
+        {
+            @"exit": parse.bool(@@(@_GET,"$shared"))
+        }
     }
 
     #$
@@ -78,13 +83,13 @@ module "print-view"
 
             div
             {
-                // const url = window.location.href;
                 script(type="text/javascript")
                 {$'
                     document.addEventListener("DOMContentLoaded", () => {
                         const btn_share = document.getElementById("btn-share");
                         btn_share.addEventListener("click", () => {
-                            navigator.clipboard.writeText("#<@_entity_link>")
+                            const url = InduxsoftCrudlModel.UrlAddParameter(window.location.href,"shared","true");
+                            navigator.clipboard.writeText(url)
                             .then(() => { alert("Se copio el enlace al portapapeles.") })
                             .catch(err => { alert("Error al copiar el enlace al portapapeles.") });
                         });

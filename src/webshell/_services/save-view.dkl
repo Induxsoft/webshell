@@ -41,7 +41,8 @@ module "save-view"
         member @"data"
         {
             @"id": fname
-            @"url": "/?go="+url_encode("/!/webshell/print-view/"+fname+"/")
+            @"url": "/!/webshell/print-view/"+fname+"/"
+            // @"url": "/?go="+url_encode("/!/webshell/print-view/"+fname+"/")
         }
     }
     do set_response(response)
