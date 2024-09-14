@@ -6,9 +6,14 @@ module "print-view"
     #include "functions.dkh"
     #include "serialize.dkh"
     #include "uielements.v12.dkl"
+    #include "../_lib/icons.dk"
 
-    @_entities_type = @@(@http_context,"$request/get/_entities_type")
-    @_entity_id = @@(@http_context,"$request/get/_entity_id")
+    ref @_HEADERS = @@(@http_context,"&request/headers")
+    ref @_GET = @@(@http_context,"&request/get")
+
+    @_entities_type = @@(@_GET,"$_entities_type")
+    @_entity_id = @@(@_GET,"$_entity_id")
+    @_entity_link = ifstr(parse.bool(@@(@_HEADERS,"$HTTPS")),"https","http")+"://"+@@(@_HEADERS,"$HTTP_HOST")+"/?go="+url_encode(@@(@_HEADERS,"$REQUEST_URI"))
     
     content = ""
     codeblock ""
@@ -28,11 +33,19 @@ module "print-view"
         }
     }
 
+    print_buttons::
+    {
+        btn_cls = "btn btn-sm border-secondary induxsoft-corners btn-main-action"
+        #$
+        button(class="#<btn_cls>" type="button" id="btn-share"){$"#<@ICON_SHARE> Compartir"}
+        #!
+    }
+    point @buttons to print_buttons
     new nav_config
     {
         @"title": @_entity_id
-        @"buttons*": @null
         @"urlexit": "/"
+        @"buttons*": @buttons
     }
 
     #$
@@ -61,6 +74,22 @@ module "print-view"
                     }
                 }
                 section(class="container-fluid" id="bottom_area"){$""}
+            }
+
+            div
+            {
+                // const url = window.location.href;
+                script(type="text/javascript")
+                {$'
+                    document.addEventListener("DOMContentLoaded", () => {
+                        const btn_share = document.getElementById("btn-share");
+                        btn_share.addEventListener("click", () => {
+                            navigator.clipboard.writeText("#<@_entity_link>")
+                            .then(() => { alert("Se copio el enlace al portapapeles.") })
+                            .catch(err => { alert("Error al copiar el enlace al portapapeles.") });
+                        });
+                    });
+                '}
             }
         }
     }
