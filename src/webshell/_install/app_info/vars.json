@@ -59,6 +59,32 @@
                 "varhelp":"URL de una imagen para mostrarse en la vista de inicio",
                 "vartype": "string",
                 "varinput": { "control": "text" }
+            },
+
+            {
+                "varname": "v12_feedback_url",
+                "vardefault": "https://api.induxsoft.net/feedback/",
+                "varvalue": "https://api.induxsoft.net/feedback/",
+                "varcaption": "URL en donde se enviarán los datos",
+                "varhelp":"URL en donde se enviarán los datos de mejoras o sugerencias",
+                "vartype": "string",
+                "varinput": { "control": "text" }
+            },
+            {
+                "varname": "v12_install_id",
+                "vardefault": "f6bc468a7b8b11efa2d4b4b02409fbeb",
+                "varvalue": "f6bc468a7b8b11efa2d4b4b02409fbeb",
+                "varcaption": "ID v12 instalado",
+                "vartype": "string",
+                "varinput": { "control": "text" }
+            },
+            {
+                "varname": "v12_feedback_tpys",
+                "vardefault": "{\"improvement\":\"Mejora\", \"requirement\":\"Requisito\",\"bug\":\"Defecto\", \"suggestion\":\"Sugerencia\"}",
+                "varvalue": "{\"improvement\":\"Mejora\", \"requirement\":\"Requisito\",\"bug\":\"Defecto\", \"suggestion\":\"Sugerencia\"}",
+                "varcaption": "Tipo de comentario",
+                "vartype": "string",
+                "varinput": { "control": "memo" }
             }
         ]
     }

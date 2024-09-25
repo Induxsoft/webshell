@@ -16,4 +16,6 @@ program
     @FOOTER_LEGEND = "V12 Copyright(c) Induxsoft 2024 | Powered by Devkron"
 
     @show_empty_categories = @false
+
+    @FEEDBACK_SVG="/$/webshell/img/icons/feedback.svg"
 }

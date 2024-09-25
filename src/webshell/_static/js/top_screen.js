@@ -153,7 +153,47 @@ var top_screen =
                 loading_line.classList.add('loading');
             }
         }
-    }
+    },
+    showModal:function(idmodal)
+	{
+		this.getBSModal(idmodal).show();
+	},
+	hideModal:function(idmodal)
+	{
+		this.getBSModal(idmodal).hide();
+	},
+	getBSModal(modalId='')
+    {
+		modalId=modalId.replace("#","");
+        const modalElement = document.getElementById(modalId);
+
+        if(!modalElement)
+        {
+            console.log("Elemento no definido");
+            return;
+        }
+        const bsModal = bootstrap.Modal.getInstance(modalElement);
+        if (!bsModal) return new bootstrap.Modal(modalElement);
+
+        return bsModal;
+    },
+    alerText:function(idelem,text="",css="",time=5000)
+	{
+		if(idelem.trim()=="")return;
+		var elm=document.querySelector(idelem);
+		if(!elm)return;
+
+		var _before_css=elm.style.cssText;
+		
+		elm.innerHTML=text;
+		if(css!="")elm.style.cssText=css;
+
+		setTimeout(function()
+		{
+			elm.innerHTML="";
+			elm.style.cssText=_before_css;
+		}, time);
+	}
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{

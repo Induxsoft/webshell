@@ -5,11 +5,12 @@ module "webShell"
     ref database = @@(@http_context,"&session/idp/database")
     open_database = @false
     
+    qname = trim(@@(@http_context,"$session/idp/qname"))
+
     codeblock ""
     {
         if @isPrintView
         {
-            qname = trim(@@(@http_context,"$session/idp/qname"))
             if isnull(database) || not(dbr.is_open(database)) {
                 ref database:dbr.open(qname)
                 open_database = @true
@@ -64,6 +65,16 @@ module "webShell"
 
     if @isPrintView && open_database { do dbr.close(database) }
 
+    installid=dbr.vars.get(database,"v12_install_id")
+    if trim(installid)==""{installid=qname}
+    v12_feedback_url=dbr.vars.get(database,"v12_feedback_url")
+
+    v12_feedback_tpys=dbr.vars.get(database,"v12_feedback_tpys")
+
+    ref rtpys=record.create()
+    if trim(v12_feedback_tpys)!=""{ref rtpys=from.json(v12_feedback_tpys)}
+
+    ref tpys=list.create_from_fields(rtpys)
     #$
     link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
     nav(class="navbar border-bottom sticky-top m-0" style="#<navfoot_style>" id="nav_main")
@@ -149,12 +160,65 @@ module "webShell"
         {
             small{$"#<webshell_footer_text>"}
         }
+        div(class="pe-2")
+        {
+            $'<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="height: 25px;width: 25px;fill: white;cursor:pointer;" onclick="opemodal()">
+                <g>
+                    <path d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M6.455 19L2 22.5V4a1 1 0 0 1 1-1h18a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H6.455zM4 18.385L5.763 17H20V5H4v13.385zM11 13h2v2h-2v-2zm0-6h2v5h-2V7z"/>
+                </g>
+            </svg>'
+        }
         div(class="pe-4")
         {
             small(id="c_view_info"){$""}
         }
     }
 
+    //modal v12
+    div(class="modal fade" id="v12_feed_back" "data-bs-keyboard"="false" "data-bs-backdrop"="static" tabindex="-1" role="dialog" "aria-labelledby"="modalforms" "aria-hidden"="true")
+    {
+        div(class= "modal-dialog modal-md modal-dialog-centered" role ="document")
+        {
+            div(class="modal-content" style="border-radius:0")
+            {
+                div(class="modal-header")
+                {
+                    h5(class="modal-title" id="textomdl"){"Comentario"}
+                    // button(type="button" onlyform="true" class="close" "data-bs-dismiss"="modal" "aria-label"="Close" style="border: 1px solid #F0F0F0;")
+                    // {
+                    //     span ("aria-hidden"="true") {$"&times;"}
+                    // }
+                }
+                div(class="modal-body" id="bdy")
+                {
+                    label(id="lbl_alert_v12" class="d-flex" style="color:red"){""}
+                    
+                    label{"Tipo de comentario"}
+                    select(class="induxsoft-form-select" id="type" name="type")
+                    {$""
+                        #!
+                        for i = 0; i < @count(tpys)
+                        {
+                            key_tpy=list.str(tpys,i)
+                            #$
+                            option(value="#<key_tpy>"){"#<@@(rtpys,key_tpy)>"}
+                        }
+                        #$
+                    }
+
+                    label{"Comentario:"}
+                    textarea(id="text" name="text" class="induxsoft-form-control" maxlength="1024"){""}
+                    #$
+                }
+                div(class="modal-footer" id="ftrAddClt")
+                {
+                    button(type="button" id="btn_mdl_feedback" class="btn btn-outline-secondary btn-sm induxsoft-corners" onclick="sendFeedBack();" ) { "Enviar"}
+                    button(type="button" class="btn btn-outline-secondary btn-sm induxsoft-corners" "data-bs-dismiss"="modal") { "Cancelar"}
+                }
+            }
+        }       
+    }
     script(src="#<@JS_TOP_SCREEN>"){$""}
     script{$'
         top_screen.url_notif = "#<@URL_NOTIF>";
@@ -183,6 +247,54 @@ module "webShell"
             let height = (window.innerHeight - (navbar.scrollHeight + footer.scrollHeight));
             main.style.height = height+"px";
         }, true);
+
+        function opemodal()
+        {
+            var text=document.getElementById("text");
+            if(text)text.value="";
+
+            top_screen.showModal("v12_feed_back");
+        }
+        function sendFeedBack()
+        {
+            var data=
+            {
+                userid:"#<@@(@http_context,"session/user/uid")>",
+                installid:"#<installid>",
+                qname:"#<qname>",
+                sign:"#<uuid()>",
+                source:"V12"
+            }
+            var url="#<v12_feedback_url>";
+            var type=document.getElementById("type");
+            var text=document.getElementById("text");
+            var trace=document.getElementById("c_view_info");
+            
+            if(url.trim()=="")
+            {
+                top_screen.alerText("#lbl_alert_v12","No se ha definido una url para el envio de datos (v12_feedback_url)" );
+                return;
+            }
+            data["trace"]=(trace?.textContent ?? "") =="" ? "/":trace?.textContent;
+
+            if(type && type.value.trim()=="")
+            {
+                top_screen.alerText("#lbl_alert_v12","Debe seleccionar un tipo de comentario" );
+                return;
+            }
+            if(text && text.value.trim()=="")
+            {
+                top_screen.alerText("#lbl_alert_v12","Debe escribir un comentario");
+                return;
+            }
+            data["type"]=type.value.trim();
+            data["text"]=text.value.trim();
+
+            InduxsoftCrudlModel.InvokeService(url, data,
+            success => {  top_screen.hideModal("v12_feed_back"); },
+            failure => { top_screen.alerText("#lbl_alert_v12",failure.message ?? JSON.stringify(failure) );},
+            "POST", false);
+        }
     '}
 
     #!
