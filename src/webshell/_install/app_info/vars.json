@@ -77,14 +77,6 @@
                 "varcaption": "ID v12 instalado",
                 "vartype": "string",
                 "varinput": { "control": "text" }
-            },
-            {
-                "varname": "v12_feedback_tpys",
-                "vardefault": "{\"improvement\":\"Mejora\", \"requirement\":\"Requisito\",\"bug\":\"Defecto\", \"suggestion\":\"Sugerencia\"}",
-                "varvalue": "{\"improvement\":\"Mejora\", \"requirement\":\"Requisito\",\"bug\":\"Defecto\", \"suggestion\":\"Sugerencia\"}",
-                "varcaption": "Tipo de comentario",
-                "vartype": "string",
-                "varinput": { "control": "memo" }
             }
         ]
     }

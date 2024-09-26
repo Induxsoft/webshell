@@ -70,9 +70,9 @@ module "webShell"
     v12_feedback_url=dbr.vars.get(database,"v12_feedback_url")
 
     v12_feedback_tpys=dbr.vars.get(database,"v12_feedback_tpys")
-
-    ref rtpys=record.create()
-    if trim(v12_feedback_tpys)!=""{ref rtpys=from.json(v12_feedback_tpys)}
+    if trim(v12_feedback_tpys)==""{v12_feedback_tpys='{"improvement":"Mejora", "requirement":"Requisito","bug":"Defecto", "suggestion":"Sugerencia"}'}
+    
+    ref rtpys=from.json(v12_feedback_tpys)
 
     ref tpys=list.create_from_fields(rtpys)
     #$
