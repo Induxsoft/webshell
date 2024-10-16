@@ -3,6 +3,13 @@
 #!
 module "login"
 {
+
+	ReseponseJSON::&res
+	{
+		@http_context<"response/headers/content-type">:"application/json;charset=utf-8"
+    	@http_context<"response/output">:"text"
+		@http_context<"response/text">:to.json(res)
+	}
 	ref tmpdb = dbr.open(@@(@http_context,"$session/idp/qname"))
 
 	method=toupper(@@(@http_context,"request/headers/REQUEST_METHOD"))
@@ -14,8 +21,13 @@ module "login"
 
 	if method=="POST"
 	{
-		uid=@@(@http_context,"request/post/user")
-		pwd=@@(@http_context,"request/post/pwd")
+		cords=contains(tolower(replace(@@(@http_context,"request/headers/HTTP_ACCEPT")," ","")),"text/html")
+
+		ref postData=@@(@http_context,"&request/post")
+		if isnull(postData){ref postData=from.json(@@(@http_context,"$request/post_string"))}
+
+		uid=@@(postData,"$user")
+		pwd=@@(postData,"$pwd")
 		success=@@(@http_context,"request/post/success")
 
 		if success==""{success=url_encode("./?ids=@ids")}
@@ -24,6 +36,25 @@ module "login"
 		ref db=dbr.login(@_qname, uid,pwd)
 
 		token=dbr.getSID(db)
+
+		if not(cords)
+		{
+			using params{@"ids":token}
+			ref uinfo=dbr.rec(db,"select u.userId, u.userName from tuser u inner join sys_session s on u.sys_pk=s.iuser where s.sys_guid=@ids;",params)
+
+			new res
+			{
+				@"success":@true
+				@"ids":token
+				@"uid":field.str(uinfo,"userId")
+				@"name":field.str(uinfo,"userName")
+				@"multifactor":@false
+				@"verified_email":@false
+				@"verified_mobile":@false
+			}
+			do ReseponseJSON(res)
+			return
+		}
 		url=url_dcode(success)
 		url=replace(url,"@token",token)
 		url=replace(url,"@ids",token)
@@ -35,6 +66,16 @@ module "login"
 		exception
 		{
 			message=last_error()
+			if not(cords)
+			{
+				new res
+				{
+					@"success":@false
+					@"message":message
+				}
+				do ReseponseJSON(res)
+				return
+			}
 		}
 	}
 
