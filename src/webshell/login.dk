@@ -28,29 +28,42 @@ module "login"
 
 		uid=@@(postData,"$user")
 		pwd=@@(postData,"$pwd")
+		token=@@(postData,"$ids")
+		
+		if trim(token)==""{token=@@(postData,"$token")}
+
 		success=@@(@http_context,"request/post/success")
 
 		if success==""{success=url_encode("./?ids=@ids")}
 		do dbr.setHashUnicode(@true)
-	
-		ref db=dbr.login(@_qname, uid,pwd)
 
-		token=dbr.getSID(db)
+		if trim(token)!=""
+		{
+			ref db=dbr.reconnect(@_qname,token)
+		}
+		else 
+		{
+			ref db=dbr.login(@_qname, uid,pwd)
+			token=dbr.getSID(db)
+		}
 
 		if not(cords)
 		{
 			using params{@"ids":token}
 			ref uinfo=dbr.rec(db,"select u.userId, u.userName from tuser u inner join sys_session s on u.sys_pk=s.iuser where s.sys_guid=@ids;",params)
-
-			new res
+			new result
 			{
-				@"success":@true
 				@"ids":token
 				@"uid":field.str(uinfo,"userId")
 				@"name":field.str(uinfo,"userName")
 				@"multifactor":@false
 				@"verified_email":@false
 				@"verified_mobile":@false
+			}
+			new res
+			{
+				@"success":@true
+				@"data*":result
 			}
 			do ReseponseJSON(res)
 			return
