@@ -27,6 +27,8 @@ module "login"
 		if isnull(postData){ref postData=from.json(@@(@http_context,"$request/post_string"))}
 
 		uid=@@(postData,"$user")
+		if trim(uid)==""{uid=@@(postData,"$uid")}
+		
 		pwd=@@(postData,"$pwd")
 		token=@@(postData,"$ids")
 		
