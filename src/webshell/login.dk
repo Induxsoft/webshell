@@ -10,6 +10,46 @@ module "login"
     	@http_context<"response/output">:"text"
 		@http_context<"response/text">:to.json(res)
 	}
+	ValidUser::&db,uid,pwd,ids
+	{
+		new data
+		{
+			@"ids":ids
+			@"pwd":pwd
+			@"uid":uid
+		}
+		if trim(@@(data,"$ids"))!=""
+		{
+			sql="select 
+			u.sys_pk
+			from tuser u 
+			inner join sys_session s on u.sys_pk=s.iuser 
+			where s.sys_guid=@ids
+			AND ifnull(u.sys_deleted,0)=0;"
+			user=dbr.num(db,sql,data)
+		}
+		else if @usehashmd5unicode
+        {
+            data<"pwdmd5u">:md5e(@@(data,"$pwd"),"unicode")
+            user=dbr.num(db,"select 
+			sys_pk 
+			from tuser 
+			where lower(userid)=@uid 
+			and lower(pwd)=@pwdmd5u
+			and ifnull(sys_deleted,0)=0",data)
+        }
+        else 
+        {
+            data<"pwdmd5">:md5(@@(data,"$pwd"))
+            user=dbr.num(db,"select 
+			sys_pk 
+			from tuser 
+			where lower(userid)=@uid 
+			and lower(pwdmd5)=@pwdmd5
+			and ifnull(sys_deleted,0)=0",data)   
+        }
+        if user < 1{do rise_error(500,"Error de inicio de sesión, verifique Usuario y Contraseña.")}
+	}
 	ref tmpdb = dbr.open(@@(@http_context,"$session/idp/qname"))
 
 	method=toupper(@@(@http_context,"request/headers/REQUEST_METHOD"))
@@ -21,6 +61,7 @@ module "login"
 
 	if method=="POST"
 	{
+		@usehashmd5unicode=@true
 		cords=contains(tolower(replace(@@(@http_context,"request/headers/HTTP_ACCEPT")," ","")),"text/html")
 
 		ref postData=@@(@http_context,"&request/post")
@@ -38,6 +79,7 @@ module "login"
 
 		if success==""{success=url_encode("./?ids=@ids")}
 		do dbr.setHashUnicode(@true)
+		do ValidUser(tmpdb,uid,pwd,token)
 
 		if trim(token)!=""
 		{
