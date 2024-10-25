@@ -27,6 +27,7 @@ module "login"
 			where s.sys_guid=@ids
 			AND ifnull(u.sys_deleted,0)=0;"
 			user=dbr.num(db,sql,data)
+			if user < 1{do rise_error(500,"Error de inicio de sesión, ids inválido.")}
 		}
 		else if @usehashmd5unicode
         {
