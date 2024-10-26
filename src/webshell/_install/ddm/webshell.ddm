@@ -87,6 +87,49 @@ model ""
         @"username" string(120) required
         @"pwdmd5" string(64) 
     }
+    // Permisos disponibles
+    entity "sitem"
+    {
+        @"sys_pk" int key required autoincrement
+        @"sys_guid" string(32) unique required
+        @"sys_dtcreated" datetime
+        @"sys_timestamp" datetime required
+        @"sys_info" string(32)
+        @"sys_user" string(32)
+        @"sys_lastuser" string(32)
+        @"sys_exported" bool
+        @"sys_dtexported" datetime
+        @"sys_recver" int
+        @"sys_deleted" bool
+        @"sys_lock" int
+
+        @"description" string(250) 
+        @"itemid" string(32) unique required
+        @"itemparent" ref:"sitem" 
+    }
+    entity "ws_det_log_enable" : "TableModel"
+    {
+        @"det" ref:"sys_app_item_type" unique required 
+        @"rpriv" ref: "sitem" required // Permiso para ver
+        @"wpriv"  ref: "sitem" required // Permiso para escribir
+        @"var_files" string(45) // Nombre de la variable de configuración que contiene la ruta física de guardado de los archivos, si es null, se usará la variable ws_file_store data/attatchments/@det/@guid/
+    }
+
+    entity "ws_det_log" : "TableModel"
+    {
+        @"origen" ref: "ws_det_log_enable" required
+        @"guid" string(32) required //sys_guid del elemento o un identificador
+        @"nota" memo 
+        @"archivo" string(128) //Nombre del archivo adjunto al mensaje
+        @"idarchivo" string(32) //Idenficador del archivo
+        @"usuario" string(45)
+    }
+
+    entity "ws_det_log_file":"TableModel"
+    {
+        @"id" string(32) unique required
+        @"nombre" string(128) required //Incluye la extensión
+    }
     // Información de la aplicación
     entity "sys_app_catalog"
     {
@@ -95,6 +138,13 @@ model ""
         @"app_title" string(255)
         @"created" datetime required
         @"app_info" mmemo
+    }
+    // Tipos de elementos de las aplicaciones
+    entity "sys_app_item_type"
+    {
+        @"id" string(32) key
+        @"title" string(255) required
+        @"view_url" string(1024) //URL de consulta, en donde @_entity_id representa el id del elemento
     }
     // Categoria de la aplicación
     entity "sys_app_category"

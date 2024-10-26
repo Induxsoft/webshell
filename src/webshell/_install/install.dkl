@@ -26,6 +26,7 @@ program "instalador"
     categories_file = path.concat(path_app_info,"sys_app_category.csv")
     catalogs_file = path.concat(path_app_info,"sys_app_catalog.csv")
     shortcuts_file = path.concat(path_app_info,"sys_app_shortcut.csv")
+    item_type_file = path.concat(path_app_info,"sys_app_item_type.csv")
     sitem_file = path.concat(path_initial_data,"sitem.csv")
     vars_file = path.concat(path_app_info,"vars.json")
 
@@ -120,7 +121,15 @@ program "instalador"
         ref shortcutsData = CsvRead(shortcuts_file,"")
         do dbr.apps.shortcut.import(database,shortcutsData)
     }
+    //#region Establecer DET
+    if file.exists(item_type_file)
+    {
+        do print("\nETABLECIENDO ENTIDADES")
 
+        ref itemsData = CsvRead(item_type_file,"")
+        do dbr.apps.itemtype.import(database,itemsData)
+    }
+    //#endregion
     if file.exists(sitem_file)
     {
         do print("\nIMPORTANDO PRIVILEGIOS")
@@ -154,6 +163,19 @@ program "instalador"
             }
         }
     }
+    do print("\nINSERTANDO DATOS EN ws_det_log_enable")
+    new ws_det_log_enable
+    {
+        @"sys_guid":"e51a777293af11ef970b74d435513b2b"
+        @"sys_dtcreated*":now()
+        @"sys_timestamp*":now()
+        @"det":"FFFFFE"
+        @"rpriv":dbr.num(database,"select sys_pk from sitem where itemid='XW10'",@null)
+        @"wpriv":dbr.num(database,"select sys_pk from sitem where itemid='XW11'",@null)
+    }
+    do dbr.apps.save(database,"ws_det_log_enable",ws_det_log_enable)
+    do print("- FFFFFE")
+    
     if dbr.is_open(database){ do dbr.close(database) }
 
     exception

@@ -35,4 +35,9 @@ module "lib"
             }
         }
     }
+    #!
+    limpiarTexto::texto
+	{
+        return tolower(trim(replace(ranychars(texto,'\\/:*?"<>|(-)[+]#$%&=,'," ")," ","_")))
+	}
 }

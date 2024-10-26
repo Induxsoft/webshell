@@ -1,0 +1,4 @@
+﻿itemid,description,itemparent
+webshell,Interfaz principal,\0
+XW10,Ver mensajes de la organización,webshell
+XW11,Publicar mensajes a la organización,webshell

@@ -73,8 +73,8 @@ module "webShell"
     if trim(v12_feedback_tpys)==""{v12_feedback_tpys='{"improvement":"Mejora", "requirement":"Requisito","bug":"Defecto", "suggestion":"Sugerencia"}'}
     
     ref rtpys=from.json(v12_feedback_tpys)
-
     ref tpys=list.create_from_fields(rtpys)
+    
     #$
     link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
     nav(class="navbar border-bottom sticky-top m-0" style="#<navfoot_style>" id="nav_main")
@@ -118,39 +118,54 @@ module "webShell"
         div(id="loading_line"){$""}
     }
 
-    main(id="main-sec")
+    div(id="webshell-grid-container")
     {
-        #!
-        url = ifstr(@url_go=="", "/webshell/frontpage.dkl", @url_go)
-        ref split=split(url,"?")
-        url_path=""
-        params_url=""
-        if @count(split)>1
-        {
-            url_path=list.str(split,0)
-            params_url="?"+list.str(split,1)
+        section(id="webshell-top-panel" direction="top"){
+            div(class="adjust-panel-v" id="adjust-top-panel"){$""}
         }
-        #$
+        section(id="webshell-main-content")
+        {
+            section(id="webshell-left-panel" direction="left"){
+                div(class="adjust-panel-h" id="adjust-left-panel"){$""}
+            }
+            main(id="main-sec")
+            {
+                #!
+                url = ifstr(@url_go=="", "/webshell/frontpage.dkl", @url_go)
+                ref split=split(url,"?")
+                url_path=""
+                params_url=""
+                if @count(split)>1
+                {
+                    url_path=list.str(split,0)
+                    params_url="?"+list.str(split,1)
+                }
+                #$
 
-        iframe(id="_main_view" src="#<url>"){$""}
+                iframe(id="_main_view" src="#<url>"){$""}
 
-        "input-key"(
-            id="ik_actions"
-            "data-key"="id"
-            "data-search"="id"
-            "data-text"="title"
-            "data-source"="#<@URL_ACTIONS>?s=@search&top_screen=1" 
-            columns="id,title,act_type"
-            colcaptions="ID,Título,Tipo"
-            "box-title-text"="Seleccione una acción"
-            "box-placeholder-text"="Buscar acción"
-            "box-nodata-text"="No se encontraron acciones"
-            "control-styles"="#container{ display: none !important; }"
-            "hidden-input"="false"
-        ){$""}
+                "input-key"(id="ik_actions" "data-key"="id" "data-search"="id" "data-text"="title"
+                    "data-source"="#<@URL_ACTIONS>?s=@search&top_screen=1" 
+                    columns="id,title,act_type"
+                    colcaptions="ID,Título,Tipo"
+                    "box-title-text"="Seleccione una acción"
+                    "box-placeholder-text"="Buscar acción"
+                    "box-nodata-text"="No se encontraron acciones"
+                    "control-styles"="#container{ display: none !important; }"
+                    "hidden-input"="false"
+                ){$""}
+            }
+            section(id="webshell-right-panel" direction="right"){
+                div(class="adjust-panel-h" id="adjust-right-panel"){$""}
+                iframe(src="#" id="right-frame"){$""}
+            }
+        }
+        section(id="webshell-bottom-panel" direction="bottom"){
+            div(class="adjust-panel-v" id="adjust-bottom-panel"){$""}
+        }
     }
 
-    div(class="fixed-bottom text-center border-top py-1 footer d-flex" style="#<navfoot_style>" id="nav_footer")
+    div(class="sticky-bottom text-center border-top py-1 footer d-flex" style="#<navfoot_style>" id="nav_footer")
     {
         div(class="ps-4")
         {
@@ -219,8 +234,11 @@ module "webShell"
             }
         }       
     }
+
+    script(src="#<@JS_WEBSHELL>"){$""}
     script(src="#<@JS_TOP_SCREEN>"){$""}
-    script{$'
+    script(type="text/javascript")
+    {$'
         top_screen.url_notif = "#<@URL_NOTIF>";
         top_screen.url_notif_go = "#<@URL_NOTIF_GO>";
         top_screen.notif_frq = "#<notif_frq>";
@@ -243,10 +261,10 @@ module "webShell"
             console.error(e);
         }
 
-        window.addEventListener("resize", function(event) {
+        /* window.addEventListener("resize", function(event) {
             let height = (window.innerHeight - (navbar.scrollHeight + footer.scrollHeight));
             main.style.height = height+"px";
-        }, true);
+        }, true); */
 
         function opemodal()
         {

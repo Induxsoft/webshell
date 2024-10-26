@@ -1,0 +1,6 @@
+#include "dkli.dkh"
+#!
+module ""
+{
+    @form_view="view_log.dk"
+}

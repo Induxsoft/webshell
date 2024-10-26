@@ -1,0 +1,184 @@
+#include "dkli.dkh"
+#!
+module ":webshell"
+{
+    ref @DB=@null
+
+    getDB::
+    {
+        if isnull(@DB)
+        {
+            ref db=@@(@http_context,"&session/idp/database")
+            if isnull(db){ref db=dbr.open(@@(@http_context,"$session/idp/qname"))}
+            
+            ref @DB=db
+        }
+        
+        return @DB
+    }
+    detlog.addFieldSystem::&data
+    {
+        using data
+        {
+            @"sys_guid":uuid()
+            @"sys_dtcreated*":now()
+            @"sys_timestamp*":now()
+        }
+    }
+    wsdet.get::detid
+    {
+        ref db=getDB()
+        new params{@"detid":detid}
+        return dbr.rec(db,"SELECT wd.sys_pk,wd.sys_guid,wd.det,wd.rpriv,wd.wpriv,wd.var_files FROM ws_det_log_enable wd WHERE wd.det=@detid",params)
+    }
+    detlog.file.add::id,nombre
+    {
+        ref db=getDB()
+        new ws_det_log_file
+        {
+            @"id":id
+            @"nombre":nombre
+        }
+        do dbr.insert(db,"ws_det_log_file",ws_det_log_file)
+    }
+    detlog.add::detid,guid,userid, text, filepath,idarchivo
+    {
+        ref db=getDB()
+
+        if trim(idarchivo)==""{idarchivo=uuid()}
+        
+        new ws_det_log
+        {
+            @"origen":detid
+            @"guid":guid
+            @"nota":text
+            @"archivo":filepath
+            @"idarchivo":idarchivo
+            @"usuario":userid
+        }
+        do detlog.addFieldSystem(ws_det_log)
+
+        do dbr.insert(db,"ws_det_log",ws_det_log)
+
+        return ws_det_log
+    }
+    detlog.get::msgid
+    {
+        ref db=getDB()
+        new params{@"msgid":msgid}
+
+        return dbr.rec(db,"SELECT
+                wl.sys_pk,
+                wl.sys_guid,
+                wl.guid,
+                wl.nota,
+                wl.archivo,
+                wl.idarchivo,
+                wl.usuario,
+                wle.sys_pk pk_det_log,
+                wle.det,
+                wle.rpriv,
+                wle.wpriv,
+                wle.var_files
+            FROM
+                ws_det_log wl
+                INNER JOIN ws_det_log_enable wle ON wl.origen = wle.sys_pk
+            WHERE 
+                wl.sys_pk=@msgid",params)
+    }
+    detlog.getall::detid,guid,from,to //si from o to son cero, se asume lo mismo que se indica en el endpoint
+    {
+        ref db=getDB()
+        ref _get=@@(@http_context,"&request/get")
+
+        new params
+        {
+            @"detid":detid
+            @"guid":guid
+        }
+
+        if parse.num(from)> 0{params<"from">:from}
+        else if trim(@@(_get,"$from"))!=""{params<"from">:@@(_get,"$from")}
+
+        if parse.num(to)> 0{params<"to">:to}
+        else if trim(@@(_get,"$to"))!=""{params<"to">:@@(_get,"$to")}
+
+        sql="SELECT
+                wl.sys_pk,
+                wl.sys_guid,
+                date_format(wl.sys_dtcreated,'%Y-%m-%d')fecha_hora,
+                wl.guid,
+                wl.nota,
+                wl.archivo,
+                wl.idarchivo,
+                wl.usuario,
+                wle.sys_pk pk_det_log,
+                wle.det,
+                wle.rpriv,
+                wle.wpriv,
+                wle.var_files
+            FROM
+                ws_det_log wl
+                INNER JOIN ws_det_log_enable wle ON wl.origen = wle.sys_pk
+            WHERE 
+                wle.det=@detid
+            AND wl.guid=@guid"
+        
+        if trim(@@(params,"$from"))!="" && trim(@@(params,"$to"))==""
+        {
+            sql=sql + " AND wl.sys_pk >= @from "
+        }
+        else if trim(@@(params,"$to"))!="" && trim(@@(params,"$from"))==""
+        {
+            sql=sql + " AND wl.sys_pk <= @to "
+        }
+        else if trim(@@(params,"$to"))!="" && trim(@@(params,"$from"))==""
+        {
+            sql=sql + " AND wl.sys_pk >= @from AND wl.sys_pk <= @to "
+        }
+
+        sql=sql + " ORDER BY wl.sys_pk DESC "
+
+        return dbr.list(db,sql,params)
+    }
+    detlog.file.get::&detid,guid
+    {
+        ref db=getDB()
+
+        new params
+        {
+            @"detid":detid
+            @"guid":guid
+        }
+        return dbr.list(db,"SELECT
+            wf.sys_pk,
+            wf.sys_guid,
+            wf.id,
+            wf.nombre
+        FROM
+            ws_det_log_file wf
+            INNER JOIN ws_det_log wl ON wf.id = wl.idarchivo
+            INNER JOIN ws_det_log_enable wd ON wl.origen = wd.sys_pk
+        WHERE
+            wl.guid = @guid
+            AND wd.det = @detid
+            AND ifnull(wl.sys_deleted,0)=0
+        ORDER BY wf.sys_pk desc",params)
+    }
+    detlog.delete::msgid,userid
+    {
+        ref db=getDB()
+        new params
+        {
+            @"id":msgid
+            @"uid":userid
+        }
+        do dbr.execute(db,"update ws_det_log set sys_deleted=1 where sys_pk=@id and usuario=@uid",params)
+
+        do dbr.execute(db,"UPDATE ws_det_log_file wf
+                INNER JOIN ws_det_log wl ON wf.id=wl.idarchivo
+                SET wf.sys_deleted=1
+                WHERE wl.sys_pk=@id and usuario=@uid",params)
+    }
+    
+}

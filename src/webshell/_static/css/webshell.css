@@ -12,18 +12,29 @@
     box-sizing: border-box;
 }
 body {
+    margin: 0;
+    display: grid;
+    grid-template-areas:
+        "header"
+        "main"
+        "footer";
+    grid-template-rows: auto 1fr auto;
     height: 100vh;
 }
-main{
-    /*height: pantalla - (header + footer) */
+/*height: pantalla - (header + footer) */
+/* main{
     height: calc(100vh - (3.31rem + 2.06rem));
     width: 100%;
-}
-iframe{
+} */
+#_main_view{
     min-width: 1px;
     width: 100%;
     height: 100%;
 }
+
+#nav_main { grid-area: header; }
+#nav_footer { grid-area: footer; }
+
 .color-inherit {
     color: inherit !important;
 }
@@ -41,6 +52,12 @@ iframe{
 .disable-element {
     pointer-events: none !important;
     opacity: .5;
+}
+.sticky-bottom {
+    position: -webkit-sticky;
+    position: sticky;
+    bottom: 0;
+    z-index: 1020;
 }
 
 /* =============== ACCESOS DIRECTOS */
@@ -117,6 +134,70 @@ iframe{
         background-color: #FFF;
         animation: loading 2s ease-in-out infinite;
     }
+}
+
+/* ======================= PANELS */
+#webshell-grid-container {
+    grid-area: main;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+}
+
+#webshell-top-panel {
+    display: none;
+    background-color: #F8F8F8;
+    min-height: 50px;
+    height: auto;
+}
+#webshell-left-panel {
+    display: none;
+    background-color: #F8F8F8;
+    min-width: 50px;
+    width: auto;
+}
+#webshell-right-panel {
+    display: none;
+    background-color: #F8F8F8;
+    min-width: 50px;
+    width: auto;
+}
+#webshell-bottom-panel {
+    display: none;
+    background-color: #F8F8F8;
+    min-height: 50px;
+    height: auto;
+}
+
+#webshell-main-content {
+    display: flex;
+    flex: 1;
+    /* position: relative; */
+}
+#main-sec {
+    flex: 1;
+}
+
+.adjust-panel-h, .adjust-panel-v {
+    background-color: #EDEDED;
+    /* position: absolute; */
+    z-index: 100;
+}
+.adjust-panel-h:hover {
+    background-color: #DDD;
+    cursor: col-resize;
+}
+.adjust-panel-v:hover {
+    background-color: #DDD;
+    cursor: row-resize;
+}
+
+#adjust-right-panel {
+    height: 100%;
+    width: 5px;
+    /* top: 0;
+    left: auto; */
 }
 
 @media screen and (max-width: 768px)

@@ -6,6 +6,9 @@ program
     @JS_IFRAME_RESIZER = "/$/webshell/js/iframeresizer.min.js"
     @JS_IFRAME_RESIZER_CONTENT = "/$/webshell/js/iframeresizer.contentwindow.min.js"
     @JS_TOP_SCREEN = "/$/webshell/js/top_screen.js"
+    @JS_WEBSHELL = "/$/webshell/js/webshell.js"
+    @JS_LOG="/$/webshell/js/log.js"
+    
     @ICON_V12 = "/$/webshell/img/icons/v12_2.png"
 
     @URL_ACTIONS = "/!/webshell/action/"
@@ -18,4 +21,5 @@ program
     @show_empty_categories = @false
 
     @FEEDBACK_SVG="/$/webshell/img/icons/feedback.svg"
+    @var_files_log="ws_file_store" //var global por default
 }

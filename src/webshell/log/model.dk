@@ -1,0 +1,87 @@
+#include "dkli.dkh"
+#!
+module ":log"
+{
+    #include "webshell.dkh"
+    #include "webshell/_lib/lib.dk"
+    #include "dbr.vars.dkl"
+
+    SaveFile::&db,&params
+    {
+        ref files=@@(@http_context,"&request/files")
+        ref file=@null
+        for i = 0; i < @count(files)
+        {
+            ref file=@item(files,i)
+            if file.exists(@@(file,"$temp_file")) && @@(file,"$filename")!="" && @@(file,"#size")>0
+            {
+                ref det=webshell.wsdet.get(@@(params,"$_entity_id"))
+
+                if @@(det,"$var_files")==""{using det{@"var_files":@var_files_log}}
+                filepath=dbr.vars.get(db,@@(det,"$var_files"))
+                if trim(filepath)==""{do rise_error(500,"No hay una ruta fisica para guardar los adjuntos")}
+
+                filename = limpiarTexto(@@(file,"$filename"))
+                params<"filename">:filename
+
+                filepath = path.concat(filepath,filename)
+                if not(dir.exists(filepath)){do rise_error(500,"El directorio para guardar el adjunto no existe")}
+
+                do file.copy(@@(file,"$temp_file"),filepath)
+                break
+            }else{ref file=@null}
+        }
+
+        return file
+    }
+    create::&db,&params,&data
+    {
+        do getDetParams(params)
+
+        ref file=SaveFile(db,params)
+
+        if not(isnull(file))
+        {
+            params<"file">:file.name(@@(file,"$filename"))
+            params<"idarchivo">:uuid()
+            do webshell.detlog.file.add(@@(params,"$idarchivo"),@@(params,"$file"))
+        }
+        
+        ref det=webshell.wsdet.get(@@(params,"$detid"))
+        if isnull(det){do rise_error(500,"No se encontró el DET")}
+
+        return webshell.detlog.add(@@(det,"#sys_pk"),@@(params,"$guid"),@@(@http_context,"$session/user/uid"),@@(data,"$text"),@@(params,"$file"),@@(params,"$idarchivo"))    
+    }
+    getDetParams::&params
+    {
+        if trim(@@(params,"$detid"))==""{params<"detid">:@@(params,"$_entity_id")}
+        if trim(@@(params,"$guid"))==""{params<"guid">:@@(params,"$_view")}
+    }
+    read::&db,&params
+    {
+        do getDetParams(params)
+        
+        new data
+        {
+            @"adjuntos*":webshell.detlog.file.get(@@(params,"$detid"),@@(params,"$guid"))
+            @"data*":webshell.detlog.getall(@@(params,"$detid"),@@(params,"$guid"),@@(params,"#from"),@@(params,"#to"))
+        }
+        return data
+    }
+    NoImplentation::&db,&params
+    {
+        do rise_error(500,"Operaci+on no implemntado")
+    }
+    delete::&db,&params
+    {
+       do webshell.detlog.delete(@@(params,"$id"),@@(@http_context,"$session/user/uid"))
+    }
+    
+    point @delete   to log.delete
+    point @read     to log.read
+    point @create   to log.create
+
+    point @blank    to log.NoImplentation
+    point @list     to log.NoImplentation
+    point @update   to log.NoImplentation
+}
