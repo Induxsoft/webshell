@@ -151,13 +151,22 @@ module "webShell"
                     "box-title-text"="Seleccione una acción"
                     "box-placeholder-text"="Buscar acción"
                     "box-nodata-text"="No se encontraron acciones"
-                    "control-styles"="#container{ display: none !important; }"
+                    "control-styles"="#container{ display:none !important; }"
                     "hidden-input"="false"
                 ){$""}
             }
-            section(id="webshell-right-panel" direction="right"){
+            button(class="btn btn-success webshell-tab" id="webshell-open-right-panel" hidden=""){div(id="webshell-right-tab-content" class="vertical-text"){"Abrir panel"}}
+            section(id="webshell-right-panel" direction="right")
+            {
                 div(class="adjust-panel-h" id="adjust-right-panel"){$""}
-                iframe(src="#" id="right-frame"){$""}
+                div(id="webshell-right-panel-area")
+                {
+                    div(class="d-flex align-items-center border-bottom bg-white gap-1" id="webshell-right-panel-header") {
+                        button(class="btn btn-sm btn-main-action no-shadow fw-500" id="webshell-close-right-panel" title="Cerrar panel"){$">>"}
+                        small(class="text-secondary" id="webshell-right-panel-header-title"){$""}
+                    }
+                    iframe(id="right-frame"){$""}
+                }
             }
         }
         section(id="webshell-bottom-panel" direction="bottom"){

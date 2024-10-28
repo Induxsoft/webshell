@@ -2,7 +2,8 @@ const WebShell =
 {
     mainsec: document.getElementById("main-sec"),
 
-    Panels:{
+    Panels:
+    {
         Const:{
             Top:"#webshell-top-panel",
             Left:"#webshell-left-panel",
@@ -10,10 +11,25 @@ const WebShell =
             Bottom:"#webshell-bottom-panel",
             All:"[id^='webshell-'][id$='-panel']"
         },
+        Available:[],
+        Open:[],
 
-        IsOpen(p){},
-        IsAvailable(p){},
-        Hide(p){},
+        IsOpen(p){ return this.Open.includes(p); },
+        IsAvailable(p){ return this.Available.includes(p); },
+        Hide(p)
+        {
+            const ElPanels = document.querySelectorAll(p);
+            if (ElPanels.length == 0) return;
+            
+            ElPanels.forEach((panel) => {
+                let selector = "#"+panel.id;
+                if (this.IsOpen(selector)) {
+                    let index = this.Open.indexOf(selector);
+                    this.Open.splice(index,1);
+                    panel.style.display = "none";
+                }
+            });
+        },
         Show(p,u)
         {
             const ElPanels = document.querySelectorAll(p);
@@ -21,17 +37,46 @@ const WebShell =
 
             ElPanels.forEach((panel) => {
                 const frame = panel.querySelector("iframe");
-                const fdocument = frame.contentDocument || frame.contentWindow.document;
+                let selector = "#"+panel.id;
                 let direction = panel.getAttribute("direction");
 
-                frame.src = u;
-                panel.style.display = "flex";
-                WebShell.setAdjustPanelEvent(`adjust-${direction}-panel`,direction);
-                
-                /* fdocument.addEventListener("DOMContentLoaded", () => {
+                if (!this.IsAvailable(selector))
+                {
+                    this.Available.push(selector);
+
+                    const OpenTab = document.getElementById(`webshell-open-${direction}-panel`);
+                    const CloseTab = document.getElementById(`webshell-close-${direction}-panel`);
+                    const TabTitle = document.getElementById(`webshell-${direction}-tab-content`);
+                    const HeaderTitle = document.getElementById(`webshell-${direction}-panel-header-title`);
+                    
+                    frame.src = u;
+                    
+                    frame.onload = () => {
+                        let title = frame.contentDocument.title;
+                        
+                        TabTitle.textContent = title;
+                        HeaderTitle.textContent = title;
+
+                        OpenTab.addEventListener("click", () => {
+                            this.Show(selector);
+                            OpenTab.hidden = true;
+                        });
+                        CloseTab.addEventListener("click", () => {
+                            this.Hide(selector);
+                            OpenTab.hidden = false;
+                        });
+                        
+                        WebShell.setAdjustPanelEvent(`adjust-${direction}-panel`,direction);
+                        if (!WebShell.IsMobile()) panel.style.display = "flex";
+                        else OpenTab.hidden = false;
+                        this.Open.push(selector);
+                    }
+                }
+                else
+                {
+                    this.Open.push(p);
                     panel.style.display = "flex";
-                    WebShell.setAdjustPanelEvent(`adjust-${direction}-panel`,direction);
-                }); */
+                }
             });
         }
     },
@@ -56,6 +101,7 @@ const WebShell =
             panelWidth = panel.offsetWidth;
             pageY = e.pageY;
             panelHeight = panel.offsetHeight;
+            panel.style.zIndex = "-1";
             WebShell.mainsec.style.zIndex = "-1";
         }
         document.onmousemove = (e) => {
@@ -82,7 +128,10 @@ const WebShell =
         }
         document.onmouseup = (e) => {
             e.stopPropagation();
-            if (panel) panel.style.transition = '.5s';
+            if (panel) { 
+                panel.style.transition = '.5s';
+                panel.style.zIndex = "";
+            }
             panel = undefined;
             pageX = undefined;
             pageY = undefined;
@@ -92,5 +141,10 @@ const WebShell =
         }
     },
 
-    IsMobile(){}
+    IsMobile(){ return (document.body.offsetWidth <= 360); }
+}
+
+// WebShell.Panels.Show(WebShell.Panels.Const.Right,"https://v12demo1.induxsoft.net/!/webshell/log/FFFFFE/@/");
+document.getElementById("_main_view").contentWindow.onunload = function(e) {
+    WebShell.Panels.Hide(WebShell.Panels.Const.All);
 }

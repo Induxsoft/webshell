@@ -59,6 +59,15 @@ body {
     bottom: 0;
     z-index: 1020;
 }
+.sticky-right 
+{
+    position: -webkit-sticky;
+    position: sticky;
+    right: 0;
+    z-index: 1020;
+}
+.no-blur, .no-shadow { outline: none !important; box-shadow: none !important; }
+.btn.btn-xs { padding: .20rem .4rem; font-size: .725rem; border-radius: .1rem; }
 
 /* =============== ACCESOS DIRECTOS */
 
@@ -154,13 +163,13 @@ body {
 #webshell-left-panel {
     display: none;
     background-color: #F8F8F8;
-    min-width: 50px;
+    min-width: 320px;
     width: auto;
 }
 #webshell-right-panel {
     display: none;
     background-color: #F8F8F8;
-    min-width: 50px;
+    min-width: 320px;
     width: auto;
 }
 #webshell-bottom-panel {
@@ -192,6 +201,13 @@ body {
     background-color: #DDD;
     cursor: row-resize;
 }
+.vertical-text {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    color: white;
+    font-size: 18px;
+    text-align: center;
+}
 
 #adjust-right-panel {
     height: 100%;
@@ -200,6 +216,105 @@ body {
     left: auto; */
 }
 
+#webshell-right-panel-area{
+    display:flex;
+    flex-direction: column;
+    width: 100%;
+}
+#webshell-right-panel-header{
+    background-color: var(--light-gray-color);
+}
+#right-frame{
+    flex: 1;   
+}
+
+.webshell-tab {
+    position: fixed;
+    padding: 8px;
+    border-radius: 5px 0 0 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+.webshell-tab:hover {
+    background-color: #4CAF50;
+}
+
+#webshell-open-right-panel {
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Log */
+.module_emisor,.module_receptor
+{
+    margin-bottom: 5px;
+}
+.body-chat-receptor,.body-chat-emisor
+{
+    padding: 4px;
+    border-radius: 5px;
+    border: 2px solid #003399;
+}
+.body-chat-receptor
+{
+    background: #CCFF3F;
+}
+.body-chat-emisor
+{
+    background: #8BF6CE;
+}
+.chat
+{
+    font-weight: bold;
+    align-items: center;
+    display: flex;
+    white-space: break-spaces;
+}
+.chat-div-adjunto
+{
+    width: 50px;
+    height: 50px;
+    background: #FFF5D0;
+    /* border-radius: 5px; */
+    border: 2px solid #003399;
+    margin-right: 5px;
+}
+.chat-img
+{
+    height: 36px;
+    width: 36px;
+}
+.fecha-hour
+{
+    font-size: 12px;
+}
+/* modulo deadjuntos */
+.btn-adjunto
+{
+    background: #FFD83F;
+    border: 2px solid #003399;
+    display: flex;
+    align-items: center;
+}
+/* buttos actions */
+#btn-send,#btn-adjunto
+{
+    cursor: pointer;
+}
+/* Contador */
+.header-counter
+{
+    background: white;
+    padding: 5px;
+    align-items: center;
+    display: flex;
+    border: 2px solid #003399;
+}
+.header-counter-text
+{
+    font-size: 20px;
+    font-weight: bold;
+}
 @media screen and (max-width: 768px)
 {
     .category-shortcuts {
