@@ -143,7 +143,24 @@ module ":webshell"
 
         return dbr.list(db,sql,params)
     }
-    detlog.file.get::&detid,guid,from,to
+    detlog.file.get::id
+    {
+        ref db=getDB()
+
+        new params{@"id":id}
+        sql="SELECT
+            wf.sys_pk,
+            wf.sys_guid,
+            wf.id,
+            wf.nombre
+        FROM
+            ws_det_log_file wf
+        WHERE
+            wf.id=@id"
+        
+        return dbr.rec(db,sql,params)
+    }
+    detlog.file.getall::&detid,guid,from,to
     {
         ref db=getDB()
         ref _get=@@(@http_context,"&request/get")

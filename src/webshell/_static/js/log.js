@@ -1,5 +1,10 @@
 document.addEventListener("DOMContentLoaded",()=>{log.init();})
 
+window.addEventListener("resize", function(event) {
+    log.AddHTML(log.header_counter,`<div class="d-none"></div>`);
+    log.CalculeContador();
+}, true);
+
 var log=
 {
     init()
@@ -12,7 +17,11 @@ var log=
         this.adjunto=document.getElementById("adjunto");
         this.header_counter=document.getElementById("header-counter");
         this.counter_text=document.getElementById("counter-text");
-
+        this.media_list=document.getElementById("media-list");
+        if(this.media_list)this.media_list.onClicking=data=>
+        {
+            log.SelectedElement(data);
+        }
         this.last_log = 0;
         this.HTML_module_receptor=`<div class="d-flex justify-content-start module_receptor">
             <div class="body-chat-receptor">
@@ -34,13 +43,15 @@ var log=
                 <small class="fecha-hour d-flex">@fecha_hora</small>
             </div>
         </div>`;
+
         this.HTML_adjunto=`
-        <a class="btn btn-sm btn-adjunto">
+        <a class="btn btn-sm btn-adjunto" href="@url" target="_blank">
             @module_adjunto
             <div>
                 <small class="chat-name-adjunto">@name_adjunto</small>
             </div>
         </a>`;
+        this.HTML_redir_chat=`<a href="@url" target="_blank">@html</a>`;
         this.HTML_module_adjunto=`<div class="chat-div-adjunto"></div>`
         this.HTML_name_adjunto=`<small class="chat-name-adjunto">@name_adjunto</small>`;
 
@@ -57,6 +68,7 @@ var log=
             }, 2000);
         }
         this.ObserveScroll();
+        log.CalculeContador();
     },
     SendMessage()
     {
@@ -133,14 +145,19 @@ var log=
     CreateItemAdjunto(item)
     {
         if(!item || !this.adjuntos)return;
+        
+        var html=this.HTML_adjunto.replace("@module_adjunto",this.HTML_module_adjunto).replace("@name_adjunto",item.nombre??"").replace("@url",log.url_download_adjuntos.replace("@id",item.id??""));
 
-        var html=this.HTML_adjunto.replace("@module_adjunto",this.HTML_module_adjunto).replace("@name_adjunto",item.nombre??"");
-
-        log.header_counter.insertAdjacentHTML("beforebegin",html);
+        this.AddHTML(log.header_counter,html);
         log.count_adjuntos+=1;
         log.ShowContador();
         log.Contador();
-        // this.adjuntos.innerHTML+=
+    },
+    AddHTML(element,html)
+    {
+        if(!element)return;
+
+        element.insertAdjacentHTML("beforebegin",html);
     },
     CreateBodyChat(data)
     {
@@ -164,7 +181,8 @@ var log=
         html=html.replace("@message",nota).replace("@user",row.usuario).replace("@fecha_hora",row.fecha_hora??"");
         if((row.archivo??"")!="")
         {
-            html=html.replace("@adjunto",this.HTML_module_adjunto);
+            let r=this.HTML_redir_chat.replace("@url",log.url_download_adjuntos.replace("@id",row.idarchivo??"")).replace("@html",this.HTML_module_adjunto);
+            html=html.replace("@adjunto",r);
             html=html.replace("@module_adjunto",this.HTML_name_adjunto.replace("@name_adjunto",row.archivo))
         }
         else
@@ -197,8 +215,11 @@ var log=
         // Observar el elemento
         observador.observe(this.adjuntos, cambiosaobservar);
         
-        setTimeout(()=>{log.adjuntos.innerHTML+=`<div></div>`;},300)
-        console.log("inicio")
+        setTimeout(
+            ()=>
+            {
+                log.AddHTML(log.header_counter,`<div class="d-none"></div>`);
+            },300)
     },
     ShowContador()
     {
@@ -218,6 +239,52 @@ var log=
         log.counter_text=document.getElementById("counter-text");
         if(log.counter_text)log.counter_text.innerHTML=log.count_adjuntos+"+";
     },
+    CalculeContador()
+    {
+        var ch=document.getElementById("card-header");
+        
+        var l=log.adjuntos?.querySelectorAll("a");
+        if(!l)return ;
+        
+        var lng=l.length - 1;
+        var w=ch.offsetWidth;
+        var c=0;
+        for (let i = 0; i < lng; i++) 
+        {
+            const element = l[i];
+            w-=element.offsetWidth;
+            if(w>0.01)c++;
+            else
+            {
+                break;
+            };
+        }
+        c=lng-c;
+        log.count_adjuntos=c;
+        this.ShowContador();
+    },
+    data_preview:null,
+	SelectedElement(data)
+	{
+		this.data_preview=this.getDataById(data.__internal_id__);
+	},
+	Download()
+	{
+		var data=this.data_preview;
+		if(!data)
+		{
+			alert("Debe seleccionar un elemento");
+			return;
+		}
+		let url=this.url_download_adjuntos.replace("@id",data.id??"");
+		window.open(url,"_blank");
+	},
+    getDataById(id)
+	{
+		var data= this.media_list.getData(false).find(e=>e.__internal_id__==id);
+		data["index"]= this.media_list.getData(false).findIndex(e=>e.__internal_id__==id);
+		return data;
+	},
     InvokeService(method,values=null,callbak_succes=null,callbak_failed=null,formdata=false)
     {
         InduxsoftCrudlModel.InvokeService(this.endpoint, values, 

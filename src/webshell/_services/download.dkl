@@ -1,0 +1,41 @@
+#include "dkli.dkh"
+#! //Conmutación a contexto IMPERATIVO
+
+module ""
+{
+    #include "functions.dkh" 
+    #include "serialize.dkh"
+    #include "dbr.dkh"
+    #include "webshell/config.dk"
+    #include "webshell.dkh"
+    #include "dbr.vars.dkl"
+    
+    ref params = @@(@http_context,"&request/get")
+    ref db=@@(@http_context,"&session/idp/database")
+
+    ref det=webshell.wsdet.get(@@(params,"$detid"))
+    if @@(det,"$var_files")==""{using det{@"var_files":@var_files_log}}
+    
+    filepath=dbr.vars.get(db,@@(det,"$var_files"))
+    if trim(filepath)==""{do rise_error(500,"No hay una ruta fisica para guardar los adjuntos")}
+    filepath=replace(filepath,"@det",@@(params,"$detid"))                
+    filepath=replace(filepath,"@guid",@@(params,"$guid"))
+    filepath=replace(filepath,"@qname",@@(@http_context,"$session/idp/qname"))
+
+    ref detfile=webshell.detlog.file.get(@@(params,"$id"))
+    if isnull(detfile){do rise_error(500,"No se encontró datos del archivo indicado")}
+    id=@@(params,"$id")+file.extension(@@(detfile,"$nombre"))
+    filepath=path.concat(filepath,id)
+    
+    if not(file.exists(filepath)){do rise_error(500,"No se encontró el archivo indicado")}
+
+    //Establecer encabezado de respuesta http
+    @http_context<"response/headers/content-type">:"application/octet-stream;charset=utf-8"
+    //Indicar que se trata de un archivo adjunto y su nombre
+    //Más información en: https://developer.mozilla.org/es/docs/Web/HTTP/Headers/Content-Disposition
+    @http_context<"response/headers/content-disposition">: "attachment; filename="+file.name(filepath)
+    //Indicar tipo de respuesta
+    @http_context<"response/output">:"binary"
+    //Asignar la respuesa de salida
+    @http_context<"response/binary*">: file.rbytes(filepath) //Lee y devuelve el array de bytes del archivo
+}

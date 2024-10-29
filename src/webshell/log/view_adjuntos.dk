@@ -18,11 +18,15 @@ module ""
         @"title": "Adjuntos"
         @"urlexit": "."
     }
+    url_root_current=current_url(@true)
+    
+    url_download_adjuntos=@SERVICE_DOWNLOAD_FILE_CHAT //url_root_current+"?_page=download&id=@id"
+    url_download_adjuntos=replace(url_download_adjuntos,"@detid",@("$parameters/_entity_id"))
+    url_download_adjuntos=replace(url_download_adjuntos,"@guid",@("$parameters/_view"))
     #$
     div(class="v12-form-view container" id="view")
     {
         script(src="#<@JS_LOG>"){""}
-        // link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
 
         section(id="top_area")
         {
@@ -36,7 +40,7 @@ module ""
         }
         section(id="work_area")
         {
-            button(class="btn btn-secondary btn-sm induxsoft-corners mb-2"){"Descargar"}
+            button(class="btn btn-secondary btn-sm induxsoft-corners mb-2" onclick="log.Download();"){"Descargar"}
 
             "media-list"(
             id="media-list"
@@ -51,6 +55,13 @@ module ""
             "outline-selected"="true"
             "label-prop"="nombre"
             ){""}
+        }
+
+        script
+        {
+            $'
+            log.url_download_adjuntos="#<url_download_adjuntos>";
+            '
         }
     }
 }

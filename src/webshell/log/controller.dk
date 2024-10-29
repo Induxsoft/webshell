@@ -6,6 +6,10 @@ module ""
 
     switch @@(params,"$_page")
     {
+        case "download"
+        {
+            point @read to log.download
+        }
         case "adjuntos"
         {
             @form_view="view_adjuntos.dk"

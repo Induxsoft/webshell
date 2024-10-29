@@ -8,7 +8,7 @@
             {
                 "varname": "ws_file_store",
                 "vardefault": "data/attatchments/@det/@guid/",
-                "varvalue": "data/attatchments/@det/@guid/",
+                "varvalue": "data/@qname/attatchments/@det/@guid/",
                 "varcaption": "Ruta física de guardado de los archivos",
                 "varhelp":"Ruta física de guardado de los archivos para las conversaciones",
                 "vartype": "string",

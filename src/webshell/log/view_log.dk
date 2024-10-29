@@ -21,8 +21,13 @@ module ""
     url_root_current=current_url(@true)
     url_mas_adjuntos=url_root_current+"?_page=adjuntos"
     count_adjuntos=@count(adjuntos)
+
+    url_download_adjuntos=@SERVICE_DOWNLOAD_FILE_CHAT //url_root_current+"?_page=download&id=@id"
+    url_download_adjuntos=replace(url_download_adjuntos,"@detid",@("$parameters/_entity_id"))
+    url_download_adjuntos=replace(url_download_adjuntos,"@guid",@("$parameters/_view"))
+
     #$
-    div(class="v12-form-view container" id="view")
+    div(class="v12-form-view container" id="view" style="min-width: 290px;")
     {
         script(src="#<@JS_LOG>"){""}
         link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
@@ -30,18 +35,19 @@ module ""
         section(id="top_area"){$""}
         section(id="work_area")
         {
-            div(class="card" style="width: 100% !important;")
+            div(class="card" style="width: 100% !important;border:0px")
             {
-                div(class="card-header sticky-top bg-white d-flex")
+                div(class="card-header sticky-top bg-white d-flex" id="card-header")
                 {
-                    div(class="d-flex gap-2" id="adjuntos" style="overflow:auto")
+                    div(class="d-flex gap-2" id="adjuntos" style="overflow:hidden")
                     {
                         #!
                         for i = 0; i < count_adjuntos
                         {
                             ref adjunto=@item(adjuntos,i)
+                            id=@@(adjunto,'$id')
                             #$
-                            a(class="btn btn-sm btn-adjunto")
+                            a(class="btn btn-sm btn-adjunto" href="#<replace(url_download_adjuntos,'@id',id)>" target="_blank")
                             {
                                 div(class="chat-div-adjunto"){$""}
                                 div
@@ -88,6 +94,7 @@ module ""
         script
         {
             $'
+            log.url_download_adjuntos="#<url_download_adjuntos>";
             log.count_adjuntos=#<count_adjuntos>;
             log.url_root_current="#<url_root_current>";
             log.current_user="#<current_user>";

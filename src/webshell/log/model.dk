@@ -5,6 +5,8 @@ module ":log"
     #include "webshell.dkh"
     #include "webshell/_lib/lib.dk"
     #include "dbr.vars.dkl"
+    #include "dbr.apps.dkl"
+    #include "dbr.security.dkl"
 
     SaveFile::&db,&params
     {
@@ -23,6 +25,7 @@ module ":log"
                 if trim(filepath)==""{do rise_error(500,"No hay una ruta fisica para guardar los adjuntos")}
                 filepath=replace(filepath,"@det",@@(params,"$detid"))                
                 filepath=replace(filepath,"@guid",@@(params,"$guid"))
+                filepath=replace(filepath,"@qname",@@(@http_context,"$session/idp/qname"))
                 
                 do dir.ensure(filepath)
                 if not(dir.exists(filepath)){do rise_error(500,"El directorio para guardar el adjunto no existe")}
@@ -30,7 +33,7 @@ module ":log"
                 filename = limpiarTexto(@@(file,"$filename"))
                 params<"filename">:filename
                 params<"idarchivo">:uuid()
-                filename=@@(params,"$idarchivo")+file.extension(filename)
+                filename=tolower(@@(params,"$idarchivo")+file.extension(filename))
                 
                 filepath = path.concat(filepath,filename)
                 do file.copy(@@(file,"$temp_file"),filepath)
@@ -43,6 +46,11 @@ module ":log"
     create::&db,&params,&data
     {
         do getDetParams(params)
+
+        ref det=webshell.wsdet.get(@@(params,"$detid"))
+        ref sitem=getSitem(db,@@(det,"#wpriv"))
+        do dbr.apps.action.grant(@@(sitem,"$itemid"))
+
         if trim(@@(params,"$detid"))==""{do rise_error(500,"No se ha indicado el código DET")}
         if trim(@@(params,"$guid"))==""{do rise_error(500,"No se ha indicado un identificador GUID")}
 
@@ -51,7 +59,7 @@ module ":log"
         do dbr.begin(db)
             if not(isnull(file))
             {
-                params<"file">:file.name(@@(file,"$filename"))
+                params<"file">:tolower(file.name(@@(file,"$filename")))
                 if not(field.exist(params,"idarchivo")){ params<"idarchivo">:uuid()}
 
                 do webshell.detlog.file.add(@@(params,"$idarchivo"),@@(params,"$file"))
@@ -76,13 +84,20 @@ module ":log"
         if trim(@@(params,"$detid"))==""{params<"detid">:@@(params,"$_entity_id")}
         if trim(@@(params,"$guid"))==""{params<"guid">:@@(params,"$_view")}
     }
+    getSitem::&db,pksitem
+    {
+        new p{@"pk":pksitem}
+        return dbr.rec(db,"select description,itemid from sitem where sys_pk=@pk",p)
+    }
     read::&db,&params
     {
         do getDetParams(params)
-        
+        ref det=webshell.wsdet.get(@@(params,"$detid"))
+        ref sitem=getSitem(db,@@(det,"#rpriv"))
+        do dbr.apps.action.grant(@@(sitem,"$itemid"))
         new data
         {
-            @"adjuntos*":webshell.detlog.file.get(@@(params,"$detid"),@@(params,"$guid"),@@(params,"#from"),@@(params,"#to"))
+            @"adjuntos*":webshell.detlog.file.getall(@@(params,"$detid"),@@(params,"$guid"),@@(params,"#from"),@@(params,"#to"))
         }
         switch @@(params,"$_page")
         {
@@ -104,6 +119,37 @@ module ":log"
     delete::&db,&params
     {
        do webshell.detlog.delete(@@(params,"$id"),@@(@http_context,"$session/user/uid"))
+    }
+    download::&db,&params
+    {
+        do getDetParams(params)
+
+        ref det=webshell.wsdet.get(@@(params,"$_entity_id"))
+        if @@(det,"$var_files")==""{using det{@"var_files":@var_files_log}}
+        
+        filepath=dbr.vars.get(db,@@(det,"$var_files"))
+        if trim(filepath)==""{do rise_error(500,"No hay una ruta fisica para guardar los adjuntos")}
+        filepath=replace(filepath,"@det",@@(params,"$detid"))                
+        filepath=replace(filepath,"@guid",@@(params,"$guid"))
+        filepath=replace(filepath,"@qname",@@(@http_context,"$session/idp/qname"))
+
+        ref detfile=webshell.detlog.file.get(@@(params,"$id"))
+        if isnull(detfile){do rise_error(500,"No se encontró datos del archivo indicado")}
+        id=@@(params,"$id")+file.extension(@@(detfile,"$nombre"))
+        filepath=path.concat(filepath,id)
+        
+        if not(file.exists(filepath)){do rise_error(500,"No se encontró el archivo indicado")}
+
+        //Establecer encabezado de respuesta http
+        @http_context<"response/headers/content-type">:"application/octet-stream;charset=utf-8"
+        //Indicar que se trata de un archivo adjunto y su nombre
+        //Más información en: https://developer.mozilla.org/es/docs/Web/HTTP/Headers/Content-Disposition
+        @http_context<"response/headers/content-disposition">: "attachment; filename="+file.name(filepath)
+        //Indicar tipo de respuesta
+        @http_context<"response/output">:"binary"
+        //Asignar la respuesa de salida
+        @http_context<"response/binary*">: file.rbytes(filepath) //Lee y devuelve el array de bytes del archivo
+        return record.create()
     }
     
     point @delete   to log.delete

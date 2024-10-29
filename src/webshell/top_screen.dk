@@ -107,7 +107,7 @@ module "webShell"
                 a(href="#<webshell_help_url>" target="_blank" class="btn btn-sm border-0 color-inherit #<d_none(webshell_hide_help)>" title="Ayuda") {$"#<@ICON_QUESTION>"}
                 div(class="d-flex align-items-center px-2 gap-2")
                 {
-                    small{$"#<@@(@http_context,'$session/user/name')>"}
+                    a(class="text-decoration-none text-white" href="/!/dbext/user/#<@@(@_USER,'$uid')>/" title="Mi usuario"){$"#<@@(@_USER,'$name')>"}
                     a(href="./?logout=true" class="color-inherit" title="Salir") {
                         $"#<@ICON_BOX_ARROW_RIGHT>"
                     }
@@ -286,7 +286,7 @@ module "webShell"
         {
             var data=
             {
-                userid:"#<@@(@http_context,"session/user/uid")>",
+                userid:"#<@@(@_USER,"$uid")>",
                 installid:"#<installid>",
                 qname:"#<qname>",
                 sign:"#<uuid()>",
