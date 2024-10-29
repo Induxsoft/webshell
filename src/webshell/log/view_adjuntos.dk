@@ -1,0 +1,56 @@
+#include "dkli.dkh"
+#!
+module ""
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "webshell/config.dk"
+    #include "webshell/_lib/lib.dk"
+    #include "uielements.v12.dkl"
+
+    do @context.begin(@crud_context)
+    ref @http_context=@("&http")
+
+    ref adjuntos=@("&./adjuntos")
+
+    new nav_config
+    {
+        @"title": "Adjuntos"
+        @"urlexit": "."
+    }
+    #$
+    div(class="v12-form-view container" id="view")
+    {
+        script(src="#<@JS_LOG>"){""}
+        // link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
+
+        section(id="top_area")
+        {
+            div
+            {
+                #!
+                do uie.printV12FormBar(nav_config)
+                #$
+            }
+            
+        }
+        section(id="work_area")
+        {
+            button(class="btn btn-secondary btn-sm induxsoft-corners mb-2"){"Descargar"}
+
+            "media-list"(
+            id="media-list"
+            data='#<to.json(adjuntos)>'
+            "can-arrange"="true"
+            "can-drag"="true"
+            "can-drop"="true"
+            "can-delete"="false"
+            "highlight-first"="true"
+            "media-prop"="id"
+            "miniature-prop"=""
+            "outline-selected"="true"
+            "label-prop"="nombre"
+            ){""}
+        }
+    }
+}

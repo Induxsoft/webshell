@@ -141,7 +141,7 @@ const WebShell =
         }
     },
 
-    IsMobile(){ return (document.body.offsetWidth <= 360); }
+    IsMobile(){ return (document.body.offsetWidth <= 450); }
 }
 
 // WebShell.Panels.Show(WebShell.Panels.Const.Right,"https://v12demo1.induxsoft.net/!/webshell/log/FFFFFE/@/");

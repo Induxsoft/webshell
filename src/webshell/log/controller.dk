@@ -3,4 +3,12 @@
 module ""
 {
     @form_view="view_log.dk"
+
+    switch @@(params,"$_page")
+    {
+        case "adjuntos"
+        {
+            @form_view="view_adjuntos.dk"
+        }
+    }
 }

@@ -18,15 +18,21 @@ module ":log"
                 ref det=webshell.wsdet.get(@@(params,"$_entity_id"))
 
                 if @@(det,"$var_files")==""{using det{@"var_files":@var_files_log}}
+
                 filepath=dbr.vars.get(db,@@(det,"$var_files"))
                 if trim(filepath)==""{do rise_error(500,"No hay una ruta fisica para guardar los adjuntos")}
-
+                filepath=replace(filepath,"@det",@@(params,"$detid"))                
+                filepath=replace(filepath,"@guid",@@(params,"$guid"))
+                
+                do dir.ensure(filepath)
+                if not(dir.exists(filepath)){do rise_error(500,"El directorio para guardar el adjunto no existe")}
+                
                 filename = limpiarTexto(@@(file,"$filename"))
                 params<"filename">:filename
-
+                params<"idarchivo">:uuid()
+                filename=@@(params,"$idarchivo")+file.extension(filename)
+                
                 filepath = path.concat(filepath,filename)
-                if not(dir.exists(filepath)){do rise_error(500,"El directorio para guardar el adjunto no existe")}
-
                 do file.copy(@@(file,"$temp_file"),filepath)
                 break
             }else{ref file=@null}
@@ -37,20 +43,33 @@ module ":log"
     create::&db,&params,&data
     {
         do getDetParams(params)
+        if trim(@@(params,"$detid"))==""{do rise_error(500,"No se ha indicado el código DET")}
+        if trim(@@(params,"$guid"))==""{do rise_error(500,"No se ha indicado un identificador GUID")}
 
         ref file=SaveFile(db,params)
+        ref log=@null
+        do dbr.begin(db)
+            if not(isnull(file))
+            {
+                params<"file">:file.name(@@(file,"$filename"))
+                if not(field.exist(params,"idarchivo")){ params<"idarchivo">:uuid()}
 
-        if not(isnull(file))
+                do webshell.detlog.file.add(@@(params,"$idarchivo"),@@(params,"$file"))
+            }
+            
+            ref det=webshell.wsdet.get(@@(params,"$detid"))
+            if isnull(det){do rise_error(500,"No se encontró el DET")}
+
+            ref log= webshell.detlog.add(@@(det,"#sys_pk"),@@(params,"$guid"),@@(@http_context,"$session/user/uid"),@@(data,"$text"),@@(params,"$file"),@@(params,"$idarchivo"))
+        do dbr.commit(db)
+
+        return log
+        exception
         {
-            params<"file">:file.name(@@(file,"$filename"))
-            params<"idarchivo">:uuid()
-            do webshell.detlog.file.add(@@(params,"$idarchivo"),@@(params,"$file"))
+            if dbr.in_transaction(db){do dbr.rollback(db)}
+            do rise_error(last_error_code(),last_error())
         }
-        
-        ref det=webshell.wsdet.get(@@(params,"$detid"))
-        if isnull(det){do rise_error(500,"No se encontró el DET")}
-
-        return webshell.detlog.add(@@(det,"#sys_pk"),@@(params,"$guid"),@@(@http_context,"$session/user/uid"),@@(data,"$text"),@@(params,"$file"),@@(params,"$idarchivo"))    
+            
     }
     getDetParams::&params
     {
@@ -63,8 +82,18 @@ module ":log"
         
         new data
         {
-            @"adjuntos*":webshell.detlog.file.get(@@(params,"$detid"),@@(params,"$guid"))
-            @"data*":webshell.detlog.getall(@@(params,"$detid"),@@(params,"$guid"),@@(params,"#from"),@@(params,"#to"))
+            @"adjuntos*":webshell.detlog.file.get(@@(params,"$detid"),@@(params,"$guid"),@@(params,"#from"),@@(params,"#to"))
+        }
+        switch @@(params,"$_page")
+        {
+            case "adjuntos"
+            {
+                break
+            }
+            default
+            {
+                data<"data*">:webshell.detlog.getall(@@(params,"$detid"),@@(params,"$guid"),@@(params,"#from"),@@(params,"#to"))
+            }
         }
         return data
     }

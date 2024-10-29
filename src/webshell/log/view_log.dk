@@ -5,6 +5,7 @@ module ""
     #include "functions.dkh"
     #include "serialize.dkh"
     #include "webshell/config.dk"
+    #include "webshell/_lib/lib.dk"
 
     do @context.begin(@crud_context)
     ref @http_context=@("&http")
@@ -13,55 +14,54 @@ module ""
     ref data=@("&./data")
     ref adjuntos=@("&./adjuntos")
 
+    using @http_context
+    {
+        member "session" { member "resource" { member "properties" { member  "web_meta_tags" {@"title":"Bitácora" }  } } }
+    }
+    url_root_current=current_url(@true)
+    url_mas_adjuntos=url_root_current+"?_page=adjuntos"
+    count_adjuntos=@count(adjuntos)
     #$
-    div(class="v12-form-view container mt-4" id="view")
+    div(class="v12-form-view container" id="view")
     {
         script(src="#<@JS_LOG>"){""}
+        link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
 
         section(id="top_area"){$""}
         section(id="work_area")
         {
-            div(class="card")
+            div(class="card" style="width: 100% !important;")
             {
-                div(class="card-header")
+                div(class="card-header sticky-top bg-white d-flex")
                 {
-                    div(class="d-flex gap-2" id="adjuntos")
+                    div(class="d-flex gap-2" id="adjuntos" style="overflow:auto")
                     {
                         #!
-                        for i = 0; i < 10
+                        for i = 0; i < count_adjuntos
                         {
+                            ref adjunto=@item(adjuntos,i)
                             #$
-                            button(class="btn btn-sm btn-secondary")
+                            a(class="btn btn-sm btn-adjunto")
                             {
-                                $"file #<i>"
+                                div(class="chat-div-adjunto"){$""}
+                                div
+                                {
+                                    small(class="chat-name-adjunto" ){$"#<@@(adjunto,'$nombre')>"}
+                                }
                             }
+                        }
+                        #$
+                        a(class="header-counter sticky-right d-none btn" id="header-counter" href="#<url_mas_adjuntos>")
+                        {
+                            div(class="header-counter-text" id="counter-text"){"#<count_adjuntos>+"}
                         }
                     }
                 }
-                div(class="card-body" id="body-chat")
-                {$""
-                    // //receptor
-                    // div(class="d-flex justify-content-start module_receptor")
-                    // {
-                    //     div(id="body-chat-receptor")
-                    //     {
-                    //         div(class="chat"){"Hello word receptor"}
-                    //         small(class="user"){"User..."}
-                    //         small(class="fecha-hour d-flex"){"2024-10-26 11:50"}
-                    //     }
-                    // }
-                    // //emisor
-                    // div(class="d-flex justify-content-end module_emisor" )
-                    // {
-                    //     div(id="body-chat-emisor")
-                    //     {
-                    //         div(class="chat"){"Hello word emisor"}
-                    //         small(class="user"){"User..."}
-                    //         small(class="fecha-hour d-flex"){"2024-10-26 11:50"}
-                    //     }
-                    // }
+                div(class="card-body" id="body-chat" style="overflow:auto")
+                {
+                    $""
                 }
-                div(class="card-footer")
+                div(class="card-footer sticky-bottom bg-white")
                 {
                     div(class="input-group mb-3")
                     {
@@ -88,6 +88,8 @@ module ""
         script
         {
             $'
+            log.count_adjuntos=#<count_adjuntos>;
+            log.url_root_current="#<url_root_current>";
             log.current_user="#<current_user>";
             log.data=#<to.json(data)>;
             '

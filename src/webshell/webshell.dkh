@@ -39,6 +39,7 @@ module ":webshell"
             @"id":id
             @"nombre":nombre
         }
+        do detlog.addFieldSystem(ws_det_log_file)
         do dbr.insert(db,"ws_det_log_file",ws_det_log_file)
     }
     detlog.add::detid,guid,userid, text, filepath,idarchivo
@@ -122,7 +123,8 @@ module ":webshell"
                 INNER JOIN ws_det_log_enable wle ON wl.origen = wle.sys_pk
             WHERE 
                 wle.det=@detid
-            AND wl.guid=@guid"
+            AND wl.guid=@guid
+            AND ifnull(wl.sys_deleted,0)=0"
         
         if trim(@@(params,"$from"))!="" && trim(@@(params,"$to"))==""
         {
@@ -137,20 +139,28 @@ module ":webshell"
             sql=sql + " AND wl.sys_pk >= @from AND wl.sys_pk <= @to "
         }
 
-        sql=sql + " ORDER BY wl.sys_pk DESC "
+        sql=sql + " ORDER BY wl.sys_pk ASC "
 
         return dbr.list(db,sql,params)
     }
-    detlog.file.get::&detid,guid
+    detlog.file.get::&detid,guid,from,to
     {
         ref db=getDB()
+        ref _get=@@(@http_context,"&request/get")
 
         new params
         {
             @"detid":detid
             @"guid":guid
         }
-        return dbr.list(db,"SELECT
+
+        if parse.num(from)> 0{params<"from">:from}
+        else if trim(@@(_get,"$from"))!=""{params<"from">:@@(_get,"$from")}
+
+        if parse.num(to)> 0{params<"to">:to}
+        else if trim(@@(_get,"$to"))!=""{params<"to">:@@(_get,"$to")}
+
+        sql="SELECT
             wf.sys_pk,
             wf.sys_guid,
             wf.id,
@@ -162,8 +172,24 @@ module ":webshell"
         WHERE
             wl.guid = @guid
             AND wd.det = @detid
-            AND ifnull(wl.sys_deleted,0)=0
-        ORDER BY wf.sys_pk desc",params)
+            AND ifnull(wl.sys_deleted,0)=0"
+
+        if trim(@@(params,"$from"))!="" && trim(@@(params,"$to"))==""
+        {
+            sql=sql + " AND wl.sys_pk >= @from "
+        }
+        else if trim(@@(params,"$to"))!="" && trim(@@(params,"$from"))==""
+        {
+            sql=sql + " AND wl.sys_pk <= @to "
+        }
+        else if trim(@@(params,"$to"))!="" && trim(@@(params,"$from"))==""
+        {
+            sql=sql + " AND wl.sys_pk >= @from AND wl.sys_pk <= @to "
+        }
+
+        sql=sql + " ORDER BY wl.sys_pk ASC "
+
+        return dbr.list(db,sql,params)
     }
     detlog.delete::msgid,userid
     {
