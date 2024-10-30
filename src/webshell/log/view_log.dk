@@ -57,7 +57,7 @@ module ""
                                         #$ img(src="#<@@(adjunto,'$mini')>"){""}
                                     }
                                 }
-                                div
+                                div(class="div-img")
                                 {
                                     small(class="chat-name-adjunto" ){$"#<@@(adjunto,'$nombre')>"}
                                 }

@@ -55,6 +55,11 @@ var log=
         this.HTML_module_adjunto=`<div class="chat-div-adjunto"><img src="@src"/></div>`
         this.HTML_name_adjunto=`<small class="chat-name-adjunto">@name_adjunto</small>`;
 
+        this.HTML_divider_fecha=`<div class="d-flex">
+                                    <hr class="fecha-divider">
+                                    <small class="f-fecha">@fecha</small>
+                                    <hr class="fecha-divider">
+                                </div>`;
         if(this.btn_send)this.btn_send.addEventListener("click",()=>{log.SendMessage();});
         if(this.adjunto)this.adjunto.addEventListener("change",()=>{log.SendFile();})
         if(this.txt_message)this.txt_message.addEventListener("keydown",(e)=>{if(e.keyCode ===13)log.SendMessage();});
@@ -110,7 +115,6 @@ var log=
             (data)=>
             {
                 this.adjunto.value="";
-                console.log(data);
             },null,true);
     },
     DeleteMessage(msgid)
@@ -167,7 +171,9 @@ var log=
             const item = data[i];
             this.CreateItemChat(item);
         }
+        this.Scroll();
     },
+    last_fecha:"",
     CreateItemChat(row)
     {
         if(!row || !this.body_chat)return;
@@ -177,8 +183,13 @@ var log=
         else  html=this.HTML_module_receptor;
         let nota=row.nota??"";
         // if(nota.trim()=="")nota=row.archivo??"";
-        
-        html=html.replace("@message",nota).replace("@user",row.usuario).replace("@fecha_hora",row.fecha_hora??"");
+        let fecha=(row.fecha??"");
+        if(this.last_fecha!=fecha)
+        {
+            this.body_chat.innerHTML+=this.HTML_divider_fecha.replace("@fecha",fecha);
+            this.last_fecha=fecha;
+        }
+        html=html.replace("@message",nota).replace("@user",row.usuario).replace("@fecha_hora",(row.hora??"").toLowerCase());
         if((row.archivo??"")!="")
         {
             let r=this.HTML_redir_chat.replace("@url",log.url_download_adjuntos.replace("@id",row.idarchivo??"")).replace("@html",this.HTML_module_adjunto.replace("@src",row.mini??""));
@@ -285,6 +296,10 @@ var log=
 		data["index"]= this.media_list.getData(false).findIndex(e=>e.__internal_id__==id);
 		return data;
 	},
+    Scroll(x=0,y=10000)
+    {
+        window.scrollTo(x, y);
+    },
     InvokeService(method,values=null,callbak_succes=null,callbak_failed=null,formdata=false)
     {
         InduxsoftCrudlModel.InvokeService(this.endpoint, values, 

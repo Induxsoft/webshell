@@ -296,6 +296,7 @@ body {
     /* border: 2px solid #003399; */
     margin-right: 5px;
     cursor: pointer;
+    aspect-ratio: 1/1;
 }
 .chat-img
 {
@@ -309,15 +310,29 @@ body {
 /* modulo deadjuntos */
 .btn-adjunto
 {
-    background: #FFD83F;
-    border: 2px solid #003399;
+    background: aliceblue;
+    border: 1px solid #003399;
     display: flex;
     align-items: center;
+    width: auto;
+    max-width: 200px;
 }
 /* buttos actions */
 #btn-send,#btn-adjunto
 {
     cursor: pointer;
+}
+/* divider fecha */
+.f-fecha
+{
+    width: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.fecha-divider
+{
+    width: 50%;
 }
 /* Contador */
 .header-counter
@@ -326,7 +341,7 @@ body {
     padding: 5px;
     align-items: center;
     display: flex;
-    border: 2px solid #003399;
+    border: 1px solid #003399;
 }
 .header-counter-text
 {

@@ -71,6 +71,8 @@ module ":webshell"
         return dbr.rec(db,"SELECT
                 wl.sys_pk,
                 wl.sys_guid,
+                date_format(wl.sys_dtcreated,'%Y-%m-%d')fecha,
+                date_format(wl.sys_dtcreated,'%h:%i %p')hora,
                 wl.guid,
                 wl.nota,
                 wl.archivo,
@@ -85,7 +87,7 @@ module ":webshell"
                 ws_det_log wl
                 INNER JOIN ws_det_log_enable wle ON wl.origen = wle.sys_pk
             WHERE 
-                wl.sys_pk=@msgid",params)
+                (wl.sys_pk=@msgid or wl.sys_guid=@msgid)",params)
     }
     detlog.getall::detid,guid,from,to //si from o to son cero, se asume lo mismo que se indica en el endpoint
     {
@@ -107,7 +109,8 @@ module ":webshell"
         sql="SELECT
                 wl.sys_pk,
                 wl.sys_guid,
-                date_format(wl.sys_dtcreated,'%Y-%m-%d')fecha_hora,
+                date_format(wl.sys_dtcreated,'%Y-%m-%d')fecha,
+                date_format(wl.sys_dtcreated,'%h:%i %p')hora,
                 wl.guid,
                 wl.nota,
                 wl.archivo,
@@ -223,5 +226,19 @@ module ":webshell"
                 SET wf.sys_deleted=1
                 WHERE wl.sys_pk=@id and usuario=@uid",params)
     }
-    
+
+    module ":webshell.temp"
+    {
+        @webshell.temp.path = "data/@qname/temp/@id/"
+
+        function store(guid,file)
+        {
+            do rise_error(0,file)
+        }
+
+        function list(guid)
+        {
+            do rise_error(0,guid)
+        }
+    }
 }

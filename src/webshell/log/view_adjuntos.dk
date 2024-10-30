@@ -41,23 +41,33 @@ module ""
         {
             div(class="d-flex p-4 justify-content-center align-items-center")
             {
-                a(class="btn btn-sm border-secondary induxsoft-corners btn-main-action no-print no-hidden" title="Salir" href="." target="_self" id="btn_go_back_")
+                a(class="btn btn-sm border-secondary induxsoft-corners btn-main-action no-print no-hidden d-flex justify-content-center" title="Salir" href="." target="_self" id="btn_go_back_")
                 {
-                    $'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-bar-left" viewBox="0 0 16 16">
+                    $'<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-arrow-bar-left" viewBox="0 0 16 16">
                     <path fill-rule="evenodd" d="M12.5 15a.5.5 0 0 1-.5-.5v-13a.5.5 0 0 1 1 0v13a.5.5 0 0 1-.5.5M10 8a.5.5 0 0 1-.5.5H3.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L3.707 7.5H9.5a.5.5 0 0 1 .5.5"/>
                     </svg>'
                 }
-
-                h6{"Adjuntos"}
+                div(class="d-flex w-100 justify-content-center")
+                {
+                    h6{"Adjuntos"}
+                }
+                button(class="btn btn-sm border-secondary induxsoft-corners btn-main-action no-print me-2 d-flex justify-content-center" onclick="log.Download();" title="Descargar")
+                {
+                    $'<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-cloud-download" viewBox="0 0 16 16">
+                        <path d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383"/>
+                        <path d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708z"/>
+                    </svg>'
+                }
                 span(class="flex-grow-1"){""}
-                $'<a type="button" class="btn btn-sm border-secondary induxsoft-corners btn-main-action no-print" title="Refrescar" href=""><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"></path>
-                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"></path>
-                </svg></a>'
+                a(type="button" class="btn btn-sm border-secondary induxsoft-corners btn-main-action no-print d-flex justify-content-center" title="Refrescar" href="")
+                {
+                    $'
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"></path>
+                        <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"></path>
+                    </svg>'
+                }
                 
-                // #!
-                // do uie.printV12FormBar(nav_config)
-                // #$
             }
             style
             {
@@ -68,8 +78,6 @@ module ""
         }
         section(id="work_area")
         {
-            button(class="btn btn-secondary btn-sm induxsoft-corners mb-2" onclick="log.Download();"){"Descargar"}
-
             "media-list"(
             id="media-list"
             data='#<to.json(adjuntos)>'
