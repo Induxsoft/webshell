@@ -26,7 +26,7 @@ var log=
         this.HTML_module_receptor=`<div class="d-flex justify-content-start module_receptor">
             <div class="body-chat-receptor">
                 <div class="chat">@adjunto 
-                    <div>@module_adjunto @message</div>
+                    <div class="div-img">@module_adjunto @message</div>
                 </div>
                 <small class="user">@user</small>
                 <small class="fecha-hour d-flex">@fecha_hora</small>
@@ -37,7 +37,7 @@ var log=
         <div class="d-flex justify-content-end module_emisor">
             <div class="body-chat-emisor">
                 <div class="chat">@adjunto 
-                    <div>@module_adjunto @message</div>
+                    <div class="div-img">@module_adjunto @message</div>
                 </div>
                 <small class="user">@user</small>
                 <small class="fecha-hour d-flex">@fecha_hora</small>
@@ -47,12 +47,12 @@ var log=
         this.HTML_adjunto=`
         <a class="btn btn-sm btn-adjunto" href="@url" target="_blank">
             @module_adjunto
-            <div>
+            <div class="div-img">
                 <small class="chat-name-adjunto">@name_adjunto</small>
             </div>
         </a>`;
         this.HTML_redir_chat=`<a href="@url" target="_blank">@html</a>`;
-        this.HTML_module_adjunto=`<div class="chat-div-adjunto"></div>`
+        this.HTML_module_adjunto=`<div class="chat-div-adjunto"><img src="@src"/></div>`
         this.HTML_name_adjunto=`<small class="chat-name-adjunto">@name_adjunto</small>`;
 
         if(this.btn_send)this.btn_send.addEventListener("click",()=>{log.SendMessage();});
@@ -146,7 +146,7 @@ var log=
     {
         if(!item || !this.adjuntos)return;
         
-        var html=this.HTML_adjunto.replace("@module_adjunto",this.HTML_module_adjunto).replace("@name_adjunto",item.nombre??"").replace("@url",log.url_download_adjuntos.replace("@id",item.id??""));
+        var html=this.HTML_adjunto.replace("@module_adjunto",this.HTML_module_adjunto.replace("@src",item.mini??"")).replace("@name_adjunto",item.nombre??"").replace("@url",log.url_download_adjuntos.replace("@id",item.id??""));
 
         this.AddHTML(log.header_counter,html);
         log.count_adjuntos+=1;
@@ -181,7 +181,7 @@ var log=
         html=html.replace("@message",nota).replace("@user",row.usuario).replace("@fecha_hora",row.fecha_hora??"");
         if((row.archivo??"")!="")
         {
-            let r=this.HTML_redir_chat.replace("@url",log.url_download_adjuntos.replace("@id",row.idarchivo??"")).replace("@html",this.HTML_module_adjunto);
+            let r=this.HTML_redir_chat.replace("@url",log.url_download_adjuntos.replace("@id",row.idarchivo??"")).replace("@html",this.HTML_module_adjunto.replace("@src",row.mini??""));
             html=html.replace("@adjunto",r);
             html=html.replace("@module_adjunto",this.HTML_name_adjunto.replace("@name_adjunto",row.archivo))
         }

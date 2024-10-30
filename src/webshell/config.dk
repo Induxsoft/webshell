@@ -24,4 +24,5 @@ program
     @var_files_log="ws_file_store" //var global por default
 
     @SERVICE_DOWNLOAD_FILE_CHAT="/webshell/_services/download.dkl?detid=@detid&guid=@guid&id=@id"
+    @IMG_MINIS = "/$/webshell/img/minis/"
 }

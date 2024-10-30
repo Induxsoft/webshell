@@ -27,7 +27,7 @@ module ""
     url_download_adjuntos=replace(url_download_adjuntos,"@guid",@("$parameters/_view"))
 
     #$
-    div(class="v12-form-view container" id="view" style="min-width: 290px;")
+    div(class="v12-form-view container-fluid" id="view" style="min-width: 290px;")
     {
         script(src="#<@JS_LOG>"){""}
         link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
@@ -45,11 +45,18 @@ module ""
                         for i = 0; i < count_adjuntos
                         {
                             ref adjunto=@item(adjuntos,i)
+                            // do rise_error(0,to.json(adjunto))
                             id=@@(adjunto,'$id')
                             #$
                             a(class="btn btn-sm btn-adjunto" href="#<replace(url_download_adjuntos,'@id',id)>" target="_blank")
                             {
-                                div(class="chat-div-adjunto"){$""}
+                                div(class="chat-div-adjunto")
+                                {$""
+                                    #! if trim(@@(adjunto,"$mini"))!=""
+                                    {
+                                        #$ img(src="#<@@(adjunto,'$mini')>"){""}
+                                    }
+                                }
                                 div
                                 {
                                     small(class="chat-name-adjunto" ){$"#<@@(adjunto,'$nombre')>"}
@@ -101,5 +108,6 @@ module ""
             log.data=#<to.json(data)>;
             '
         }
+        
     }
 }

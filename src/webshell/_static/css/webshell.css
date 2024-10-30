@@ -249,19 +249,26 @@ body {
 {
     margin-bottom: 5px;
 }
+#body-chat
+{
+    background: #efeae2ff;
+}
 .body-chat-receptor,.body-chat-emisor
 {
     padding: 4px;
     border-radius: 5px;
-    border: 2px solid #003399;
+    border: 1px solid #003399;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+    min-width: 40%;
+    max-width: 80%;
 }
 .body-chat-receptor
 {
-    background: #CCFF3F;
+    background: white;
 }
 .body-chat-emisor
 {
-    background: #8BF6CE;
+    background: #d9fdd3ff;
 }
 .chat
 {
@@ -270,13 +277,23 @@ body {
     display: flex;
     white-space: break-spaces;
 }
+.div-img
+{
+    overflow: hidden;
+}
+
+.chat-div-adjunto img
+{
+    height: 100%;
+    width: 100%;
+}
 .chat-div-adjunto
 {
     width: 50px;
     height: 50px;
-    background: #FFF5D0;
+    /* background: #FFF5D0; */
     /* border-radius: 5px; */
-    border: 2px solid #003399;
+    /* border: 2px solid #003399; */
     margin-right: 5px;
     cursor: pointer;
 }

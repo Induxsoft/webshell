@@ -17,6 +17,15 @@ module ""
     {
         @"title": "Adjuntos"
         @"urlexit": "."
+        member "hidden" 
+        { 
+            @"print":@true 
+            // @"exit":@true
+        }
+    }
+    using @http_context
+    {
+        member "session" { member "resource" { member "properties" { member  "web_meta_tags" {@"title":"Bitácora" }  } } }
     }
     url_root_current=current_url(@true)
     
@@ -24,19 +33,38 @@ module ""
     url_download_adjuntos=replace(url_download_adjuntos,"@detid",@("$parameters/_entity_id"))
     url_download_adjuntos=replace(url_download_adjuntos,"@guid",@("$parameters/_view"))
     #$
-    div(class="v12-form-view container" id="view")
+    div(class="v12-form-view container-fluid" id="view")
     {
         script(src="#<@JS_LOG>"){""}
 
         section(id="top_area")
         {
-            div
+            div(class="d-flex p-4 justify-content-center align-items-center")
             {
-                #!
-                do uie.printV12FormBar(nav_config)
-                #$
+                a(class="btn btn-sm border-secondary induxsoft-corners btn-main-action no-print no-hidden" title="Salir" href="." target="_self" id="btn_go_back_")
+                {
+                    $'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-bar-left" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M12.5 15a.5.5 0 0 1-.5-.5v-13a.5.5 0 0 1 1 0v13a.5.5 0 0 1-.5.5M10 8a.5.5 0 0 1-.5.5H3.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L3.707 7.5H9.5a.5.5 0 0 1 .5.5"/>
+                    </svg>'
+                }
+
+                h6{"Adjuntos"}
+                span(class="flex-grow-1"){""}
+                $'<a type="button" class="btn btn-sm border-secondary induxsoft-corners btn-main-action no-print" title="Refrescar" href=""><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"></path>
+                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"></path>
+                </svg></a>'
+                
+                // #!
+                // do uie.printV12FormBar(nav_config)
+                // #$
             }
-            
+            style
+            {
+                $'
+                #main_bar{display:none !important;}
+                '
+            }
         }
         section(id="work_area")
         {
@@ -51,7 +79,7 @@ module ""
             "can-delete"="false"
             "highlight-first"="true"
             "media-prop"="id"
-            "miniature-prop"=""
+            "miniature-prop"="mini"
             "outline-selected"="true"
             "label-prop"="nombre"
             ){""}

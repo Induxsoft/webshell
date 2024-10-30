@@ -43,6 +43,32 @@ module ":log"
 
         return file
     }
+    function adj.prop(&adj,filepath)
+    {
+        if isnull(adj) { ref adj:record.create() }
+        if trim(@@(adj,"$idarchivo"))==""{return adj}
+
+        name = file.justname(filepath)
+        ext = file.extension(filepath)
+        mini = "file.png"
+
+        if ext == ".pdf" { mini = "pdf.png" }
+        else if ext == ".xml" { mini = "xml.png" }
+        else if ext == ".csv" { mini = "csv.png" }
+        else if containsword(ext,"zip,rar") { mini = "zip.png" }
+        else if containsword(ext,"jpg,jpeg,png") { mini = "img.png" }
+        else if containsword(ext,"docx,docm,dotx,dotm,doc,dot,wbk,wll,wwl") { mini = "word.png" }
+        else if containsword(ext,"xlsx,xlsm,xltx,xltm,xls,xlt,xlm,xlsb,xla,xlam,xll,xlw,xll_,xla_,xla5,xla8") { mini = "excel.png" }
+
+        using adj
+        {
+            @"path": filepath
+            @"name": name
+            @"ext": ext
+            @"mini": path.concat(@IMG_MINIS,mini)
+        }
+        return adj
+    }
     create::&db,&params,&data
     {
         do getDetParams(params)
@@ -95,9 +121,18 @@ module ":log"
         ref det=webshell.wsdet.get(@@(params,"$detid"))
         ref sitem=getSitem(db,@@(det,"#rpriv"))
         do dbr.apps.action.grant(@@(sitem,"$itemid"))
+
+        ref adjuntos=webshell.detlog.file.getall(@@(params,"$detid"),@@(params,"$guid"),@@(params,"#from"),@@(params,"#to"))
+        for i = 0; i < @count(adjuntos)
+        {
+            ref adjunto=@item(adjuntos,i)
+            adjunto<"idarchivo">:@@(adjunto,"$id")
+            do adj.prop(adjunto,@@(adjunto,"$nombre"))
+        }
+        
         new data
         {
-            @"adjuntos*":webshell.detlog.file.getall(@@(params,"$detid"),@@(params,"$guid"),@@(params,"#from"),@@(params,"#to"))
+            @"adjuntos*":adjuntos
         }
         switch @@(params,"$_page")
         {
@@ -107,7 +142,13 @@ module ":log"
             }
             default
             {
-                data<"data*">:webshell.detlog.getall(@@(params,"$detid"),@@(params,"$guid"),@@(params,"#from"),@@(params,"#to"))
+                ref ldata=webshell.detlog.getall(@@(params,"$detid"),@@(params,"$guid"),@@(params,"#from"),@@(params,"#to"))
+                for i = 0; i < @count(ldata)
+                {
+                    ref dt=@item(ldata,i)
+                    do adj.prop(dt,@@(dt,"$archivo"))
+                }
+                data<"data*">:ldata
             }
         }
         return data
