@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded",()=>{log.init();})
+document.addEventListener("DOMContentLoaded",()=>{log.init();});
 
 window.addEventListener("resize", function(event) {
     log.AddHTML(log.header_counter,`<div class="d-none"></div>`);
@@ -18,6 +18,7 @@ var log=
         this.header_counter=document.getElementById("header-counter");
         this.counter_text=document.getElementById("counter-text");
         this.media_list=document.getElementById("media-list");
+        this.iframe_top=window.top.document.getElementById("right-frame");
         if(this.media_list)this.media_list.onClicking=data=>
         {
             log.SelectedElement(data);
@@ -70,7 +71,7 @@ var log=
             setInterval(() => 
             {
                 log.GetMessages();
-            }, 2000);
+            }, log.time_load_bitacora);
         }
         this.ObserveScroll();
         log.CalculeContador();
@@ -127,11 +128,14 @@ var log=
     },
     GetMessages()
     {
+        log.Scroll();
         this.endpoint="";
         this.endpoint+="?from="+(Number(this.last_log) + 1);
+        
         this.InvokeService("GET",null,
             (data)=>
             {
+                
                 if(data.data)log.CreateBodyChat(data.data);
                 if(data.adjuntos)log.CreateBodyAdjuntos(data.adjuntos);
 

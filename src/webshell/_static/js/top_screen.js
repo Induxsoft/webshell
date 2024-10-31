@@ -23,6 +23,14 @@ var top_screen =
         if (language_info) language_info.textContent = (new Intl.NumberFormat()).resolvedOptions().locale;
     },
 
+    load(url){
+        let href = url.toString().trim()
+        if (!this.iframe_view || !href) return;
+        
+        let d = this.iframe_view.contentDocument || this.iframe_view.contentWindow.document;
+        d.location.href = href;
+    },
+
     // =============== ACCIONES
     set_ik_action_events()
     {

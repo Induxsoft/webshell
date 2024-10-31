@@ -101,6 +101,7 @@ module ""
         script
         {
             $'
+            log.time_load_bitacora=#<@TIME_LOAD_BITACORA>;
             log.url_download_adjuntos="#<url_download_adjuntos>";
             log.count_adjuntos=#<count_adjuntos>;
             log.url_root_current="#<url_root_current>";
