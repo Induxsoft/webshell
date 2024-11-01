@@ -229,16 +229,38 @@ module ":webshell"
 
     module ":webshell.temp"
     {
-        @webshell.temp.path = "data/@qname/temp/@id/"
+        @webshell.temp.path = "data/@qname/temp/@guid/"
 
-        function store(guid,file)
+        function store(guid,&file)
         {
-            do rise_error(0,file)
+            qname = @@(@http_context,"$session/idp/qname")
+            path = replace(@webshell.temp.path,"@qname",qname)
+            path = replace(path,"@guid",guid)
+            do dir.ensure(path)
+
+            tempfile = @@(file,"$temp_file")
+            filename = trim(replace(ranychars(@@(file,"$filename"),'\\/:*?"<>|(-)[+]#$%&=,'," ")," ","_"))
+            filepath = path.concat(path,filename)
+            do file.copy(tempfile,filepath)
+
+            return filepath
         }
 
         function list(guid)
         {
-            do rise_error(0,guid)
+            qname = @@(@http_context,"$session/idp/qname")
+            path = replace(@webshell.temp.path,"@qname",qname)
+            path = replace(path,"@guid",guid)
+            do dir.ensure(path)
+
+            new data
+            {
+                @"guid": guid
+                @"path": path
+                @"files*": list.files(path,"*")
+            }
+
+            return data
         }
     }
 }

@@ -1,0 +1,55 @@
+#include "dkli.dkh"
+#!
+module "Almacén temporal de archivos."
+{
+    #include "webshell.dkh"
+
+    NotImplemented1::&db,&params
+    {
+        do rise_error(500,"Acción no implementada")
+    }
+    NotImplemented2::&db,&params,&data
+    {
+        do rise_error(500,"Acción no implementada")
+    }
+
+    function List(&db,&params)
+    {
+        return webshell.temp.list(@@(params,"$_view"))
+
+        exception{ do catch(db,params,@null) }
+    }
+
+    function Store(&db,&params,&data)
+    {
+        ref FILES = ifnull(@@(@http_context,"&request/files"),list.create())
+        ref stored = list.create()
+        guid = trim(@@(params,"$_view"))
+
+        for i = 0; i < list.count(FILES)
+        {
+            ref file = list.obj(FILES,i)
+            
+            if file.exists(@@(file,"$temp_file")) && @@(file,"$filename")!="" && @@(file,"#size")>0 {
+                filepath = webshell.temp.store(guid,file)
+                do list.add(stored,filepath)
+            }
+        }
+
+        return stored
+        exception{ do catch(db,params,@null) }
+    }
+
+    catch::&db,&params,&data
+    {
+        do errordet(@false)
+        code = last_error_code()
+        error = last_error()
+
+        if dbr.in_transaction(db){ do dbr.rollback(db) }
+        if isset("@@_action_context"){ do dbr.apps.action.log() }
+
+        do clear_exceptions()
+        do rise_error(code,error)
+    }
+}

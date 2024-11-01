@@ -1,0 +1,19 @@
+#include "dkli.dkh"
+#!
+module "Controller"
+{
+    point @list to NotImplemented1
+    point @read to NotImplemented1
+    point @blank to NotImplemented1
+    point @create to NotImplemented2
+    point @update to NotImplemented2
+    point @delete to NotImplemented1
+
+    if @@(@http_context,"$request/get/_entity_id/") == "upload"
+    {
+        point @list to List
+        point @read to List
+        point @create to Store
+        point @update to Store
+    }
+}

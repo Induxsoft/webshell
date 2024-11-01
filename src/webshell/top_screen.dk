@@ -74,6 +74,8 @@ module "webShell"
     
     ref rtpys=from.json(v12_feedback_tpys)
     ref tpys=list.create_from_fields(rtpys)
+
+    url_user = ftext("/!/dbext/user/#<@@(@_USER,'$uid')>/")
     
     #$
     link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
@@ -107,7 +109,7 @@ module "webShell"
                 a(href="#<webshell_help_url>" target="_blank" class="btn btn-sm border-0 color-inherit #<d_none(webshell_hide_help)>" title="Ayuda") {$"#<@ICON_QUESTION>"}
                 div(class="d-flex align-items-center px-2 gap-2")
                 {
-                    a(class="text-decoration-none text-white" href="/!/dbext/user/#<@@(@_USER,'$uid')>/" title="Mi usuario"){$"#<@@(@_USER,'$name')>"}
+                    a(class="text-decoration-none text-white" href="javascript:top_screen.load('#<url_user>')" title="Mi usuario"){$"#<@@(@_USER,'$name')>"}
                     a(href="./?logout=true" class="color-inherit" title="Salir") {
                         $"#<@ICON_BOX_ARROW_RIGHT>"
                     }
