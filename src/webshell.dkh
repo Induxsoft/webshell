@@ -227,6 +227,54 @@ module ":webshell"
                 WHERE wl.sys_pk=@id and usuario=@uid",params)
     }
 
+    detlog.register::ldetlog
+    {
+        ref db=getDB()
+
+        for i = 0; i < @count(ldetlog)
+        {
+            ref detlog=@item(ldetlog,i)
+
+            det=dbr.num(db,"select sys_pk from ws_det_log_enable where det=@det",detlog)
+            pk_rpriv=dbr.num(db,"select sys_pk from sitem where itemid=@rpriv",detlog)
+            pk_wpriv=dbr.num(db,"select sys_pk from sitem where itemid=@wpriv",detlog)
+
+            using detlog
+            {
+                @"rpriv":pk_rpriv
+                @"wpriv":pk_wpriv
+            }
+
+            if pk_rpriv > 0 && pk_wpriv > 0
+            {
+                if det > 0
+                {
+                    new p{@"pk":det}
+                    do dbr.update(db,"ws_det_log_enable",detlog,"sys_pk=@pk",p)
+                    do print("- DET "+@@(detlog,"$det")+" Actualizado correctamente")
+                }
+                else 
+                {
+                    do detlog.addFieldSystem(detlog)
+                    do dbr.insert(db,"ws_det_log_enable",detlog)
+                    do print("- DET "+@@(detlog,"$det")+" Insertado correctamente")
+                }
+            }
+            
+        }
+    }
+    detlog.unregiste::det
+    {
+        new p{@"det":det}
+        res= dbr.execute(db,"delete from ws_det_log_enable where det=@det",p)
+
+        execute
+        {
+            res= dbr.execute(db,"update ws_det_log_enable set sys_deleted=1 where det=@det",p)
+        }
+
+        return res
+    }
     module ":webshell.temp"
     {
         @webshell.temp.path = "data/@qname/temp/@guid/"
