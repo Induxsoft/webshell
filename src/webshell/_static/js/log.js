@@ -76,6 +76,8 @@ var log=
         this.ObserveScroll();
         log.CalculeContador();
     },
+    ScrollGen:true,
+    CountScroll:0,
     SendMessage()
     {
         if(this.txt_message.value.trim()=="")
@@ -91,7 +93,6 @@ var log=
             (data)=>
             {
                 log.txt_message.value="";
-                // console.log(data);
             });
     },
     SendFile()
@@ -128,17 +129,18 @@ var log=
     },
     GetMessages()
     {
-        log.Scroll();
+        log.PanelAvailable();
+        if(log.CountScroll<3)log.Scroll();
+        
         this.endpoint="";
         this.endpoint+="?from="+(Number(this.last_log) + 1);
         
         this.InvokeService("GET",null,
             (data)=>
             {
-                
                 if(data.data)log.CreateBodyChat(data.data);
                 if(data.adjuntos)log.CreateBodyAdjuntos(data.adjuntos);
-
+                log.CountScroll++;
             },(failure)=>{console.log(failure.message??JSON.stringify(failure))});
     },
     CreateBodyAdjuntos(data)
@@ -300,9 +302,34 @@ var log=
 		data["index"]= this.media_list.getData(false).findIndex(e=>e.__internal_id__==id);
 		return data;
 	},
-    Scroll(x=0,y=10000)
+    Scroll(scrll=false,x=0,y=10000)
     {
-        window.scrollTo(x, y);
+       if(scrll)window.scrollTo(x, y);
+       else 
+       {
+            var chat_body_h=700;//log.body_chat.clientHeight - 100
+            var elements=document.querySelectorAll("#body-chat > div");
+
+            var h=0;
+            for (let i = 0; i < elements.length; i++) 
+            {
+                const element = elements[i];
+                if(element)h+=element.clientHeight;
+            }
+            
+           if(h>=chat_body_h) window.scrollTo(x, y);
+       }
+    },
+    PanelAvailable()
+    {
+        var webshell=window.top.WebShell;
+        if(!webshell)
+        {
+            console.warn("No se pudo obtener el elemento de webshell");
+            return;
+        }
+        log.ScrollGen=webshell.Panels.IsOpen(webshell.Panels.Const.Right);
+        if(!log.ScrollGen)log.CountScroll=0;
     },
     InvokeService(method,values=null,callbak_succes=null,callbak_failed=null,formdata=false)
     {

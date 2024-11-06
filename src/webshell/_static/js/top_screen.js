@@ -159,6 +159,7 @@ var top_screen =
                 }
                 //Ahora sí, poner la animación
                 loading_line.classList.add('loading');
+                WebShell.Panels.Dispose(WebShell.Panels.Const.All);
             }
         }
     },

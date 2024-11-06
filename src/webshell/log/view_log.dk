@@ -70,11 +70,11 @@ module ""
                         }
                     }
                 }
-                div(class="card-body" id="body-chat" style="overflow:auto")
+                div(class="card-body" id="body-chat" style="overflow:auto;min-height: 100vh;")
                 {
                     $""
                 }
-                div(class="card-footer sticky-bottom bg-white")
+                div(class="card-footer sticky-bottom bg-white px-0")
                 {
                     div(class="input-group mb-3")
                     {
