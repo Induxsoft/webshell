@@ -18,7 +18,7 @@ var WebShell =
         IsAvailable(p){ return this.Available.includes(p); },
         Hide(p)
         {
-            const ElPanels = document.querySelectorAll(p);
+            const ElPanels = document.querySelectorAll("section"+p);
             if (ElPanels.length == 0) return;
             
             ElPanels.forEach((panel) => {
@@ -36,7 +36,7 @@ var WebShell =
         },
         Show(p,u)
         {
-            const ElPanels = document.querySelectorAll(p);
+            const ElPanels = document.querySelectorAll("section"+p);
             if (ElPanels.length == 0) return;
 
             ElPanels.forEach((panel) => {
@@ -57,6 +57,7 @@ var WebShell =
                     frame.src = u;
                     
                     frame.onload = () => {
+                        if (!frame.src || frame.src == "about:blank") return;
                         let title = frame.contentDocument.title;
                         
                         TabTitle.textContent = title;
@@ -84,11 +85,11 @@ var WebShell =
         },
         Dispose(p)
         {
-            const ElPanels = document.querySelectorAll(p);
+            const ElPanels = document.querySelectorAll("section"+p);
             if (ElPanels.length == 0) return;
             
             ElPanels.forEach((panel) => {
-                // const frame = panel.querySelector("iframe");
+                const frame = panel.querySelector("iframe");
                 let selector = "#"+panel.id;
                 let direction = panel.getAttribute("direction");
 
@@ -103,8 +104,8 @@ var WebShell =
                 if (TabTitle) TabTitle.textContent = "Abrir panel";
                 if (HeaderTitle) HeaderTitle.textContent = "";
                 if (OpenTab) OpenTab.hidden = true;
+                if (frame) frame.src = "about:blank";
                 panel.style.display = "none";
-                // frame.src = "about:blank";
             });
         }
     },
@@ -170,8 +171,4 @@ var WebShell =
     },
 
     IsMobile(){ return (document.body.offsetWidth <= 450); }
-}
-
-document.getElementById("_main_view").contentWindow.onbeforeunload = function(e) {
-    WebShell.Panels.Hide(WebShell.Panels.Const.All);
 }
