@@ -1,4 +1,4 @@
-const WebShell =
+var WebShell =
 {
     mainsec: document.getElementById("main-sec"),
 
@@ -23,10 +23,14 @@ const WebShell =
             
             ElPanels.forEach((panel) => {
                 let selector = "#"+panel.id;
+                let direction = panel.getAttribute("direction");
+
                 if (this.IsOpen(selector)) {
-                    let index = this.Open.indexOf(selector);
-                    this.Open.splice(index,1);
+                    const OpenTab = document.getElementById(`webshell-open-${direction}-panel`);
+                    
+                    this.Open.splice(this.Open.indexOf(selector),1);
                     panel.style.display = "none";
+                    OpenTab.hidden = false;
                 }
             });
         },
@@ -40,11 +44,12 @@ const WebShell =
                 let selector = "#"+panel.id;
                 let direction = panel.getAttribute("direction");
 
+                const OpenTab = document.getElementById(`webshell-open-${direction}-panel`);
+
                 if (!this.IsAvailable(selector))
                 {
                     this.Available.push(selector);
 
-                    const OpenTab = document.getElementById(`webshell-open-${direction}-panel`);
                     const CloseTab = document.getElementById(`webshell-close-${direction}-panel`);
                     const TabTitle = document.getElementById(`webshell-${direction}-tab-content`);
                     const HeaderTitle = document.getElementById(`webshell-${direction}-panel-header-title`);
@@ -57,26 +62,49 @@ const WebShell =
                         TabTitle.textContent = title;
                         HeaderTitle.textContent = title;
 
-                        OpenTab.addEventListener("click", () => {
-                            this.Show(selector);
-                            OpenTab.hidden = true;
-                        });
-                        CloseTab.addEventListener("click", () => {
-                            this.Hide(selector);
-                            OpenTab.hidden = false;
-                        });
+                        OpenTab.addEventListener("click", () => this.Show(selector));
+                        CloseTab.addEventListener("click", () => this.Hide(selector));
                         
                         WebShell.setAdjustPanelEvent(`adjust-${direction}-panel`,direction);
-                        if (!WebShell.IsMobile()) panel.style.display = "flex";
-                        else OpenTab.hidden = false;
-                        this.Open.push(selector);
+                        if (WebShell.IsMobile()) OpenTab.hidden = false;
+                        else {
+                            this.Open.push(selector);
+                            OpenTab.hidden = true;
+                            panel.style.display = "flex";
+                        }
                     }
                 }
                 else
                 {
-                    this.Open.push(p);
+                    this.Open.push(selector);
+                    OpenTab.hidden = true;
                     panel.style.display = "flex";
                 }
+            });
+        },
+        Dispose(p)
+        {
+            const ElPanels = document.querySelectorAll(p);
+            if (ElPanels.length == 0) return;
+            
+            ElPanels.forEach((panel) => {
+                // const frame = panel.querySelector("iframe");
+                let selector = "#"+panel.id;
+                let direction = panel.getAttribute("direction");
+
+                const OpenTab = document.getElementById(`webshell-open-${direction}-panel`);
+                // const CloseTab = document.getElementById(`webshell-close-${direction}-panel`);
+                const TabTitle = document.getElementById(`webshell-${direction}-tab-content`);
+                const HeaderTitle = document.getElementById(`webshell-${direction}-panel-header-title`);
+                
+                if (this.IsOpen(selector)) this.Open.splice(this.Open.indexOf(selector),1);
+                if (this.IsAvailable(selector)) this.Available.splice(this.Available.indexOf(selector),1);
+                
+                if (TabTitle) TabTitle.textContent = "Abrir panel";
+                if (HeaderTitle) HeaderTitle.textContent = "";
+                if (OpenTab) OpenTab.hidden = true;
+                panel.style.display = "none";
+                // frame.src = "about:blank";
             });
         }
     },
@@ -144,7 +172,6 @@ const WebShell =
     IsMobile(){ return (document.body.offsetWidth <= 450); }
 }
 
-// WebShell.Panels.Show(WebShell.Panels.Const.Right,"https://v12demo1.induxsoft.net/!/webshell/log/FFFFFE/@/");
-document.getElementById("_main_view").contentWindow.onunload = function(e) {
+document.getElementById("_main_view").contentWindow.onbeforeunload = function(e) {
     WebShell.Panels.Hide(WebShell.Panels.Const.All);
 }
