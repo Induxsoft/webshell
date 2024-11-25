@@ -89,6 +89,16 @@ module "login"
 		{
 			ref db=dbr.login(@_qname, uid,pwd)
 			token=dbr.getSID(db)
+			ses_limit=dbr.num(db,"select ifnull((select varvalue from globalvar where varname='sys_session_limit'),'0') sys_session_limit;",@null)
+			if ses_limit>0
+			{
+				 if ses_limit<dbr.num(db,"select ifnull(count(sys_pk),0) actives from sys_session where ifnull(sys_deleted,0)=0;",@null)
+				 {
+					do dbr.logout(db)
+					do dbr.close(db)
+					do rise_error(592,"Se ha excedido el límite de sesiones concurrentes")
+				 }
+			}
 		}
 
 		if not(cords)
