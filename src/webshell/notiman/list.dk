@@ -1,0 +1,343 @@
+#include "dkli.dkh"
+#!
+module "Administración de notificaciones"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "uielements.v12.dkl"
+
+    do @context.begin(@crud_context)
+
+    ref @_GET = ifnull(@("&parameters"),record.create())
+
+    @_entities_type = @("$parameters/_entities_type")
+
+    table_id = "tbl_"+@_entities_type
+    show_tab = @("$parameters/_show")
+    show_fdr = isanyword(show_tab,"leidas,enviadas")
+
+    curr_ndt = ndatetime.now()
+    curr_year = ndatetime.year(curr_ndt)
+    curr_month = ndatetime.month(curr_ndt)
+    curr_day = ndatetime.day(curr_ndt)
+
+    fdr_year_opt = ""
+    for i = 2024; i <= curr_year { fdr_year_opt = fdr_year_opt + str(i) + "," }
+    fdr_year_opt = rremove(fdr_year_opt,1)
+
+    new fdr_init
+    {
+        @"fdr_mode": field.dstr(@_GET,"fdr_mode","month")
+        // [month]
+        @"fdr_year": field.dnum(@_GET,"fdr_year",curr_year)
+        @"fdr_month": field.dnum(@_GET,"fdr_month",curr_month)
+        // [lastdays]
+        @"fdr_range": field.dnum(@_GET,"fdr_range",30)
+        // [range]
+        @"fdr_from": field.dstr(@_GET,"fdr_from","")
+        @"fdr_to": field.dstr(@_GET,"fdr_to","")
+    }
+
+    new fil_fdr_field
+    {
+        @"datatable*": from.json('[
+            {"id":1, "const":"Inicio"},
+            {"id":2, "const":"Cierre"}
+        ]')
+        member "attributes"
+        {
+            @"name": "fdr_field"
+            @"class": "induxsoft-form-select"
+            @"title": "Elegir método de filtro para el rango de fechas"
+            @"onchange": "filter(this);"
+        }
+        @"value_field": "id"
+        @"text_field": "const"
+        @"selected": @("#parameters/fdr_field")
+    }
+
+    new fil_limit
+    {
+        @"datatable*": from.json('[
+            {"v":-1, "t":"(Todos)"},
+            {"v":10, "t":"10"},
+            {"v":25, "t":"25"},
+            {"v":50, "t":"50"},
+            {"v":75, "t":"75"},
+            {"v":100, "t":"100"},
+            {"v":150, "t":"150"},
+            {"v":200, "t":"200"},
+            {"v":250, "t":"250"},
+            {"v":500, "t":"500"}
+        ]')
+        @"id": "limit"
+        member "attributes"
+        {
+            @"name": "limit"
+            @"class": "form-select form-select-sm rounded-0"
+            @"title": "Limitar resultados a..."
+            @"onchange": "filter(this);"
+        }
+        @"value_field": "v"
+        @"text_field": "t"
+        @"selected": @("#parameters/limit")
+    }
+
+    function print_buttons()
+    {
+        btn_cls = "btn btn-sm border-secondary induxsoft-corners btn-main-action"
+        #$
+        button(class="#<btn_cls>" type="button" id="btn_new_notif" "data-bs-toggle"="modal" "data-bs-target"="#new_notif_modal"){$"Nuevo"}
+        #!
+    }
+
+    point @buttons to print_buttons
+
+    new nav_config
+    {
+        @"title": "Administración de notificaciones"
+        @"urlexit": "javascript:window.history.back();"
+        @"buttons*": @buttons
+        member @"hidden"
+        {
+            @"print": @true
+        }
+    }
+
+    new table_config
+    {
+        @"datatable*": ifnull(@("&./data"),list.create())
+        member @"columns"
+        {
+            member @"sndrid" { @"caption": "Remitente" }
+            member @"title" { @"caption": "Asunto" }
+            member @"start"
+            {
+                @"caption": "Inicio"
+                @"align": "center"
+            }
+            member @"end"
+            {
+                @"caption": "Cierre"
+                @"align": "center"
+            }
+        }
+    }
+
+    // Encapsula a la vista en su totalidad, todo lo que hay antes o después no se considera
+    #$
+    div(class="container-fluid" id="view")
+    {
+        style
+        {$'
+            #tab-filters label:hover
+            {
+                border-color: #e9ecef #e9ecef #dee2e6 !important;
+                isolation: isolate !important;
+                color: initial !important;
+                background-color: initial !important;
+            }
+            #tab-filters input[type="radio"]:checked + label
+            {
+                border: none !important;
+                border-bottom: 2px solid #0B5ED7 !important;
+                color: #000 !important;
+                background-color: #F0F8FF !important;
+            }
+
+            .no-blur, .no-shadow { outline: none !important; box-shadow: none !important; }
+            .btn.btn-xs { padding: .20rem .4rem; font-size: .725rem; border-radius: .1rem; }
+        '}
+
+        // Filtros y acciones
+        section(id="top_area")
+        {
+            #!
+            do uie.printV12FormBar(nav_config)
+            #$
+
+            form(class="mb-1" action="./" method="GET" id="form_filter")
+            {
+                div(class="d-flex align-items-center gap-2 border-bottom" id="tab-filters")
+                {
+                    div(class="btn-group" role="group" "aria-label"="Basic radio toggle button group")
+                    {
+                        input(class="btn-check" type="radio" name="_show" value="pendientes" id="rdb-pendientes" onchange="filter(this);" "#<ifstr(show_tab=='pendientes','checked','')>"="")
+                        label(class="btn btn-outline-primary border-0 rounded-0" "for"="rdb-pendientes"){$"Pendientes"}
+
+                        input(class="btn-check" type="radio" name="_show" value="leidas" id="rdb-leidas" onchange="filter(this);" "#<ifstr(show_tab=='leidas','checked','')>"="")
+                        label(class="btn btn-outline-primary border-0 rounded-0" "for"="rdb-leidas"){$"Leídas"}
+
+                        input(class="btn-check" type="radio" name="_show" value="enviadas" id="rdb-enviadas" onchange="filter(this);" "#<ifstr(show_tab=='enviadas','checked','')>"="")
+                        label(class="btn btn-outline-primary border-0 rounded-0" "for"="rdb-enviadas"){$"Enviadas"}
+                    }
+
+                    span(class="text-secondary"){$"|"}
+
+                    div(class="d-inline-flex align-items-center")
+                    {
+                        label(class="" "for"="limit"){$"Límite: "}
+                        ##
+                        do uie.dbSelect(fil_limit)
+                        ##
+                    }
+                }
+
+                div(class="d-flex align-items-center mt-1 #<ifstr(show_fdr,'','d-none')>")
+                {
+                    div
+                    {
+                        ##
+                        do uie.dbSelect(fil_fdr_field)
+                        ##
+                    }
+                    div(class="flex-grow-1")
+                    {
+                        "filter-date-range"(
+                            "form"="#form_filter"
+                            "auto-submit"="true"
+                            "custom-range"="true"
+                            "selection"='#<to.json(fdr_init)>'
+
+                            "mode-field"="fdr_mode"
+                            "year-field"="fdr_year"
+                            "month-field"="fdr_month"
+                            "range-field"="fdr_range"
+                            "from-field"="fdr_from"
+                            "to-field"="fdr_to"
+                            
+                            "lastdays-options"="15,30,45,60,90"
+                            "years-options"="#<fdr_year_opt>"
+                            "month-names"="Enero,Febrero,Marzo,Abril,Mayo,Junio,Julio,Agosto,Septiembre,Octubre,Noviembre,Diciembre"
+                            
+                            "label-months"="Ver por cada mes"
+                            "label-days"="Últ. @lastdays días"
+                            "label-custom"="Personalizado"
+                            "label-from"="Desde:"
+                            "label-to"="Hasta:"
+                        ){$""}
+                    }
+                }
+            }
+
+            div(class="modal fade" id="new_notif_modal" tabindex="-1" "aria-hidden"="true" "data-bs-backdrop"="false")
+            {
+                div(class="modal-dialog modal-lg") // modal-dialog-scrollable modal-dialog-centered
+                {
+                    div(class="modal-content rounded-0 p-0 border-0 shadow")
+                    {
+                        div(class="modal-header p-3 border-0")
+                        {
+                            h6(class="modal-title"){$""}
+                            div(class="w-100 rounded" role="alert" style="height:8px; background-color:#FCFCFC"){$""}
+                            button(type="button" class="btn-close btn-sm" "data-bs-dismiss"="modal" "aria-label"="Close"){$""}
+                        }
+                        div(class="modal-body py-0 px-2 bg-white")
+                        {
+                            form(class="card" action="/!/webshell/notiman/_new/" method="POST" id="new_notif_form")
+                            {
+                                nav(class="")
+                                {
+                                    div(class="nav nav-tabs bg-light" id="nav-tab" role="tablist")
+                                    {
+                                        button(class="nav-link active" type="button" role="tab" id="nav-principal-tab" "data-bs-toggle"="tab" "data-bs-target"="#nav-principal" "aria-controls"="nav-principal" "aria-selected"="true"){$"Principal"}
+                                        button(class="nav-link" type="button" role="tab" id="nav-opciones-tab" "data-bs-toggle"="tab" "data-bs-target"="#nav-opciones" "aria-controls"="nav-opciones" "aria-selected"="false"){$"Opciones"}
+                                    }
+                                }
+                                div(class="tab-content bg-white p-2")
+                                {
+                                    div(class="tab-pane fade show active" id="nav-principal" role="tabpanel" "aria-labelledby"="nav-principal-tab")
+                                    {
+                                        div(class="d-flex align-items-center border-bottom")
+                                        {
+                                            label(class="text-muted fw-bolder" "for"="sndrid"){$"De:"}
+                                            input(class="form-control rounded-0 border-0 no-shadow" type="text" name="sndrid" value="#<@('$http/session/user/name')>" id="sndrid")
+                                        }
+                                        div(class="d-flex align-items-center border-bottom")
+                                        {
+                                            label(class="text-muted fw-bolder" "for"="to"){$"para:"}
+                                            input(class="form-control rounded-0 border-0 no-shadow" type="hidden" name="to" value="" id="to")
+                                            select(class="form-select rounded-0 border-0 no-shadow" id="_to" required="")
+                                            {
+                                                option(selected="" disabled="" hidden="" value=""){""}
+
+                                                optgroup(id="opt-gp-groups" label="Grupos"){$""}
+                                                optgroup(id="opt-gp-users" label="Usuarios"){$""}
+                                            }
+                                            // label(class="px-2") {
+                                            //     $'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="16" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>'
+                                            // }
+                                        }
+                                        div(class="d-flex align-items-center border-bottom")
+                                        {
+                                            label(class="text-muted fw-bolder" "for"="title"){$"Asunto:"}
+                                            input(class="form-control rounded-0 border-0 no-shadow" type="text" name="title" value="" id="title" required="")
+                                        }
+                                        textarea(class="form-control rounded-0 mt-2" name="body" id="body" rows="4"){$""}
+                                    }
+                                    div(class="tab-pane fade" id="nav-opciones" role="tabpanel" "aria-labelledby"="nav-opciones-tab")
+                                    {
+                                        div(class="row gx-2")
+                                        {
+                                            div(class="col-auto") {
+                                                label(class="text-muted" "for"="start"){$"Inicio:"}
+                                                input(class="form-control rounded-0 no-shadow" type="datetime-local" name="start" value="" id="start")
+                                            }
+                                            div(class="col-auto") {
+                                                label(class="text-muted" "for"="end"){$"Cierre:"}
+                                                input(class="form-control rounded-0 no-shadow" type="datetime-local" name="end" value="" id="end")
+                                            }
+                                            div(class="col-12") {
+                                                label(class="text-muted" "for"="href"){$"Url asociada:"}
+                                                input(class="form-control rounded-0 no-shadow" type="url" name="href" value="" id="href")
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        div(class="modal-footer border-0")
+                        {
+                            button(type="button" class="btn btn-sm btn-primary rounded-0" id="btn_send_notif"){$"Enviar"}
+                        }
+                    }
+                }
+            }
+        }
+        // Contenido principal
+        section(id="work_area")
+        {
+            #!
+            do uie.dbeditable(table_config,table_id)
+            #$
+        }
+        // Resúmenes y datos al pie
+        section(id="bottom_area")
+        {
+            //////////////////////////////////////////////////////////////////
+            div(id="_custom_area")
+            {
+                script(src="/$/webshell/js/notiman.js"){$""}
+                script(type="text/javascript")
+                {$'
+                    function filter(fe) { fe.form.submit(); }
+                    function between(val,min,max) { return (val >= min && val <= max); }
+                    
+                    function getCurrentContext() {
+                        const table = document.getElementById("#<table_id>");
+                        const id = (table?.DataArray[table.CurrentRowIndex()]?.sys_pk ?? "");
+                        return { item_id:id, context: {} }
+                    }
+                    
+                    document.addEventListener("DOMContentLoaded", () => {
+                        // Script injection
+                        #<@@(@crud_context,"script")>
+                    });
+                '}
+            }
+        }
+    }
+    #!
+
+    do @context.end()
+}

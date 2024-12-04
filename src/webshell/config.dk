@@ -7,6 +7,7 @@ program
     @JS_IFRAME_RESIZER_CONTENT = "/$/webshell/js/iframeresizer.contentwindow.min.js"
     @JS_TOP_SCREEN = "/$/webshell/js/top_screen.js"
     @JS_WEBSHELL = "/$/webshell/js/webshell.js"
+    @JS_NOTIMAN = "/$/webshell/js/notiman.js"
     @JS_LOG="/$/webshell/js/log.js"
     
     @ICON_V12 = "/$/webshell/img/icons/v12_2.png"

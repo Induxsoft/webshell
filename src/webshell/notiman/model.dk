@@ -1,0 +1,185 @@
+#include "dkli.dkh"
+#!
+module "Administración de notificaciones:notiman"
+{
+    #include "dbr.notif.dkl"
+
+    @table_name = "sys_notif"
+    @list_query = "
+    SELECT
+        n.sys_guid id,
+        IFNULL(DATE_FORMAT(n.sys_dtcreated,'%Y-%m-%d %H:%i:%s'),'') created,
+        n.sndrid,
+        n.title,
+        n.body,
+        n.href,
+        n.target, 
+        IFNULL(DATE_FORMAT(n.start,'%Y-%m-%d %H:%i:%s'),'') start,
+        IFNULL(DATE_FORMAT(n.end,'%Y-%m-%d %H:%i:%s'),'') end
+    FROM sys_notif n
+        #<joins>
+    WHERE
+        #<conditions>
+    "
+
+    function evaluateFilters(&params)
+    {
+        @__dbr.notif.no.readed = 10
+        @__dbr.notif.readed = 10
+        @__dbr.notif.sent = 10
+
+        _show = tolower(trim(@@(params,"$_show")))
+        limit = field.dnum(params,"limit",10)
+        fdr_field = ""
+        conditions = ""
+
+        // Establecer filtros predeterminados y preparar consulta
+        if limit < 1 && limit != -1 { limit = 10 }
+        if isanyword(_show,"leidas,enviadas")
+        {
+            curr_ndt = ndatetime.now()
+            curr_year = ndatetime.year(curr_ndt)
+            curr_month = ndatetime.month(curr_ndt)
+            curr_day = ndatetime.day(curr_ndt)
+
+            using params
+            {
+                //fdr_init
+                @"fdr_field": field.dnum(params,"fdr_field",1)
+                @"fdr_mode": field.dstr(params,"fdr_mode","month")
+                // [month]
+                @"fdr_year": field.dnum(params,"fdr_year",curr_year)
+                @"fdr_month": field.dnum(params,"fdr_month",curr_month)
+                // [lastdays]
+                @"fdr_range": field.dnum(params,"fdr_range",15)
+                // [range]
+                @"fdr_from": field.dstr(params,"fdr_from",date_str(now(),"yyyy-MM-01"))
+                @"fdr_to": field.dstr(params,"fdr_to",date_str(now(),"yyyy-MM-dd"))
+            }
+
+            new notif_date_fields
+            {
+                @"1": "n.start"
+                @"2": "n.end"
+            }
+            fdr_field = field.dstr(notif_date_fields, @@(params,"#fdr_field"), "n.start")
+
+            if _show == "enviadas" {
+                conditions = conditions + "n.sndrid = CONCAT('@',@uid)"
+            }
+            else
+            {
+                joins = "
+                INNER JOIN sys_notif_usr nu ON nu.notif = n.sys_pk
+                INNER JOIN tuser u ON nu.user = u.sys_pk
+                INNER JOIN sys_session ss ON ss.iuser = u.sys_pk
+                "
+
+                conditions = conditions + "ss.sys_guid = @ids AND IFNULL(nu.readed,0)"
+            }
+
+            conditions = conditions + "
+            AND (
+                CASE @fdr_mode
+                    WHEN 'month' THEN (YEAR(#<fdr_field>) = @fdr_year AND MONTH(#<fdr_field>) = @fdr_month)
+                    WHEN 'lastdays' THEN (DATE(#<fdr_field>) BETWEEN ADDDATE(DATE(NOW()), INTERVAL -@fdr_range DAY) AND DATE(NOW()))
+                    WHEN 'range' THEN (
+                        CASE
+                            WHEN @fdr_from != '' && @fdr_to != '' THEN (DATE(#<fdr_field>) BETWEEN @fdr_from AND @fdr_to)
+                            WHEN @fdr_from != '' && @fdr_to = '' THEN (DATE(#<fdr_field>) >= @fdr_from)
+                            WHEN @fdr_from = '' && @fdr_to != '' THEN (DATE(#<fdr_field>) <= @fdr_to)
+                            ELSE TRUE
+                        END
+                    )
+                    ELSE TRUE
+                END
+            )
+            "
+        }
+        else
+        {
+            _show = "pendientes"
+
+            joins = "
+            INNER JOIN sys_notif_usr nu ON nu.notif = n.sys_pk
+            INNER JOIN tuser u ON nu.user = u.sys_pk
+            INNER JOIN sys_session ss ON ss.iuser = u.sys_pk
+            "
+
+            conditions = "
+            ss.sys_guid = @ids
+            AND (NOW() BETWEEN n.start AND n.end)
+            AND IFNULL(nu.readed, 0) = 0
+            "
+        }
+
+        using params
+        {
+            @"_show": _show
+            @"limit": limit
+            @"ids": @@(@http_context,"$session/user/ids")
+            @"uid": @@(@http_context,"$session/user/uid")
+        }
+
+        if limit != -1 { conditions = conditions + " LIMIT @limit" }
+
+        conditions = ftext(conditions)
+        @list_query = ftext(@list_query)
+    }
+
+    function list(&db,&params)
+    {
+        do evaluateFilters(params)
+        new data
+        {
+            @"data*": entity.list(db,params)
+        }
+
+        return data
+    }
+
+    function create(&db,&params,&data)
+    {
+        _to = field.dstr(data,"to","[]")
+        if trim(_to) == "" { _to = "[]" }
+        
+        ref to = from.json(_to)
+        title = trim(@@(data,"$title"))
+        
+        if title == "" { do rise_error(511,"El valor del campo `Asunto` es requerido.") }
+        if list.count(to) < 1 { do rise_error(512,"Es necesario indicar al menos un destinatario (`Para`).") }
+        
+        new notif
+        {
+            @"sender": "@"+@@(@http_context,"$session/user/uid")
+            @"to*": to
+            @"title": title
+            @"body": trim(@@(data,"$body"))
+            @"href": trim(@@(data,"$href"))
+            @"img": @@(data,"$img")
+            @"start": @@(data,"$start")
+            @"end": @@(data,"$end")
+        }
+        ref resp = dbr.notif.send(db,notif)
+
+        resp<"url_redir"> : "/!/webshell/notiman/"
+        
+        return resp
+    }
+
+    NotImplemented1::&db,&params
+    {
+        do rise_error(500,"Acción no implementada")
+    }
+    NotImplemented2::&db,&params,&data
+    {
+        do rise_error(500,"Acción no implementada")
+    }
+
+    point @list to notiman.list
+    point @read to notiman.NotImplemented1
+    point @blank to notiman.NotImplemented1
+    point @create to notiman.create
+    point @update to notiman.NotImplemented2
+    point @delete to notiman.NotImplemented1
+}
