@@ -13,7 +13,15 @@ var notiman =
         this.ff = this.form.elements;
 
         const submit = document.getElementById("btn_send_notif");
+        // const targets_container = document.getElementById("targets-container");
+        // const targets_combo = document.getElementById("_to");
+
         submit?.addEventListener("click", () => { this.send() });
+        // targets_container.addEventListener("click", () => {
+        //     targets_combo.hidden = !targets_combo.hidden;
+        //     if (!targets_combo.hidden) targets_combo.showPicker();
+        // });
+        // targets_container.addEventListener("blur", () => { targets_combo.hidden = true; });
 
         this.getUsersAndGroups();
     },
@@ -57,6 +65,34 @@ var notiman =
         .catch(error => alert(error.message ?? JSON.stringify(error)))
     },
 
+    goto(href,target,event) {
+        event.stopPropagation();
+        window.open(href,target);
+    },
+
+    readed(notifId,event)
+    {
+        event.stopPropagation();
+        event.target.disabled = true;
+        
+        let endpoint = "/!/webshell/notif/go/"+notifId+"/"
+        InduxsoftCrudlModel.InvokeService(endpoint, null,
+            (r) => {
+                if (r.message) {
+                    alert(r.message);
+                    event.target.disabled = false;
+                    return
+                }
+                window.location.reload();
+            },
+            (e) => {
+                alert(e.message);
+                event.target.disabled = false
+            },
+            "PUT", false
+        );
+    },
+
     send()
     {
         const select = this.ff["_to"];
@@ -81,7 +117,7 @@ var notiman =
 
         this.ff["to"].value = JSON.stringify(to);
 
-        InduxsoftCrudlModel.Submit(this.form, {}, null, null, {redir:false});
+        InduxsoftCrudlModel.Submit(this.form); //, {}, null, null, {redir:false}
     }
 }
 

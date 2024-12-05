@@ -12,8 +12,9 @@ module "Administración de notificaciones:notiman"
         n.sndrid,
         n.title,
         n.body,
-        n.href,
-        n.target, 
+        IFNULL(n.img,'') img,
+        IFNULL(n.href,'') href,
+        IF(IFNULL(n.target,0)=0, '', IF(n.target=1, '_blank', '_self')) target,
         IFNULL(DATE_FORMAT(n.start,'%Y-%m-%d %H:%i:%s'),'') start,
         IFNULL(DATE_FORMAT(n.end,'%Y-%m-%d %H:%i:%s'),'') end
     FROM sys_notif n
@@ -145,6 +146,8 @@ module "Administración de notificaciones:notiman"
         
         ref to = from.json(_to)
         title = trim(@@(data,"$title"))
+        url = trim(@@(data,"$href"))
+        img = trim(@@(data,"$img"))
         
         if title == "" { do rise_error(511,"El valor del campo `Asunto` es requerido.") }
         if list.count(to) < 1 { do rise_error(512,"Es necesario indicar al menos un destinatario (`Para`).") }
@@ -155,14 +158,17 @@ module "Administración de notificaciones:notiman"
             @"to*": to
             @"title": title
             @"body": trim(@@(data,"$body"))
-            @"href": trim(@@(data,"$href"))
-            @"img": @@(data,"$img")
             @"start": @@(data,"$start")
             @"end": @@(data,"$end")
+            @"target": field.str(data,"target","_self")
         }
+
+        if url != "" { notif<"href"> : "/?go="+url_encode(url) }
+        if img != "" { notif<"img"> : img }
+
         ref resp = dbr.notif.send(db,notif)
 
-        resp<"url_redir"> : "/!/webshell/notiman/"
+        resp<"url_redir"> : "/!/webshell/notiman/?_show=enviadas"
         
         return resp
     }
