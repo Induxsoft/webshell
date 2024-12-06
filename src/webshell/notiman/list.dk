@@ -76,7 +76,7 @@ module "Administración de notificaciones"
         member "attributes"
         {
             @"name": "limit"
-            @"class": "form-select form-select-sm rounded-0"
+            @"class": "form-select rounded-0"
             @"title": "Limitar resultados a..."
             @"onchange": "filter(this);"
         }
@@ -130,60 +130,7 @@ module "Administración de notificaciones"
     #$
     div(class="container-fluid" id="view")
     {
-        style
-        {$'
-            .no-blur, .no-shadow { outline: none !important; box-shadow: none !important; }
-            .btn.btn-xs { padding: .20rem .4rem; font-size: .725rem; border-radius: .1rem; }
-
-            #tab-filters label:hover
-            {
-                border-color: #e9ecef #e9ecef #dee2e6 !important;
-                isolation: isolate !important;
-                color: initial !important;
-                background-color: initial !important;
-            }
-            #tab-filters input[type="radio"]:checked + label
-            {
-                border: none !important;
-                border-bottom: 2px solid #0B5ED7 !important;
-                color: #000 !important;
-                background-color: #F0F8FF !important;
-            }
-
-            #targets-container .btn-close {
-                width:.75em;
-                height:.75em;
-            }
-
-            #work_area {
-                overflow-x:hidden;
-                overflow-y:auto;
-            }
-
-            .notif-img-col img {
-                min-width:50px;
-                max-width:96px;
-            }
-            .notif-body-col .card-body {
-                min-height:50px;
-                max-height:100px;
-            }
-
-            @media (max-width: 768px) {
-                .notif-gp-act-cont1 { display:none !important; }
-                .notif-gp-act-cont2 { display:initial !important; }
-            }
-
-            @media (max-width: 500px) {
-                .notif-body-col .card-title { font-size:1em; }
-                .notif-body-col .card-text {
-                    display:none;
-                    /* white-space:nowrap;
-                    overflow:hidden;
-                    text-overflow:ellipsis; */
-                }
-            }
-        '}
+        link(href="#<@CSS_NOTIMAN>" rel="stylesheet")
 
         // Filtros y acciones
         section(id="top_area")
@@ -194,9 +141,9 @@ module "Administración de notificaciones"
 
             form(class="mb-1" action="./" method="GET" id="form_filter")
             {
-                div(class="d-flex align-items-center gap-2 border-bottom" id="tab-filters")
+                div(class="d-flex align-items-center gap-2 border-bottom")
                 {
-                    div(class="btn-group" role="group" "aria-label"="Basic radio toggle button group")
+                    div(class="btn-group" role="group" id="tab-filters" "aria-label"="Basic radio toggle button group")
                     {
                         input(class="btn-check" type="radio" name="_show" value="pendientes" id="rdb-pendientes" onchange="filter(this);" "#<ifstr(show_tab=='pendientes','checked','')>"="")
                         label(class="btn btn-outline-primary border-0 rounded-0" "for"="rdb-pendientes"){$"Pendientes"}
@@ -208,24 +155,23 @@ module "Administración de notificaciones"
                         label(class="btn btn-outline-primary border-0 rounded-0" "for"="rdb-enviadas"){$"Enviadas"}
                     }
 
-                    span(class="text-secondary"){$"|"}
+                    // span(class="text-secondary"){$"|"}
 
-                    div(class="d-inline-flex align-items-center")
-                    {
-                        label(class="" "for"="limit"){$"Límite: "}
-                        ##
-                        do uie.dbSelect(fil_limit)
-                        ##
-                    }
+                    // div(class="d-inline-flex align-items-center")
+                    // {
+                    //     label(class="" "for"="limit"){$"Límite: "}
+                    //     ##
+                    //     do uie.dbSelect(fil_limit)
+                    //     ##
+                    // }
                 }
 
-                div(class="d-flex align-items-center mt-1 #<ifstr(show_fdr,'','d-none')>")
+                div(class="d-flex align-items-center flex-wrap mt-1 #<ifstr(show_fdr,'','d-none')>")
                 {
-                    div
+                    div(class="d-flex align-items-center")
                     {
-                        ##
-                        do uie.dbSelect(fil_fdr_field)
-                        ##
+                        div{ #! do uie.dbSelect(fil_limit) } #$
+                        div{ #! do uie.dbSelect(fil_fdr_field) } #$
                     }
                     div(class="flex-grow-1")
                     {
@@ -338,7 +284,33 @@ module "Administración de notificaciones"
                                             }
                                             div(class="col-12") {
                                                 label(class="text-muted" "for"="href"){$"Url asociada:"}
-                                                input(class="form-control rounded-0 no-shadow" type="url" name="href" value="" id="href")
+                                                input(class="form-control rounded-0 no-shadow" type="url" name="href" value="" id="href" placeholder="https://...")
+                                            }
+                                            div(class="col-12")
+                                            {
+                                                label(class="text-muted" "for"="img"){$"Url a una imagen:"}
+                                                div(class="input-group")
+                                                {
+                                                    input(class="form-control rounded-0 no-shadow" type="text" name="img" value="" id="img" placeholder="https://...")
+                                                    button(class="btn btn-light border rounded-0 no-shadow" type="button" id="btn_show_media")
+                                                    {$'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>'}
+                                                    // label(class="btn btn-light border rounded-0" "for"="local-img" title="Subir imagen local")
+                                                    // {$'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-folder" viewBox="0 0 16 16"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a2 2 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4zm4.69-1.707A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981l.006.139q.323-.119.684-.12h5.396z"/></svg>'}
+                                                    // input(class="d-none" type="file" name="local-img" id="local-img" accept="image/png, image/jpg, image/jpeg")
+                                                }
+                                                "media-list"(id="notif_media_list" hidden=""
+                                                    "outline-selected"="true"
+                                                    "highlight-first"="false"
+                                                    "back-color-media"="#F8F8F8"
+                                                    "max-size-media"="5rem"
+                                                    "can-arrange"="false"
+                                                    "can-drag"="false"
+                                                    "can-drop"="false"
+                                                    "can-delete"="false"
+                                                    "media-prop"="src"
+                                                    "label-prop"="name"
+                                                    "miniature-prop"="src"
+                                                ){""}
                                             }
                                         }
                                     }
@@ -383,59 +355,22 @@ module "Administración de notificaciones"
                                 }
                                 #! else if show_tab == "pendientes" {
                                     #$
-                                    $'<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="currentColor" viewBox="0 0 110 110">
-                                        <g id="Artboard" />
-                                        <g id="Multicolor">
-                                            <circle cx="55" cy="55" r="55" style="fill:#E04F5F;" />
-                                            <g>
-                                                <path d="M78.5,71c-3.4-2.8-7.5-7.55-7.5-28c0,0,0-1.8-0.93-4c-1.46-3.49-5.26-8-15.07-8 s-13.61,4.51-15.07,8C39,41.2,39,43,39,43c0,20.45-4.1,25.2-7.5,28c-2.43,2-4.5,3.01-4.5,8h28h28C83,74.01,80.93,73,78.5,71z" style="fill:#FACB1B;" />
-                                                <path d="M55,79H27c0-4.99,2.07-6,4.5-8c3.4-2.8,7.5-7.55,7.5-28c0,0,0-1.8,0.93-4c1.46-3.49,5.26-8,15.07-8 V79z" style="fill:#FBEC9A;" />
-                                                <circle cx="55" cy="27" r="4" style="fill:#FBE158;" />
-                                                <path d="M39.015,42.685c0.071-1,0.364-2.381,0.915-3.685H55v4H39C39,43,39,42.888,39.015,42.685z" style="fill:#FACB1B;" />
-                                                <path d="M70.985,42.685c-0.071-1-0.364-2.381-0.915-3.685H55v4h16C71,43,71,42.888,70.985,42.685z" style="fill:#F3B607;" />
-                                                <path d="M78.5,71H55v8h28C83,74.01,80.93,73,78.5,71z" style="fill:#F3B607;" />
-                                                <path d="M31.5,71H55v8H27C27,74.01,29.07,73,31.5,71z" style="fill:#FACB1B;" />
-                                                <path d="M55,87c4.418,0,8-3.582,8-8H47C47,83.418,50.582,87,55,87z" style="fill:#FBE158;" />
-                                            </g>
-                                        </g>
+                                    $'<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="currentColor" class="bi bi-exclamation-circle" viewBox="0 0 16 16">
+                                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                                        <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
                                     </svg>'
                                 }
                                 #! else if show_tab == "leidas" {
                                     #$
-                                    $'<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="currentColor" viewBox="0 0 110 110">
-                                        <g id="Artboard" />
-                                        <g id="Multicolor">
-                                            <circle cx="55" cy="55" r="55" style="fill:#198754;" />
-                                            <g>
-                                                <path d="M78.5,71c-3.4-2.8-7.5-7.55-7.5-28c0,0,0-1.8-0.93-4c-1.46-3.49-5.26-8-15.07-8 s-13.61,4.51-15.07,8C39,41.2,39,43,39,43c0,20.45-4.1,25.2-7.5,28c-2.43,2-4.5,3.01-4.5,8h28h28C83,74.01,80.93,73,78.5,71z" style="fill:#FACB1B;" />
-                                                <path d="M55,79H27c0-4.99,2.07-6,4.5-8c3.4-2.8,7.5-7.55,7.5-28c0,0,0-1.8,0.93-4c1.46-3.49,5.26-8,15.07-8 V79z" style="fill:#FBEC9A;" />
-                                                <circle cx="55" cy="27" r="4" style="fill:#FBE158;" />
-                                                <path d="M39.015,42.685c0.071-1,0.364-2.381,0.915-3.685H55v4H39C39,43,39,42.888,39.015,42.685z" style="fill:#FACB1B;" />
-                                                <path d="M70.985,42.685c-0.071-1-0.364-2.381-0.915-3.685H55v4h16C71,43,71,42.888,70.985,42.685z" style="fill:#F3B607;" />
-                                                <path d="M78.5,71H55v8h28C83,74.01,80.93,73,78.5,71z" style="fill:#F3B607;" />
-                                                <path d="M31.5,71H55v8H27C27,74.01,29.07,73,31.5,71z" style="fill:#FACB1B;" />
-                                                <path d="M55,87c4.418,0,8-3.582,8-8H47C47,83.418,50.582,87,55,87z" style="fill:#FBE158;" />
-                                            </g>
-                                        </g>
+                                    $'<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="currentColor" class="bi bi-check-circle" viewBox="0 0 16 16">
+                                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                                        <path d="m10.97 4.97-.02.022-3.473 4.425-2.093-2.094a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05"/>
                                     </svg>'
                                 }
                                 #! else if show_tab == "enviadas" {
                                     #$
-                                    $'<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="currentColor" viewBox="0 0 110 110">
-                                        <g id="Artboard" />
-                                        <g id="Multicolor">
-                                            <circle cx="55" cy="55" r="55" style="fill:#0d6efd;" />
-                                            <g>
-                                                <path d="M78.5,71c-3.4-2.8-7.5-7.55-7.5-28c0,0,0-1.8-0.93-4c-1.46-3.49-5.26-8-15.07-8 s-13.61,4.51-15.07,8C39,41.2,39,43,39,43c0,20.45-4.1,25.2-7.5,28c-2.43,2-4.5,3.01-4.5,8h28h28C83,74.01,80.93,73,78.5,71z" style="fill:#FACB1B;" />
-                                                <path d="M55,79H27c0-4.99,2.07-6,4.5-8c3.4-2.8,7.5-7.55,7.5-28c0,0,0-1.8,0.93-4c1.46-3.49,5.26-8,15.07-8 V79z" style="fill:#FBEC9A;" />
-                                                <circle cx="55" cy="27" r="4" style="fill:#FBE158;" />
-                                                <path d="M39.015,42.685c0.071-1,0.364-2.381,0.915-3.685H55v4H39C39,43,39,42.888,39.015,42.685z" style="fill:#FACB1B;" />
-                                                <path d="M70.985,42.685c-0.071-1-0.364-2.381-0.915-3.685H55v4h16C71,43,71,42.888,70.985,42.685z" style="fill:#F3B607;" />
-                                                <path d="M78.5,71H55v8h28C83,74.01,80.93,73,78.5,71z" style="fill:#F3B607;" />
-                                                <path d="M31.5,71H55v8H27C27,74.01,29.07,73,31.5,71z" style="fill:#FACB1B;" />
-                                                <path d="M55,87c4.418,0,8-3.582,8-8H47C47,83.418,50.582,87,55,87z" style="fill:#FBE158;" />
-                                            </g>
-                                        </g>
+                                    $'<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="currentColor" class="bi bi-send" viewBox="0 0 16 16">
+                                        <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576zm6.787-8.201L1.591 6.602l4.339 2.76z"/>
                                     </svg>'
                                 }
                                 #! else {
@@ -450,7 +385,8 @@ module "Administración de notificaciones"
                             div(class="card-body py-0")
                             {
                                 h5(class="card-title"){$"#<@@(obj,'$title')>"}
-                                p(class="card-text"){$"#<@@(obj,'$body')>"}
+                                div(class="card-text"){$"#<@@(obj,'$body')>"}
+                                a(class="card-link text-decoration-none expand" href="#" onclick="notiman.vermas(this)"){$"Ver mas"}
                             }
                         }
                         div(class="col-md-auto notif-act-col")
@@ -495,8 +431,52 @@ module "Administración de notificaciones"
                     }
                 }
             }
-            $"SIN NOTIFICACIONES PENDIENTES"
+            #!
+            if list.count(data) < 1 {
+                #$ div(class="d-flex justify-content-center align-items-center") {
+                    figure(class="figure")
+                    {
+                        #! if show_tab == "pendientes" {
+                            #$
+                            img(src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAACXBIWXMAAAsTAAALEwEAmpwYAAADfUlEQVR4nO2dy27TQBSGfxKEEKSIyzMg9RnoBXpBagCx4wWQYAFPAay5lELTPgE7YIUEGyT2sER0BzS0UBawYFuMRppI4WjS2I5n5oz9f9KRqiiecebPfHbssQoQQgghhBBCCCGEEEIIIYSQcVwCsAsga3j1AazE/rq07Y7EHoxMSfXtmETjgoJByJTV+ZiBPFUwAJmyehIrjBaAHbEzy2geF8UYfI+lLamrnwAOo3m0AfzQoC2pq000l83Y2qKu/mdZBLIbWlvUlTJtSV1thOxcKdG05dLVUqjOFRNNW2Yq8uwqn7bmEQAzFakrNxtibNYQQFffqKuRLIXWFnWlTFtSVz2fnSVKMG25dLXoq7OECaatedHRXkOvXZXR1hw8YKYedZWPnhirx6gY6qoYi761RV0Vo23vi3jTltTVepWN15SeL225dLVQVeMN01ariobNVOPZVTXamkUFmKlGXZVjXYzdKiak5Vh3RV3lZ0GM3c6k2prTsqIiUVz3jmar1JW5U0giaculK3MvnUTSlpla1JUfbc2UachMLerKz6KQR0UboK78LpsqrC3qSpm2VrWs6K4RpbV1CMDXmKvwGqKtfl5tzcRa8NVAbZ3Ls+FDsVHo2gbQDfRs5Hbkz2rGeqyu9iLvZGaV6ZvYYWT23vuB2jquYCczW1Mew5hS8PkGdWzczmZK6qzHQKYVfL5BjaXwBhVxT/S74vn4MdyX6TsUyQRy2ffSmQN+E4Q4iUgukDMA/g71+8XT6XZbHND3AZxGOJIJxPBa9H0d1XND9PEKYUkqkKuib/NN7lR8diVX0FxBWJIKpA3gk+j/uf19NCnmfP+laPtjVUtz6hoI7HWz4WOJqQcThtJyXIHY97UIum6BuJ6xGMyUTklNyZkRc/VlkoEcAfDGsS/mCunNnI9BmFlxDcBnRztvARxFHJIMxHACwAfH/gyuda3Z3w/TduZ07N9de/9m1LWq97btWCQbyEA3z0YMbJl6AeAk4pJ0IANuA/g1QRBm21vQQS0CMZwCcBfA7wJBmPfeUTArahnI8AF/2Z4KvwOwBeCPrS372n378KV5rzZqF0jqMBBlMBBlMBBlMBBlMBBlMBBlMBBlMBBlMBBlMBBlMJC6BcKC1zFgIND1JUtimX7WkMr12EXX8UgbC17CiP5PxAghhBBCCCGEEEIIIYTAA/8Ar1T5hpdY+RIAAAAASUVORK5CYII=" alt="inbox" class="opacity-50 mt-4"){$""}
+                        }
+                        #! if show_tab == "leidas" {
+                            #$
+                            img(src="data:image/png;base64,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" alt="check-inbox--v2" class="opacity-50 mt-4"){$""}
+                        }
+                        #! if show_tab == "enviadas" {
+                            #$
+                            $'
+                            <svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" fill="currentColor" viewBox="0 0 48 48">
+                                <style type="text/css">
+                                    .st0 { display: none; }
+                                    .st1 {
+                                        fill: none;
+                                        stroke: #6c757d;
+                                        stroke-width: 0.7;
+                                        stroke-linecap: round;
+                                        stroke-linejoin: round;
+                                        stroke-miterlimit: 10;
+                                    }
+                                    .st2 { fill: #6c757d; }
+                                </style>
+                                <g class="st0" id="Padding__x26__Artboard" />
+                                <g id="Icons">
+                                    <g>
+                                        <polyline class="st1" points="29.20388,31.39837 34.76982,13.18629 16.555,18.74949 13.23018,23.79638 21.4132,25.36696     21.4132,25.36882 30.95678,16.99933 22.60923,26.63069 24.17982,34.81371 29.20388,31.39837" />
+                                        <line class="st1" x1="24.47414" x2="26.14364" y1="17.99184" y2="17.47815" />
+                                        <line class="st1" x1="19.1341" x2="23.30684" y1="19.63493" y2="18.35101" />
+                                    </g>
+                                </g>
+                            </svg>
+                            '
+                        }
+                        #$ figcaption(class="figure-caption text-center h5"){$"Sin resultados"}
+                    }
+                }
+            }
             #$
+            $""
         }
         // Resúmenes y datos al pie
         section(id="bottom_area")

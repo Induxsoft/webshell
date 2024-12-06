@@ -1,0 +1,20 @@
+#include "dkli.dkh"
+#!
+module "NotimanController"
+{
+    point @list to notiman.list
+    point @read to notiman.NotImplemented1
+    point @blank to notiman.NotImplemented1
+    point @create to notiman.create
+    point @update to notiman.NotImplemented2
+    point @delete to notiman.NotImplemented1
+
+    switch @@(@http_context,"$request/get/_view")
+    {
+        case "get-minis"
+        {
+            point @list to notiman.GetMinis
+            break
+        }
+    }
+}

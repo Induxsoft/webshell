@@ -2,7 +2,11 @@
 #!
 program
 {
+    @IMG_MINIS = "/$/webshell/img/minis/"
+
     @CSS_WEBSHELL = "/$/webshell/css/webshell.css"
+    @CSS_NOTIMAN = "/$/webshell/css/notiman.css"
+    
     @JS_IFRAME_RESIZER = "/$/webshell/js/iframeresizer.min.js"
     @JS_IFRAME_RESIZER_CONTENT = "/$/webshell/js/iframeresizer.contentwindow.min.js"
     @JS_TOP_SCREEN = "/$/webshell/js/top_screen.js"

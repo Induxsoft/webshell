@@ -72,7 +72,7 @@ var top_screen =
     },
     print_notif(data)
     {
-        let template = ``;
+        let template = `<li><a class="dropdown-item text-end" href="#" onclick="top_screen.load('/!/webshell/notiman/')">Administrar</a></li>`;
         let containr = document.querySelector('#notis_container');
         let notisnum = document.querySelector('#notis_num');
         let num_text = document.querySelector('#notis_num_text');

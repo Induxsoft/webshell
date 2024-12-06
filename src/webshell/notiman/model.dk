@@ -100,6 +100,7 @@ module "Administración de notificaciones:notiman"
         else
         {
             _show = "pendientes"
+            limit = 250
 
             joins = "
             INNER JOIN sys_notif_usr nu ON nu.notif = n.sys_pk
@@ -173,6 +174,47 @@ module "Administración de notificaciones:notiman"
         return resp
     }
 
+    function GetMinis(&db,&params)
+    {
+        ref minis = list.files("webshell/_static/img/minis","*")
+        ref data = list.create()
+
+        for i = 0; i < list.count(minis)
+        {
+            file = list.str(minis,i)
+            
+            new mini
+            {
+                @"name": file.justname(file)
+                @"src": path.concat(@IMG_MINIS,file.name(file))
+            }
+            do list.add(data,mini)
+        }
+
+        return data
+    }
+
+    function UploadImg(&db,&params,&data)
+    {
+        ref files = @@(@http_context,"&request/files")
+        if isnull(files) || @count(files) < 1 { return }
+
+        attachment_path = "data/"+@@(@http_context,"$session/idp/qname")+"/webshell/notiman/"
+        do dir.ensure(attachment_path)
+
+        for i = 0; i < @count(files)
+        {
+            ref file = @item(files,i)
+            if file.exists(@@(file,"$temp_file")) && @@(file,"$filename")!="" && @@(file,"#size")>0
+            {
+                filename = @@(params,"$notifid")+file.extension(@@(file,"$filename")) //limpiarTexto(@@(file,"$filename"))
+                filepath = path.concat(attachment_path,filename)
+                
+                do file.copy(@@(file,"$temp_file"),filepath)
+            }
+        }
+    }
+
     NotImplemented1::&db,&params
     {
         do rise_error(500,"Acción no implementada")
@@ -181,11 +223,4 @@ module "Administración de notificaciones:notiman"
     {
         do rise_error(500,"Acción no implementada")
     }
-
-    point @list to notiman.list
-    point @read to notiman.NotImplemented1
-    point @blank to notiman.NotImplemented1
-    point @create to notiman.create
-    point @update to notiman.NotImplemented2
-    point @delete to notiman.NotImplemented1
 }

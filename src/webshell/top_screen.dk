@@ -101,6 +101,7 @@ module "webShell"
                     }
                     ul(class="dropdown-menu dropdown-menu-lg-end" "aria-labelledby"="dropdownMenuClickableInside" id="notis_container")
                     {
+                        li{ a(class="dropdown-item" href="/!/webshell/notiman/"){$"Administrar"} }
                         #
                         do print_notis(notis)
                         #$

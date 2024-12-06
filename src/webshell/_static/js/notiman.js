@@ -2,6 +2,8 @@ var notiman =
 {
     dialogId:"new_notif_modal",
     dialog:null,
+    mediaId:"notif_media_list",
+    media:null,
     formId:"new_notif_form",
     form:null,
     ff:null,
@@ -9,12 +11,16 @@ var notiman =
     init()
     {
         this.dialog = document.getElementById(this.dialogId);
+        this.media = document.getElementById(this.mediaId);
         this.form = document.getElementById(this.formId);
         this.ff = this.form.elements;
 
         const submit = document.getElementById("btn_send_notif");
         // const targets_container = document.getElementById("targets-container");
         // const targets_combo = document.getElementById("_to");
+        // const img = document.getElementById("img");
+        // const localimg = document.getElementById("local-img");
+        const btn_show_media = document.getElementById("btn_show_media");
 
         submit?.addEventListener("click", () => { this.send() });
         // targets_container.addEventListener("click", () => {
@@ -22,8 +28,25 @@ var notiman =
         //     if (!targets_combo.hidden) targets_combo.showPicker();
         // });
         // targets_container.addEventListener("blur", () => { targets_combo.hidden = true; });
+        // img.addEventListener("change", (e) => { localimg.value = "" });
+        // localimg.addEventListener("change", (e) => {
+        //     const input = e.target;
+        //     const file = input.files[0];
+            
+        //     if (input.files.length != 1 || (file?.size ?? 0) < 1) {
+        //         input.value = "";
+        //         return
+        //     }
+
+        //     img.value = file?.name;
+        // });
+        btn_show_media.addEventListener("click", () => { this.media.hidden = !this.media.hidden });
+        this.media.onClicking = (data) => {
+            this.ff["img"].value = data.src;
+        }
 
         this.getUsersAndGroups();
+        this.getMinis();
     },
 
     getUsersAndGroups()
@@ -63,6 +86,36 @@ var notiman =
             });
         })
         .catch(error => alert(error.message ?? JSON.stringify(error)))
+    },
+
+    getMinis()
+    {
+        fetch("/!/webshell/notiman/?_view=get-minis").then(resp => resp.json())
+        .then(data => {
+            if (data?.message) {
+                alert(data.message);
+                return;
+            }
+
+            this.media.setData(data);
+        })
+        .catch(error => alert(error.message ?? JSON.stringify(error)))
+    },
+
+    vermas(el) {
+        const container = el.parentElement;
+        if (el.classList.contains("expand")) {
+            container.querySelector(".card-text").style.display = "initial";
+            container.style.maxHeight = "100%";
+            el.textContent = "Contraer";
+            el.classList.remove("expand");
+        }
+        else {
+            el.classList.add("expand");
+            el.textContent = "Ver mas";
+            container.style.maxHeight = "100px";
+            container.querySelector(".card-text").style.display = "none";
+        }
     },
 
     goto(href,target,event) {
@@ -117,7 +170,7 @@ var notiman =
 
         this.ff["to"].value = JSON.stringify(to);
 
-        InduxsoftCrudlModel.Submit(this.form); //, {}, null, null, {redir:false}
+        InduxsoftCrudlModel.Submit(this.form);
     }
 }
 
