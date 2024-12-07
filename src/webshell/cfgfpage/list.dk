@@ -1,0 +1,133 @@
+#include "dkli.dkh"
+#!
+module "list.dk"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "uielements.v12.dkl"
+
+    do @context.begin(@crud_context)
+
+    ref data = ifnull(@("&./data"),list.create())
+    // ref titles = ifnull(@("&./titles"),record.create())
+
+	@_entities_type = @("$parameters/_entities_type")
+    table_id = "tbl_"+@_entities_type
+
+    new fil_type
+    {
+        @"datatable*": from.json('[
+            {"id":"*", "const":"(Todos)"}
+            {"id":"userid", "const":"Usuarios"},
+            {"id":"groupid", "const":"Grupos"}
+        ]')
+        @"value_field": "id"
+        @"text_field": "const"
+        @"selected": field.dstr(@("&parameters"),"type","*")
+        member @"attributes"
+        {
+            @"class": "induxsoft-form-select"
+            @"name": "type"
+            @"title": "Filtrar por tipo"
+            @"onchange": "document.querySelector('#form-filter').submit();"
+        }
+    }
+
+    new table_definition
+    {
+        @"datatable*": data
+        member @"columns"
+        {
+            member @"type" { @"caption":"Tipo" }
+            member @"id" { @"caption":"ID" }
+            member @"name" { @"caption":"Nombre" }
+			// member @"shortcut" { @"caption":"Acceso" }
+            // member @"relevance" { @"caption":"Relevancia" }
+        }
+        @"table_footer": "Mostrando los primeros # registros"
+    }
+
+    function print_buttons()
+    {
+        btn_cls = "btn btn-sm border-secondary induxsoft-corners btn-main-action"
+        #$
+        a(class="#<btn_cls>" href="./_new/?type=#<@('$parameters/type')>"){$"Agregar"}
+        #!
+    }
+
+    point @buttons to print_buttons
+    
+    new nav_config
+    {
+        @"title": "Configuración de páginas de inicio"
+        @"urlexit": "/"
+        @"buttons*": @buttons
+        @"main": "XW42,XW43" // Acciones que seran visibles en la navbar.
+        @"actions*": ifnull(@("&./itemactions"),list.create())
+        @"reports*": ifnull(@("&./itemreports"),list.create())
+        @"jscurrentcontext": "getCurrentContext"
+        
+        member @"hidden"
+        {
+            @"print": @true
+        }
+    }
+    // Encapsula a la vista en su totalidad, todo lo que hay antes o después no se considera 
+    #$
+    div(class="container-lg" id="view")
+    {
+        // Filtros y acciones
+        section(id="top_area")
+        {
+            #!
+            do uie.printV12FormBar(nav_config)
+            #$
+
+            form(class="mb-1" action="./" method="GET" id="form-filter")
+            {
+                div(class="d-flex align-items-center gap-2 flex-wrap w-100 py-1")
+                {
+                    div(class="d-flex gap-2")
+                    {
+                        div{ #! do uie.dbSelect(fil_type) } #$
+                    }
+                    div(class="flex-grow-1") {
+                        "filter-text"(class="w-100" id="fil_text" "text-field"="search" value="#<@('$parameters/search')>" placeholder="Buscar ..." "form"="#form-filter" "auto-submit"="true"){$""}
+                    }
+                }
+            }
+        }
+        // Contenido principal
+        section(id="work_area")
+        {
+            #!
+            do uie.dbeditable(table_definition,table_id)
+            #$
+        }
+        // Resúmenes y datos al pie
+        section(id="bottom_area")
+        {
+            //////////////////////////////////////////////////////////////////
+            div(id="_custom_area")
+            {
+                // script(src=""){$""}
+                script(type="text/javascript")
+                {$'
+                    function getCurrentContext() {
+                        const table = document.getElementById("#<table_id>");
+                        const id = (table?.DataArray[table.CurrentRowIndex()]?.sys_guid ?? "");
+                        return { item_id:id, context: {} }
+                    }
+                    
+                    document.addEventListener("DOMContentLoaded", () => {
+                        // Script injection
+                        #<@@(@crud_context,"script")>
+                    });
+                '}
+            }
+        }
+    }
+    #!
+
+    do @context.end()
+}

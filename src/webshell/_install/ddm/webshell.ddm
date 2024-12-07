@@ -3,27 +3,6 @@ model ""
 {
     #include "induxsoft.abstracts.ddm"
 
-    // Categorías jerárquicas de variables
-    entity "varcategory"
-    {
-        @"id" string(32) key
-        @"caption" string(150) required
-        @"help" memo
-        @"parent" ref:"varcategory"
-    }
-    // Variables globales
-    entity "globalvar" : "TableModel"
-    {
-        @"varname" string(32) unique required
-        @"vardefault" string(255)
-        @"varvalue" mmemo
-        @"varcaption" string    // Etiqueta de la variable
-        @"varhelp" memo         // Ayuda o información adicional
-        @"vartype" string(15)   // Tipo de dato: string,integer,decimal,bool,date,datetime,time
-        @"varinput" memo        // Json con especificaciones al tipo de control de entrada: null or 'default', color, select,inputkey,dkl,json,textarea
-        @"ref_varcat" ref:"varcategory" // Categoría de variable
-        @"userenable" bool // Si es true, la variable puede establecerse por usuario
-    }
     // Registro de notificaciones
     entity "sys_notif" : "TableModel"
     {
@@ -62,6 +41,67 @@ model ""
             field "notif"
             field "user"
         }
+    }
+
+    entity "ws_det_log_enable" : "TableModel"
+    {
+        @"det" ref:"sys_app_item_type" unique required 
+        @"rpriv" ref: "sitem" required // Permiso para ver
+        @"wpriv"  ref: "sitem" required // Permiso para escribir
+        @"var_files" string(45) // Nombre de la variable de configuración que contiene la ruta física de guardado de los archivos, si es null, se usará la variable ws_file_store data/attatchments/@det/@guid/
+    }
+
+    entity "ws_det_log" : "TableModel"
+    {
+        @"origen" ref: "ws_det_log_enable" required
+        @"guid" string(32) required //sys_guid del elemento o un identificador
+        @"nota" memo 
+        @"archivo" string(128) //Nombre del archivo adjunto al mensaje
+        @"idarchivo" string(32) //Idenficador del archivo
+        @"usuario" string(45)
+    }
+
+    entity "ws_det_log_file" : "TableModel"
+    {
+        @"id" string(32) unique required
+        @"nombre" string(128) required //Incluye la extensión
+    }
+    // Configuración de la página de inicio
+    entity "webshell_fpage" : "TableModel"
+    {
+        @"type" string(15) required // userid | groupid
+        @"id" string(32) required // userid o groupid
+        @"shortcut_type" string(32) // choose | write
+        @"shortcut" string(32)
+        @"href" string(1024) required
+        @"relevance" int // Entre mayor sea este número, más relevante es al momento de elegir una página de grupo, solo aplica para type=groupid
+
+        index "unique_idx_01" unique
+        {
+            field "type"
+            field "id"
+        }
+    }
+    // Categorías jerárquicas de variables
+    entity "varcategory"
+    {
+        @"id" string(32) key
+        @"caption" string(150) required
+        @"help" memo
+        @"parent" ref:"varcategory"
+    }
+    // Variables globales
+    entity "globalvar" : "TableModel"
+    {
+        @"varname" string(32) unique required
+        @"vardefault" string(255)
+        @"varvalue" mmemo
+        @"varcaption" string    // Etiqueta de la variable
+        @"varhelp" memo         // Ayuda o información adicional
+        @"vartype" string(15)   // Tipo de dato: string,integer,decimal,bool,date,datetime,time
+        @"varinput" memo        // Json con especificaciones al tipo de control de entrada: null or 'default', color, select,inputkey,dkl,json,textarea
+        @"ref_varcat" ref:"varcategory" // Categoría de variable
+        @"userenable" bool // Si es true, la variable puede establecerse por usuario
     }
     // Usuarios
     entity "tuser"
@@ -106,29 +146,6 @@ model ""
         @"description" string(250) 
         @"itemid" string(32) unique required
         @"itemparent" ref:"sitem" 
-    }
-    entity "ws_det_log_enable" : "TableModel"
-    {
-        @"det" ref:"sys_app_item_type" unique required 
-        @"rpriv" ref: "sitem" required // Permiso para ver
-        @"wpriv"  ref: "sitem" required // Permiso para escribir
-        @"var_files" string(45) // Nombre de la variable de configuración que contiene la ruta física de guardado de los archivos, si es null, se usará la variable ws_file_store data/attatchments/@det/@guid/
-    }
-
-    entity "ws_det_log" : "TableModel"
-    {
-        @"origen" ref: "ws_det_log_enable" required
-        @"guid" string(32) required //sys_guid del elemento o un identificador
-        @"nota" memo 
-        @"archivo" string(128) //Nombre del archivo adjunto al mensaje
-        @"idarchivo" string(32) //Idenficador del archivo
-        @"usuario" string(45)
-    }
-
-    entity "ws_det_log_file":"TableModel"
-    {
-        @"id" string(32) unique required
-        @"nombre" string(128) required //Incluye la extensión
     }
     // Información de la aplicación
     entity "sys_app_catalog"

@@ -1,0 +1,169 @@
+#include "dkli.dkh"
+#!
+module "form.dk"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "uielements.v12.dkl"
+    #include "webshell/config.dk"
+    #include "webshell/_lib/lib.dk"
+
+    do @context.begin(@crud_context)
+    // do rise_error(0,to.json(@("&.")))
+
+    ref entity = ifnull(@("&./entity"),record.create())
+    ref usrgpo = ifnull(@("&./usrgpo"),record.create())
+    ref shortcut = ifnull(@("&./shortcut"),record.create())
+
+	@_entities_type = @("$parameters/_entities_type")
+	@_entity_id = @("$parameters/_entity_id")
+	@is_new = (@_entity_id == "_new")
+
+    form_id = "frm_"+@_entities_type
+    url_search_users = "/!/webshell/cfgfpage/?_view=search-users&search=@search"
+    url_search_groups = "/!/webshell/cfgfpage/?_view=search-groups&search=@search"
+    url_search_shortcuts = "/!/webshell/cfgfpage/?_view=search-shortcuts&search=@search"
+
+    function print_buttons()
+    {
+        btn_cls = "btn btn-sm border-secondary induxsoft-corners btn-main-action"
+        #$
+        button(class="#<btn_cls>" type="button" id="btn-submit" title="Guardar"){$"Guardar"}
+        #!
+    }
+
+    point @buttons to print_buttons
+    
+    new nav_config
+    {
+        @"title": ifstr(@is_new, "Agregar", "Editar") +" página de inicio"
+        @"urlexit": "../"
+        @"buttons*": @buttons
+        member @"hidden"
+        {
+            @"print": @true
+        }
+    }
+    // Encapsula a la vista en su totalidad, todo lo que hay antes o después no se considera 
+    #$
+    div(class="container-lg" id="view")
+    {
+        // Filtros y acciones
+        section(id="top_area")
+        {
+            #!
+            do uie.printV12FormBar(nav_config)
+            #$
+        }
+        // Contenido principal
+        section(id="work_area" style="overflow-y:auto; overflow-x:hidden;")
+        {
+            form(action="./" method="POST" id="#<form_id>")
+            {
+                input(type="hidden" name="sys_pk" value="#<@@(entity,'#sys_pk')>")
+                input(type="hidden" name="sys_guid" value="#<@@(entity,'#sys_guid')>")
+                input(type="hidden" name="sys_recver" value="#<@@(entity,'#sys_recver')>")
+                #!
+                do uie.print_from_url_field()
+                #$
+
+                div(class="row gx-1 px-2")
+                {
+                    div(class="col-md-2 col-sm-3")
+                    {
+                        label(class="form-label fw-bolder" "for"="type"){$"Tipo:"}
+                        ##
+                        new types
+                        {
+                            @"datatable*": from.json('[
+                                {"id":"userid", "const":"Usuario"},
+                                {"id":"groupid", "const":"Grupo"}
+                            ]')
+                            @"id": "type"
+                            @"value_field": "id"
+                            @"text_field": "const"
+                            @"selected": fd('type','tx',entity)
+                            member @"attributes"
+                            {
+                                @"class": "form-select rounded-0"
+                                @"name": "type"
+                                @"required": ""
+                            }
+                        }
+                        do uie.dbSelect(types)
+                        ##
+                    }
+                    div(class="col-md-10 col-sm-9 align-self-end mt-2 mt-sm-0")
+                    {
+                        "input-key"(id="ik_usrgpo" name="id" "data-key"="id" "data-search"="id" "data-text"="name" "data-value"="#<to.json(usrgpo)>" "data-source"="@search" columns="id,name" colcaptions="ID,Nombre" required="true"){$""}
+                    }
+                    div(class="col-md-2 col-sm-3")
+                    {
+                        label(class="form-label fw-bolder" "for"="shortcut_type"){$"Destino:"}
+                        ##
+                        new shortcut_types
+                        {
+                            @"datatable*": from.json('[
+                                {"id":"choose", "const":"Acceso directo"},
+                                {"id":"write", "const":"URL"}
+                            ]')
+                            @"id": "shortcut_type"
+                            @"value_field": "id"
+                            @"text_field": "const"
+                            @"selected": fd('shortcut_type','tx',entity)
+                            member @"attributes"
+                            {
+                                @"class": "form-select rounded-0"
+                                @"name": "shortcut_type"
+                                @"required": ""
+                            }
+                        }
+                        do uie.dbSelect(shortcut_types)
+                        ##
+                    }
+                    div(class="col-md-10 col-sm-9 align-self-end mt-2 mt-sm-0")
+                    {
+                        "input-key"(id="ik_shortcut" "data-key"="id" "data-search"="id" "data-text"="title" "data-value"="#<to.json(shortcut)>" "data-source"="#<url_search_shortcuts>" columns="id,title" colcaptions="ID,Título" "hidden-input"="false" required="true"){$""}
+
+                        fieldset(class="row align-items-end gx-1" id="shortcut-info" hidden="")
+                        {
+                            input(type="hidden" name="shortcut" value="#<fd('shortcut','tx',entity)>" id="shortcut")
+                            div(class="col-12") {
+                                input(class="form-control rounded-0" type="text" name="href" value="#<fd('href','tx',entity)>" id="href" maxlength="1024" spellcheck="false" placeholder="Url asociado:")
+                            }
+                        }
+                    }
+                    div(class="col-md-2 col-sm-3 col-6" id="div_relevance" hidden="")
+                    {
+                        label(class="form-label" "for"="relevance"){$"Relevancia:"}
+                        input(class="form-control rounded-0" type="number" name="relevance" value="#<fd('relevance','nm',entity)>" id="relevance")
+                    }
+                }
+            }
+        }
+        // Resúmenes y datos al pie
+        section(id="bottom_area"){$""}
+
+        //////////////////////////////////////////////////////////////////
+        div(id="_custom_area")
+        {
+            script(src="#<@JS_CFGFPAGE>"){$""}
+            script(type="text/javascript")
+            {$'
+                document.addEventListener("DOMContentLoaded", () => {
+                    fpage.formId = "#<form_id>";
+                    fpage.url_search_users = "#<url_search_users>";
+                    fpage.url_search_groups = "#<url_search_groups>";
+                    fpage.url_search_shortcuts = "#<url_search_shortcuts>";
+                    fpage.init();
+                    
+                    // Script injection
+                    #<@@(@crud_context,"script")>
+                });
+            '}
+        }
+    }
+    #!
+    
+    do @context.end()
+}

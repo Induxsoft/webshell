@@ -12,6 +12,7 @@ program
     @JS_TOP_SCREEN = "/$/webshell/js/top_screen.js"
     @JS_WEBSHELL = "/$/webshell/js/webshell.js"
     @JS_NOTIMAN = "/$/webshell/js/notiman.js"
+    @JS_CFGFPAGE = "/$/webshell/js/cfgfpage.js"
     @JS_LOG="/$/webshell/js/log.js"
     
     @ICON_V12 = "/$/webshell/img/icons/v12_2.png"
@@ -24,12 +25,12 @@ program
     @FOOTER_LEGEND = "V12 Copyright(c) Induxsoft 2024 | Powered by Devkron"
 
     @show_empty_categories = @false
+    @default_max_rows = 250
 
     @FEEDBACK_SVG="/$/webshell/img/icons/feedback.svg"
     @var_files_log="ws_file_store" //var global por default
 
     @SERVICE_DOWNLOAD_FILE_CHAT="/webshell/_services/download.dkl?detid=@detid&guid=@guid&id=@id"
-    @IMG_MINIS = "/$/webshell/img/minis/"
 
     @TIME_LOAD_BITACORA= 1000 //EN MILISEGUNDOS
 }

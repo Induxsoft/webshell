@@ -1,0 +1,273 @@
+#include "dkli.dkh"
+#!
+module "Configuración de página de inicio:cfgfpage"
+{
+    #include "dbr.apps.dkl"
+	#include "dbr.vars.dkl"
+	#include "dbr.events.dkl"
+	#include "dbr.security.dkl"
+
+    @table_name = "webshell_fpage"
+    @keyfield = "sys_guid"
+
+    @list_query = "
+    SELECT
+        cfg.sys_pk,
+        cfg.sys_guid,
+        IF(type = 'userid', 'Usuario', 'Grupo') type,
+        IF(type = 'userid', usr.username, gpo.description) name,
+        cfg.id,
+        cfg.shortcut,
+        cfg.href,
+        IFNULL(cfg.relevance,0) relevance
+    FROM #<@table_name> cfg
+        LEFT JOIN tuser usr ON usr.userid = cfg.id
+        LEFT JOIN usergroup gpo ON gpo.groupid = cfg.id
+    WHERE NOT IFNULL(cfg.sys_deleted,0)
+        AND IF(IFNULL(@type,'*')='*', TRUE, cfg.type = @type)
+        AND IF(IFNULL(@search,'')='', TRUE, (cfg.id = @search OR cfg.shortcut LIKE CONCAT('%',@search,'%')))
+    LIMIT #<@default_max_rows>
+    "
+    @read_query = "
+    SELECT
+        sys_pk,
+        sys_guid,
+        sys_recver,
+        type,
+        id,
+        shortcut_type,
+        shortcut,
+        href,
+        IFNULL(relevance,0) relevance
+    FROM #<@table_name>
+    WHERE #<@keyfield> = @_entity_id
+    LIMIT 1
+    "
+
+    function buscarUsuarios(&db,&params)
+    {
+        sql = "SELECT userid id, username name FROM tuser WHERE "
+
+        if trim(@@(params,"$id")) != "" {
+            sql = sql + " userid = @id"
+            return dbr.rec(db,sql,params)
+        }
+        if trim(@@(params,"$search")) != "" {
+            sql = sql + "NOT IFNULL(sys_deleted,0) AND (userid = @search OR username LIKE CONCAT('%',@search,'%'))"
+            return dbr.list(db,sql,params)
+        }
+
+        return list.create()
+    }
+
+    function buscarGrupos(&db,&params)
+    {
+        sql = "SELECT groupid id, description name FROM usergroup WHERE "
+
+        if trim(@@(params,"$id")) != "" {
+            sql = sql + " groupid = @id"
+            return dbr.rec(db,sql,params)
+        }
+        if trim(@@(params,"$search")) != "" {
+            sql = sql + "NOT IFNULL(sys_deleted,0) AND (groupid = @search OR description LIKE CONCAT('%',@search,'%'))"
+            return dbr.list(db,sql,params)
+        }
+
+        return list.create()
+    }
+
+    function buscarShortcuts(&db,&params)
+    {
+        sql = "
+        SELECT * FROM (
+            SELECT id, title, src FROM sys_app_shortcut
+            UNION
+            SELECT id, title, href FROM sys_app_item_action WHERE (act_type='shortcut' OR NOT IFNULL(req_context_item_id,0)) AND TRIM(IFNULL(href,''))!=''
+        ) shortcuts WHERE 
+        "
+
+        if trim(@@(params,"$id")) != "" {
+            sql = sql + " id = @id"
+            return dbr.rec(db,sql,params)
+        }
+        if trim(@@(params,"$search")) != "" {
+            sql = sql + "(id = @search OR title LIKE CONCAT('%',@search,'%'))"
+            return dbr.list(db,sql,params)
+        }
+
+        return list.create()
+    }
+
+    function getUserOrGroup(&db,id,type)
+    {
+        id >> params
+
+        if type == "userid" { return buscarUsuarios(db,params) }
+        if type == "groupid" { return buscarGrupos(db,params) }
+
+        return record.create()
+    }
+
+    function getShortcut(&db,id)
+    {
+        id >> params
+        return buscarShortcuts(db,params)
+    }
+
+    function prepareView(&db,&params,&data)
+    {
+        //#region prepareView()
+        is_new = (@@(params,"$_entity_id") == "_new")
+
+        cfgtype = field.dstr(params,"type","userid")
+        UserIdOrGoupId = ""
+        shortcut_type = ""
+        shortcut = ""
+
+        if field.exist(data,"form")
+        {
+            cfgtype = @@(data,"$form/type")
+            UserIdOrGoupId = @@(data,"$form/id")
+            shortcut_type = @@(data,"$form/shortcut_type")
+            shortcut = @@(data,"$form/shortcut")
+        }
+        else if field.exist(data,"entity")
+        {
+            cfgtype = @@(data,"$entity/type")
+            UserIdOrGoupId = @@(data,"$entity/id")
+            shortcut_type = @@(data,"$entity/shortcut_type")
+            shortcut = @@(data,"$entity/shortcut")
+        }
+
+        if UserIdOrGoupId != "" { data<"usrgpo*"> : getUserOrGroup(db,UserIdOrGoupId,cfgtype) }
+        if shortcut_type == "choose" && shortcut != "" { data<"shortcut*"> : getShortcut(db,shortcut) }
+    }
+
+    function list(&db,&params)
+    {
+        //#region list()
+        do dbr.apps.action.grant("XW40")
+        
+        new data
+        {
+            @"data*": entity.list(db,params)
+            @"itemactions*": dbr.apps.itemactions(db,"DET08F","action","",0)
+            @"itemreports*": dbr.apps.itemactions(db,"DET08F","report","",0)
+        }
+        return data
+
+        exception{ do catch(db,params,@null) }
+    }
+
+    function read(&db,&params)
+    {
+        //#region read()
+        do dbr.apps.action.grant("XW40")
+
+        if not(isset("@just_read_entity")) { @just_read_entity = @false }
+        if @just_read_entity { return entity.read(db,params) }
+
+        new data { @"entity*": entity.read(db,params) }
+        do prepareView(db,params,data)
+        return data
+
+        exception{ do catch(db,params,@null) }
+    }
+
+    function blank(&db,&params)
+    {
+        //#region blank()
+        do dbr.apps.action.grant("XW40")
+        
+        new data {}
+        do prepareView(db,params,data)
+        return data
+        
+        exception{ do catch(db,params,@null) }
+    }
+
+    function create(&db,&params,&data)
+    {
+        //#region create()
+        @use_transaction = @false
+        @just_read_entity = @true
+        
+        do dbr.apps.action.pre("XW41")
+        do dbr.begin(db)
+
+        ref entity = entity.create(db,params,data)
+
+        do dbr.apps.action.pos(entity)
+        do dbr.commit(db)
+        do dbr.apps.action.ext(entity)
+
+        return entity
+
+        exception{ do catch(db,params,data) }
+    }
+
+    function update(&db,&params,&data)
+    {
+        //#region update()
+        @use_transaction = @false
+        @just_read_entity = @true
+        
+        do dbr.apps.action.pre("XW42")
+        do dbr.begin(db)
+
+        ref entity = entity.update(db,params,data)
+
+        do dbr.apps.action.pos(entity)
+        do dbr.commit(db)
+        do dbr.apps.action.ext(entity)
+
+        return entity
+
+        exception{ do catch(db,params,data) }
+    }
+
+    function delete(&db,&params)
+    {
+        //#region delete()
+        @use_transaction = @false
+        
+        do dbr.apps.action.pre("XW43")
+        do dbr.begin(db)
+
+        ref entity = entity.delete(db,params)
+
+        do dbr.apps.action.pos(entity)
+        do dbr.commit(db)
+        do dbr.apps.action.ext(entity)
+
+        return entity
+
+        exception{ do catch(db,params,@null) }
+    }
+
+    catch::&db,&params,&data
+    {
+        //#region catch
+        do errordet(@false)
+        code = last_error_code()
+        error = last_error()
+
+        if dbr.in_transaction(db) { do dbr.rollback(db) }
+        if isset("@@_action_context") { do dbr.apps.action.log() }
+
+        if isanyword(@@(params,"$_operation"),"create,update")
+        {
+            if isnull(data) { ref data:record.create() }
+            if contains(error,"Duplicate entry") { error = "Entrada duplicada, ya existe una configuración para el `Usuario` o `Grupo` seleccionado." }
+
+            ref FormData = record.copy(data,"*")
+            do record.clear(data)
+            data<"form*"> : FormData
+            
+            do prepareView(db,params,data)
+        }
+        
+        do clear_exceptions()
+        do rise_error(code,error)
+    }
+}

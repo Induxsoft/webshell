@@ -63,8 +63,6 @@ module "webShell"
 
     function d_none(var) { return ifstr(var,"d-none","") }
 
-    if @isPrintView && open_database { do dbr.close(database) }
-
     installid=dbr.vars.get(database,"v12_install_id")
     if trim(installid)==""{installid=qname}
     v12_feedback_url=dbr.vars.get(database,"v12_feedback_url")
@@ -76,6 +74,8 @@ module "webShell"
     ref tpys=list.create_from_fields(rtpys)
 
     url_user = ftext("/!/dbext/user/#<@@(@_USER,'$uid')>/")
+
+    if @isPrintView && open_database { do dbr.close(database) }
     
     #$
     link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
@@ -134,7 +134,7 @@ module "webShell"
             main(id="main-sec")
             {
                 #!
-                url = ifstr(@url_go=="", "/webshell/frontpage.dkl", @url_go)
+                url = ifstr(@url_go=="", get_home_page(), @url_go)
                 ref split=split(url,"?")
                 url_path=""
                 params_url=""

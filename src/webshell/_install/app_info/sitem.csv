@@ -4,3 +4,8 @@ XW10,Ver mensajes de la organización,webshell
 XW11,Publicar mensajes a la organización,webshell
 webshell.notiman,Administración de notificaciones,webshell
 XW20,Administración de notificaciones,webshell.notiman
+webshell.cfgfpage,Configuración de páginas de inicio,webshell
+XW40,Configuración de páginas de inicio,webshell.cfgfpage
+XW41,Agregar página de inicio,webshell.cfgfpage
+XW42,Editar página de inicio,webshell.cfgfpage
+XW43,Eliminar página de inicio,webshell.cfgfpage

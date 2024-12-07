@@ -1,0 +1,33 @@
+#include "dkli.dkh"
+#!
+module "CfgfpageController"
+{
+    switch @@(@http_context,"$request/get/_view")
+    {
+        case "search-users"
+        {
+            point @list to cfgfpage.buscarUsuarios
+            break
+        }
+        case "search-groups"
+        {
+            point @list to cfgfpage.buscarGrupos
+            break
+        }
+        case "search-shortcuts"
+        {
+            point @list to cfgfpage.buscarShortcuts
+            break
+        }
+        default
+        {
+            point @list to cfgfpage.list
+            point @read to cfgfpage.read
+            point @blank to cfgfpage.blank
+            point @create to cfgfpage.create
+            point @update to cfgfpage.update
+            point @delete to cfgfpage.delete
+            break
+        }
+    }
+}

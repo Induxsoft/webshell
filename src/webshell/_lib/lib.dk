@@ -2,6 +2,8 @@
 #!
 module "lib"
 {
+    if not(isset("@http_context")) && isset("@crud_context") { ref @http_context = ifnull(@@(@crud_context,"&http"),record.create()) }
+
     function print_notis(&notis)
     {
         for i = 0; i < list.count(notis)
@@ -34,6 +36,51 @@ module "lib"
                 }
             }
         }
+    }
+    #!
+    function fd(name,type,&obj)
+    {
+        if isnull(obj) { ref obj:record.create() }
+        name = trim(str(name))
+        type = trim(str(type))
+        
+        if isanyword(type,"nm,num,number")
+        {
+            value = @("#./form/"+name)
+            if value == 0 { value = @("#input/"+name) }
+            if value == 0 { value = @@(obj,"#"+name) }
+            return value
+        }
+        else if isanyword(type,"rd,rdb,ch,chk")
+        {
+            bool = trim(@("$./form/"+name))
+            if bool == "" { bool = trim(@("$input/"+name)) }
+            if bool == "" { bool = trim(@@(obj,"$"+name)) }
+            return ifstr(parse.bool(bool),"checked","")
+        }
+        else
+        {
+            value = trim(@("$./form/"+name))
+            if value == "" { value = trim(@("$input/"+name)) }
+            if value == "" { value = trim(@@(obj,"$"+name)) }
+            return value
+        }
+    }
+    #!
+    function get_home_page()
+    {
+        ref db = @@(@http_context,"&session/idp/database")
+        ref user = @@(@http_context,"&session/user")
+        new params
+        {
+            @"uid": @@(user,"$uid")
+        }
+        
+        url = dbr.str(db,"select href from webshell_fpage where type = 'userid' and id = @uid",params)
+
+        if url == "" { url = "/webshell/frontpage.dkl" }
+
+        return url
     }
     #!
     current_url::hst
