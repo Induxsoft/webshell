@@ -52,6 +52,7 @@ module "Controller configs"
 	do crudl.routes.entity("/notif/","notif")
 	do crudl.routes.entity("/temp/","temp")
 	do crudl.routes.entity("/log/","log")
+	do crudl.routes.entity("/interchat/","interchat")
 
 	@dbmvc_path="crudl/"
 	@auto_crud=@true

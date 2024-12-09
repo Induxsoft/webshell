@@ -1,0 +1,14 @@
+#include "dkli.dkh"
+#!
+module ""
+{
+    @table_name="interchat_topic"
+    @list_query="SELECT i.sys_pk,
+                DATE_FORMAT(i.sys_dtcreated,'%Y-%m-%d') fecha,
+                DATE_FORMAT(i.sys_dtcreated,'%H:%i-%s')hora,
+                i.title,
+                IFNULL(i.closed,0)closed
+                FROM interchat_topic i
+                ORDER BY i.sys_dtcreated DESC
+                LIMIT 250"
+}

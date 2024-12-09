@@ -85,46 +85,15 @@ module "Administración de notificaciones"
         @"selected": @("#parameters/limit")
     }
 
-    function print_buttons()
-    {
-        btn_cls = "btn btn-sm border-secondary induxsoft-corners btn-main-action"
-        #$
-        button(class="#<btn_cls>" type="button" id="btn_new_notif" "data-bs-toggle"="modal" "data-bs-target"="#new_notif_modal"){$"Nuevo"}
-        #!
-    }
-
-    point @buttons to print_buttons
-
     new nav_config
     {
         @"title": "Administración de notificaciones"
         @"urlexit": "javascript:window.history.back();"
-        @"buttons*": @buttons
         member @"hidden"
         {
             @"print": @true
         }
     }
-
-    /* new table_config
-    {
-        @"datatable*": data
-        member @"columns"
-        {
-            member @"sndrid" { @"caption": "Remitente" }
-            member @"title" { @"caption": "Asunto" }
-            member @"start"
-            {
-                @"caption": "Inicio"
-                @"align": "center"
-            }
-            member @"end"
-            {
-                @"caption": "Cierre"
-                @"align": "center"
-            }
-        }
-    } */
 
     // Encapsula a la vista en su totalidad, todo lo que hay antes o después no se considera
     #$
@@ -201,135 +170,11 @@ module "Administración de notificaciones"
                     }
                 }
             }
-
-            div(class="modal fade" id="new_notif_modal" tabindex="-1" "aria-hidden"="true" "data-bs-backdrop"="false")
-            {
-                div(class="modal-dialog modal-lg") // modal-dialog-scrollable modal-dialog-centered
-                {
-                    div(class="modal-content rounded-0 p-0 border-0 shadow")
-                    {
-                        div(class="modal-header p-3 border-0")
-                        {
-                            h6(class="modal-title"){$""}
-                            div(class="w-100 rounded" role="alert" style="height:8px; background-color:#FCFCFC"){$""}
-                            button(type="button" class="btn-close btn-sm" "data-bs-dismiss"="modal" "aria-label"="Close"){$""}
-                        }
-                        div(class="modal-body py-0 px-2 bg-white")
-                        {
-                            form(class="card" action="/!/webshell/notiman/_new/" method="POST" id="new_notif_form")
-                            {
-                                nav(class="")
-                                {
-                                    div(class="nav nav-tabs bg-light" id="nav-tab" role="tablist")
-                                    {
-                                        button(class="nav-link active" type="button" role="tab" id="nav-principal-tab" "data-bs-toggle"="tab" "data-bs-target"="#nav-principal" "aria-controls"="nav-principal" "aria-selected"="true"){$"Principal"}
-                                        button(class="nav-link" type="button" role="tab" id="nav-opciones-tab" "data-bs-toggle"="tab" "data-bs-target"="#nav-opciones" "aria-controls"="nav-opciones" "aria-selected"="false"){$"Opciones"}
-                                    }
-                                }
-                                div(class="tab-content bg-white p-2")
-                                {
-                                    div(class="tab-pane fade show active" id="nav-principal" role="tabpanel" "aria-labelledby"="nav-principal-tab")
-                                    {
-                                        div(class="d-flex align-items-center border-bottom")
-                                        {
-                                            label(class="text-muted fw-bolder" "for"="sndrid"){$"De:"}
-                                            input(class="form-control rounded-0 border-0 no-shadow" type="text" name="sndrid" value="#<@('$http/session/user/name')>" id="sndrid")
-                                        }
-                                        div(class="d-flex align-items-center border-bottom")
-                                        {
-                                            label(class="text-muted fw-bolder" "for"="to"){$"para:"}
-                                            input(class="form-control rounded-0 border-0 no-shadow" type="hidden" name="to" value="" id="to")
-                                            /* div(class="form-select rounded-0 border-0 no-shadow ps-1" id="targets-container") {
-                                                span(class="d-inline-flex align-items-center gap-1 badge bg-light text-dark rounded-0 ms-1") {
-                                                    $"Hola" button(class="btn-close rounded-0 p-0 no-shadow" type="button" "aria-label"="Remove"){$""}
-                                                }
-                                                span(class="d-inline-flex align-items-center gap-1 badge bg-light text-dark rounded-0 ms-1") {
-                                                    $"Mundo" button(class="btn-close rounded-0 p-0 no-shadow" type="button" "aria-label"="Remove"){$""}
-                                                }
-                                            } */
-                                            select(class="form-select rounded-0 border-0 no-shadow" id="_to")
-                                            {
-                                                option(selected="" disabled="" hidden="" value=""){""}
-                                                optgroup(id="opt-gp-groups" label="Grupos"){$""}
-                                                optgroup(id="opt-gp-users" label="Usuarios"){$""}
-                                            }
-                                        }
-                                        div(class="d-flex align-items-center border-bottom")
-                                        {
-                                            label(class="text-muted fw-bolder" "for"="title"){$"Asunto:"}
-                                            input(class="form-control rounded-0 border-0 no-shadow" type="text" name="title" value="" id="title" required="")
-                                        }
-                                        textarea(class="form-control rounded-0 mt-2" name="body" id="body" rows="4"){$""}
-                                    }
-                                    div(class="tab-pane fade" id="nav-opciones" role="tabpanel" "aria-labelledby"="nav-opciones-tab")
-                                    {
-                                        div(class="row gx-2")
-                                        {
-                                            div(class="col-lg-4 col-sm-6") {
-                                                label(class="text-muted" "for"="start"){$"Inicio:"}
-                                                input(class="form-control rounded-0 no-shadow" type="datetime-local" name="start" value="" id="start")
-                                            }
-                                            div(class="col-lg-4 col-sm-6") {
-                                                label(class="text-muted" "for"="end"){$"Cierre:"}
-                                                input(class="form-control rounded-0 no-shadow" type="datetime-local" name="end" value="" id="end")
-                                            }
-                                            div(class="col-lg-4")
-                                            {
-                                                label(class="text-muted" "for"="target"){$"Abrir url asociada en:"}
-                                                select(class="form-select rounded-0" name="target" id="target")
-                                                {
-                                                    option(value="_self"){$"Misma pestaña"}
-                                                    option(value="_blank"){$"Nueva pestaña"}
-                                                }
-                                            }
-                                            div(class="col-12") {
-                                                label(class="text-muted" "for"="href"){$"Url asociada:"}
-                                                input(class="form-control rounded-0 no-shadow" type="url" name="href" value="" id="href" placeholder="https://...")
-                                            }
-                                            div(class="col-12")
-                                            {
-                                                label(class="text-muted" "for"="img"){$"Url a una imagen:"}
-                                                div(class="input-group")
-                                                {
-                                                    input(class="form-control rounded-0 no-shadow" type="text" name="img" value="" id="img" placeholder="https://...")
-                                                    button(class="btn btn-light border rounded-0 no-shadow" type="button" id="btn_show_media")
-                                                    {$'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>'}
-                                                    // label(class="btn btn-light border rounded-0" "for"="local-img" title="Subir imagen local")
-                                                    // {$'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-folder" viewBox="0 0 16 16"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a2 2 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4zm4.69-1.707A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981l.006.139q.323-.119.684-.12h5.396z"/></svg>'}
-                                                    // input(class="d-none" type="file" name="local-img" id="local-img" accept="image/png, image/jpg, image/jpeg")
-                                                }
-                                                "media-list"(id="notif_media_list" hidden=""
-                                                    "outline-selected"="true"
-                                                    "highlight-first"="false"
-                                                    "back-color-media"="#F8F8F8"
-                                                    "max-size-media"="5rem"
-                                                    "can-arrange"="false"
-                                                    "can-drag"="false"
-                                                    "can-drop"="false"
-                                                    "can-delete"="false"
-                                                    "media-prop"="src"
-                                                    "label-prop"="name"
-                                                    "miniature-prop"="src"
-                                                ){""}
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        div(class="modal-footer border-0")
-                        {
-                            button(type="button" class="btn btn-sm btn-primary rounded-0" id="btn_send_notif"){$"Enviar"}
-                        }
-                    }
-                }
-            }
         }
         // Contenido principal
         section(id="work_area")
         {
             #!
-            // do uie.dbeditable(table_config,table_id)
             for i = 0; i < list.count(data)
             {
                 ref obj = list.obj(data,i)
@@ -384,7 +229,7 @@ module "Administración de notificaciones"
                         {
                             div(class="card-body py-0")
                             {
-                                h5(class="card-title"){$"#<@@(obj,'$title')>"}
+                                h5(class="card-title"){"#<@@(obj,'$title')>"}
                                 div(class="card-text"){$"#<@@(obj,'$body')>"}
                                 a(class="card-link text-decoration-none expand" href="#" onclick="notiman.vermas(this)"){$"Ver mas"}
                             }

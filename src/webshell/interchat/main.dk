@@ -1,0 +1,110 @@
+#include "dkli.dkh"
+#!
+module ""
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "../config.dk"
+
+    do @context.begin(@crud_context)
+
+    ref data = ifnull(@("&."),list.create())
+
+    #$
+    div(class="container-fluid")
+    {
+        script(src="#<@INTER_CHAT>"){""}
+        #!
+        #include "modals.dk"
+        #$
+        div(class="row")
+        {
+            div(class="col-md-4 pe-0" id="col-1-chat")
+            {
+                div(class="card h-100")
+                {
+                    div(class="card-header")
+                    {
+                        div(class="d-flex")
+                        {
+                            h3{"Chats"}
+                            span(class="flex-grow-1"){""}
+                            button(class="btn btn-sm btn-secondary" id="btn_add_topic"){"+"}
+                        }
+                    }
+                    div(class="card-body")
+                    {
+                        nav
+                        {
+                            div(class="nav nav-tabs" id="nav-tab" role="tablist")
+                            {
+                                button(class="nav-link py-1 w-50 active" type="button" role="tab" id="nav-activas-tab" "data-bs-toggle"="tab" "data-bs-target"="#nav-activas" "aria-controls"="nav-activas" "aria-selected"="true"){"Activas"}
+                                button(class="nav-link py-1 w-50" type="button" role="tab" id="nav-archivadas-tab" "data-bs-toggle"="tab" "data-bs-target"="#nav-archivadas" "aria-controls"="nav-archivadas" "aria-selected"="true"){"Archivadas"}
+                            }
+                        }
+                        div(class="" id="module-interchat")
+                        {
+                            div(class="interchat-item pt-2")
+                            {
+                                div(class="d-flex")
+                                {
+                                    div(class="interchat-img")
+                                    {
+                                        p
+                                        {
+                                            $'<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="currentColor" class="bi bi-people-fill" viewBox="0 0 16 16">
+                                            <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
+                                            </svg>'
+                                        }
+                                    }
+                                    h5{"text 01"}
+                                    small{"2024-12-09"}
+                                }
+                                
+                                hr(class="p-0 m-0"){""}
+                            }
+                        } 
+                    }
+                }
+            }
+            div(class="col-md-8 ps-0" id="col-2-chat")
+            {
+                div(class="card h-100")
+                {
+                    div(class="card-body")
+                    {
+                        iframe(id="iframe-interchat" src="https://v12demo1.induxsoft.net/!/webshell/log/det01c/@/"){""}
+                    }
+                }
+            }
+        }
+        style
+        {
+            $'
+            #iframe-interchat
+            {
+                flex:1;
+                width: 100%;
+                height: 100%;
+            }
+            #col-1-chat
+            {
+                height: 90vh;
+            }
+            #col-2-chat
+            {
+                height: 90vh;
+            }
+            .nav-link.active
+            {
+                border: none !important;
+                border-bottom: 2px solid #0B5ED7 !important;
+                text-decoration: none !important;
+                color: #000 !important;
+                background-color: #F0F8FF !important;
+            }
+                
+            '
+        }
+    }
+}

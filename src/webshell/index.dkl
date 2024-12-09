@@ -18,6 +18,7 @@ module "index"
         do rise_error(99,"Conexión no establecida. Use la herramienta connectv12 para establecer el nombre cualificado de conexión para este sitio V12.")
     }
 
+    ref @_GET = @@(@http_context,"&request/get")
     ref @_USER = @@(@http_context,"&session/user")
 
     codeblock

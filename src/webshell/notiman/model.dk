@@ -14,7 +14,7 @@ module "Administración de notificaciones:notiman"
         n.body,
         IFNULL(n.img,'') img,
         IFNULL(n.href,'') href,
-        IF(IFNULL(n.target,0)=0, '', IF(n.target=1, '_blank', '_self')) target,
+        IF(IFNULL(n.target,0)=0, '', IF(n.target=1, '_blank', '_top')) target,
         IFNULL(DATE_FORMAT(n.start,'%Y-%m-%d %H:%i:%s'),'') start,
         IFNULL(DATE_FORMAT(n.end,'%Y-%m-%d %H:%i:%s'),'') end
     FROM sys_notif n
@@ -176,7 +176,7 @@ module "Administración de notificaciones:notiman"
 
     function GetMinis(&db,&params)
     {
-        ref minis = list.files("webshell/_static/img/minis","*")
+        ref minis = list.files(@PATH_IMG_NOTIS,"*")
         ref data = list.create()
 
         for i = 0; i < list.count(minis)
@@ -186,7 +186,7 @@ module "Administración de notificaciones:notiman"
             new mini
             {
                 @"name": file.justname(file)
-                @"src": path.concat(@IMG_MINIS,file.name(file))
+                @"src": path.concat(@IMG_NOTIS,file.name(file))
             }
             do list.add(data,mini)
         }

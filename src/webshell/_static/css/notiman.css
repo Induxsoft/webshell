@@ -42,8 +42,8 @@
 .notif-act-col { grid-area: actions; } */
 
 .notif-img-col img, .notif-img-col svg {
-    min-width:50px;
-    max-width:96px;
+    min-width:48px;
+    max-width:64px;
 }
 .notif-body-col .card-body {
     overflow: hidden;

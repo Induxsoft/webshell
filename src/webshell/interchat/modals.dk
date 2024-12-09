@@ -1,0 +1,37 @@
+#include "dkli.dkh"
+#!
+module ""
+{
+    #$
+    div(class="modal fade" id="modal_topic_main" tabindex="-1" role="dialog" "aria-labelledby"="modalforms" "aria-hidden"="true" "data-bs-backdrop"="false")
+    {
+        div(class= "modal-dialog modal-xs" role ="document")
+        {
+            div(class="modal-content")
+            {
+                div(class="modal-header")
+                {
+                    h5(class="modal-title" id="textomdl"){"Nuevo chat"}
+                    button(type="button" class="close border-0" "data-bs-dismiss"="modal" "aria-label"="Close")
+                    {
+                        span ("aria-hidden"="true") {$"&times;"}
+                    }
+                }
+                div(class="modal-body" id="bdymsg")
+                {
+                    label(style="color:red" id="lbl_alert_interchat" class="d-flex"){""}
+
+                    label{"Nombre:"}
+                    input(type="text" class="form-control" id="title" name="title" required="true" alert="El campo nombre es requerido")
+
+                    // label{"Motivo:"}
+                    // textarea(id="motivo" class="form-control"){""}
+                }
+                div(class="modal-footer" id="ftrAddClt")
+                {
+                    button(type="button" class="btn btn-sm btn-secondary" id="btn_add_interchat") { "Aceptar"}
+                }
+            }
+        }		
+    }
+}

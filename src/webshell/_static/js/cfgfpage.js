@@ -26,10 +26,6 @@ var fpage =
         });
         
         shorttype.addEventListener("change", (e) => {
-            this.ff["shortcut"].value = "";
-            this.ff["href"].value = "";
-            ik_shortcut.clear();
-
             if (e.target.value == "choose") {
                 shortinfo.hidden = true;
                 ik_shortcut.hidden = false;
@@ -74,5 +70,8 @@ var fpage =
     
             InduxsoftCrudlModel.Submit(this.form);
         });
+
+        const event = new Event("change", {bubbles:true, cancelable:true});
+        shorttype.dispatchEvent(event);
     }
 }

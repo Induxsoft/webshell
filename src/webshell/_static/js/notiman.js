@@ -7,9 +7,14 @@ var notiman =
     formId:"new_notif_form",
     form:null,
     ff:null,
+    initiate:false,
+    _config:{},
+    _params:{},
 
     init()
     {
+        if (this.initiate) return;
+
         this.dialog = document.getElementById(this.dialogId);
         this.media = document.getElementById(this.mediaId);
         this.form = document.getElementById(this.formId);
@@ -23,6 +28,7 @@ var notiman =
         const btn_show_media = document.getElementById("btn_show_media");
 
         submit?.addEventListener("click", () => { this.send() });
+        this.dialog.addEventListener("hidden.bs.modal", () => { this.form.reset() });
         // targets_container.addEventListener("click", () => {
         //     targets_combo.hidden = !targets_combo.hidden;
         //     if (!targets_combo.hidden) targets_combo.showPicker();
@@ -47,6 +53,7 @@ var notiman =
 
         this.getUsersAndGroups();
         this.getMinis();
+        this.initiate = true;
     },
 
     getUsersAndGroups()
@@ -118,6 +125,18 @@ var notiman =
         }
     },
 
+    dlgins()
+    {
+        if (!this.initiate) this.init();
+        
+        let instance = bootstrap.Modal.getInstance(this.dialog);
+        if (!instance) instance = new bootstrap.Modal(this.dialog);
+        
+        return instance;
+    },
+    showDialog(){this.dlgins().show()},
+    closeDialog(){this.dlgins().hide()},
+
     goto(href,target,event) {
         event.stopPropagation();
         window.open(href,target);
@@ -148,6 +167,8 @@ var notiman =
 
     send()
     {
+        if (!this.initiate) this.init();
+
         const select = this.ff["_to"];
         let to = []
         for (let i = 0; i < select.options.length; i++) {
@@ -168,12 +189,18 @@ var notiman =
             return
         }
 
+        let isNotiman = (this._params["_program"] === "notiman");
         this.ff["to"].value = JSON.stringify(to);
 
-        InduxsoftCrudlModel.Submit(this.form);
+        InduxsoftCrudlModel.Submit(this.form, {},
+            (data) => {
+                if (data?.message) {
+                    alert(data.message)
+                    return;
+                }
+                this.closeDialog();
+                if (isNotiman) top.top_screen.load(data.url_redir);
+            }
+        );
     }
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-    notiman.init();
-});

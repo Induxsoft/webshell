@@ -1,7 +1,11 @@
 #include "dkli.dkh"
 #!
-program
+program ""
 {
+    @PATH_IMG_NOTIS = "webshell/_static/img/notis"
+    @PATH_IMG_MINIS = "webshell/_static/img/minis"
+
+    @IMG_NOTIS = "/$/webshell/img/notis/"
     @IMG_MINIS = "/$/webshell/img/minis/"
 
     @CSS_WEBSHELL = "/$/webshell/css/webshell.css"
@@ -14,6 +18,7 @@ program
     @JS_NOTIMAN = "/$/webshell/js/notiman.js"
     @JS_CFGFPAGE = "/$/webshell/js/cfgfpage.js"
     @JS_LOG="/$/webshell/js/log.js"
+    @INTER_CHAT="/$/webshell/js/interchat.js"
     
     @ICON_V12 = "/$/webshell/img/icons/v12_2.png"
 

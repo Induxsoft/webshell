@@ -2,6 +2,11 @@ var WebShell =
 {
     mainsec: document.getElementById("main-sec"),
 
+    Notif:
+    {
+        Send(){ notiman.showDialog() }
+    },
+
     Panels:
     {
         Const:{

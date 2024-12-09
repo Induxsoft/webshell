@@ -26,7 +26,8 @@ module "lib"
                     div(class="notify-controls d-flex gap-2")
                     {
                         button(class="btn btn-sm px-2 btn-primary" title="Marcar como leido" onclick="top_screen.set_readed_notify('#<n_id>', event)"){$"Marcar como Leído"}
-                        #! if href != "" 
+                        #!
+                        if href != ""
                         {
                             nwhref = @URL_NOTIF_GO+n_id+"/"
                             target = ifstr(trgt==0,'',ifstr(trgt==1,'_blank','_self'))
@@ -35,6 +36,7 @@ module "lib"
                     }
                 }
             }
+            #!
         }
     }
     #!
@@ -76,10 +78,16 @@ module "lib"
             @"uid": @@(user,"$uid")
         }
         
-        url = dbr.str(db,"select href from webshell_fpage where type = 'userid' and id = @uid",params)
-
+        // Buscar y devolver página específica del usuario.
+        url = dbr.str(db,"SELECT href FROM webshell_fpage WHERE `type` = 'userid' AND id = @uid",params)
+        if url != "" { return url }
+        // Determinar página del grupo con mayor relevancia a la cual pertenece el usuario.
+        teams = trim(ranychars(to.json(@@(user,"&memberships/teams")),"[]"," "))
+        url = dbr.str(db,ftext("SELECT href FROM webshell_fpage WHERE `type` = 'groupid' AND id IN (#<teams>) ORDER BY relevance DESC LIMIT 1;"),@null)
+        if url != "" { return url }
+        // Devolver página predeterminada.
+        url = dbr.vars.getd(db,"wsbkoff_frontpage","/webshell/frontpage.dkl")
         if url == "" { url = "/webshell/frontpage.dkl" }
-
         return url
     }
     #!

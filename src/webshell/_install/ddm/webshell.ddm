@@ -82,6 +82,25 @@ model ""
             field "id"
         }
     }
+    //Interchat topic
+    entity "interchat_topic" : "TableModel"
+    {
+        @"title" string(50) required
+        @"closed" bool 
+    }
+
+    entity "interchat_topic_topic_member" : "TableModel"
+    {
+        @"topic" ref: "interchat_topic" required
+        @"user" ref: "tuser" required
+        @"admin" bool
+        
+        index "chat_topic_member_uq" unique
+        {
+            field "user"
+            field "topic"
+        }
+    }
     // Categorías jerárquicas de variables
     entity "varcategory"
     {

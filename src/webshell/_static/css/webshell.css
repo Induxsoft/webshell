@@ -42,7 +42,7 @@ body {
     background-color: var(--bg-main-color) !important;
     color: var(--text-main-color) !important;
 }
-.card {
+._card {
     width: 100px !important;
 }
 .footer{

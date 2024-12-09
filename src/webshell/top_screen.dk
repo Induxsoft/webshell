@@ -143,6 +143,9 @@ module "webShell"
                     url_path=list.str(split,0)
                     params_url="?"+list.str(split,1)
                 }
+                
+                // notification dialog
+                #include "webshell/dlg.notif.dk"
                 #$
 
                 iframe(id="_main_view" src="#<url>"){$""}
@@ -247,6 +250,7 @@ module "webShell"
         }       
     }
 
+    script(src="#<@JS_NOTIMAN>"){$""}
     script(src="#<@JS_WEBSHELL>"){$""}
     script(src="#<@JS_TOP_SCREEN>"){$""}
     script(type="text/javascript")
@@ -262,8 +266,8 @@ module "webShell"
         
         try
         {
-            //resuelve la url, para pasar todos los párametros a la vista, definidos en la url
-            if(iframe) {
+            // resuelve la url, para pasar todos los párametros a la vista, definidos en la url
+            if (iframe) {
                 var frame = iframe.contentDocument || iframe.contentWindow.document;
                 if("#<params_url>"!="") frame.location.href="#<url_path+params_url>";
             }
@@ -272,11 +276,6 @@ module "webShell"
         {
             console.error(e);
         }
-
-        /* window.addEventListener("resize", function(event) {
-            let height = (window.innerHeight - (navbar.scrollHeight + footer.scrollHeight));
-            main.style.height = height+"px";
-        }, true); */
 
         function opemodal()
         {
