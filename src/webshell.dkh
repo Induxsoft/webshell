@@ -63,6 +63,40 @@ module ":webshell"
 
         return ws_det_log
     }
+    detlog.files.save::detid, _entity_id
+    {
+        ref files = @@(@http_context,"&request/files")
+        if isnull(files) || @count(files) < 1 { return }
+
+        ref det = ifnull(webshell.wsdet.get(detid), record.create())
+        ref db = getDB()
+
+        if @@(det,"$var_files") == "" { det<"var_files"> : "ws_file_store" }
+        attachment_path = dbr.vars.get(db,@@(det,"$var_files"))
+        if trim(attachment_path) == "" { do rise_error(500,"No hay una ruta fisica para guardar los adjuntos") }
+
+        attachment_path=replace(attachment_path,"@qname",@@(@http_context,"$session/idp/qname"))
+        attachment_path=replace(attachment_path,"@det",detid)
+        attachment_path=replace(attachment_path,"@guid",_entity_id)
+
+        do dir.ensure(tolower(attachment_path))
+
+        for i = 0; i < @count(files)
+        {
+            ref file = @item(files,i)
+            if file.exists(@@(file,"$temp_file")) && @@(file,"$filename")!="" && @@(file,"#size")>0
+            {
+                userid = @@(@http_context,"$session/user/uid")
+                fileid = uuid()
+                filename = trim(replace(ranychars(@@(file,"$filename"),'\\/:*?"<>|(-)[+]#$%&=,'," ")," ","_"))
+                filepath = path.concat(attachment_path,fileid+file.extension(filename))
+
+                do webshell.detlog.add(@@(det,"#sys_pk"),_entity_id,userid,"",filename,fileid)
+                do webshell.detlog.file.add(fileid,filename)
+                do file.copy(@@(file,"$temp_file"),filepath)
+            }
+        }
+    }
     detlog.get::msgid
     {
         ref db=getDB()
