@@ -3,4 +3,13 @@
 module ""
 {
     @list_view="main.dk"
+
+    switch @@(params,"$_view")
+    {
+        case "search-user"
+        {
+            point @list to SearchUsers
+            break
+        }
+    }
 }

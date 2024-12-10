@@ -9,3 +9,9 @@ XW40,Configuración de páginas de inicio,webshell.cfgfpage
 XW41,Agregar página de inicio,webshell.cfgfpage
 XW42,Editar página de inicio,webshell.cfgfpage
 XW43,Eliminar página de inicio,webshell.cfgfpage
+webshell.interchat,"Chat internas",webshell
+XW30,Conversaciones internas,webshell.interchat
+XW31,Crear tópicos de conversación,webshell.interchat
+XW32,Acceder a cualquier conversación,webshell.interchat
+XW33,Cerrar cualquier conversación,webshell.interchat
+XW34,Eliminar conversaciones,webshell.interchat

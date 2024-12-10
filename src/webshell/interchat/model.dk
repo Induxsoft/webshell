@@ -4,11 +4,54 @@ module ""
 {
     @table_name="interchat_topic"
     @list_query="SELECT i.sys_pk,
+                i.sys_guid,
                 DATE_FORMAT(i.sys_dtcreated,'%Y-%m-%d') fecha,
                 DATE_FORMAT(i.sys_dtcreated,'%H:%i-%s')hora,
                 i.title,
                 IFNULL(i.closed,0)closed
                 FROM interchat_topic i
-                ORDER BY i.sys_dtcreated DESC
+                WHERE true
+                #<@conditional>
+                ORDER BY i.sys_dtcreated ASC
                 LIMIT 250"
+
+    @sql_users = "
+        SELECT
+            u.sys_pk,
+            u.userid,
+            u.username,
+            GROUP_CONCAT(g.groupid SEPARATOR '; ') _grupos,
+            GROUP_CONCAT(g.description SEPARATOR '; ') grupos
+        FROM tuser u
+            LEFT JOIN user_usergroup_ ug ON ug.users = u.sys_pk
+            LEFT JOIN usergroup g ON ug.groups=g.sys_pk
+        WHERE NOT IFNULL(u.sys_deleted,0)
+            AND NOT IFNULL(u.external,0)
+            AND IF(IFNULL(@fil_gpo,'-1')='-1', TRUE, ug.groups = @fil_gpo)
+            AND IF(IFNULL(@s,'')='', TRUE, (u.userid = @s OR u.username LIKE CONCAT('%',@s,'%')))
+        GROUP BY u.userid
+        ORDER BY u.username ASC
+        LIMIT 250;
+        "
+
+    list::&db,&params
+    {
+        @conditional="AND IFNULL(i.closed,0)=0 "
+        if @@(params,"#from") > 0
+        {
+            @conditional=@conditional + " AND i.sys_pk >=@from "
+        }
+        if parse.bool(@@(params,"close"))
+        {
+            @conditional="AND IFNULL(i.closed,0)=1 "
+        }
+
+        ref entity= entity.list(db,params)
+        return entity
+    }
+    SearchUsers::&db,&params
+    {
+        return dbr.list(db,ftext(@sql_users),params)
+    }
+    point @list to list
 }

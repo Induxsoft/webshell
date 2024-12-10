@@ -1,3 +1,4 @@
 "pack_id","app_id","app_title","created","app_info"
 webshell,webshell.notiman,Notificaciones,"2024-12-05T23:59:59","Administración de notificaciones"
 webshell,webshell.cfgfpage,Frontpage,"2024-12-06T23:59:59","Configuración de página de inicio"
+webshell,webshell.interchat,Chat internal,"2024-12-09T23:59:59","Chat internal"

@@ -22,14 +22,58 @@ module ""
                     label(style="color:red" id="lbl_alert_interchat" class="d-flex"){""}
 
                     label{"Nombre:"}
-                    input(type="text" class="form-control" id="title" name="title" required="true" alert="El campo nombre es requerido")
-
-                    // label{"Motivo:"}
-                    // textarea(id="motivo" class="form-control"){""}
+                    input(type="text" class="induxsoft-form-control" id="title" name="title" required="true" alert="El campo nombre es requerido")
                 }
                 div(class="modal-footer" id="ftrAddClt")
                 {
-                    button(type="button" class="btn btn-sm btn-secondary" id="btn_add_interchat") { "Aceptar"}
+                    button(type="button" class="btn btn-sm btn-secondary induxsoft-corners" id="btn_add_interchat") { "Aceptar"}
+                }
+            }
+        }		
+    }
+
+    div(class="modal fade" id="modal_topic_add_user" tabindex="-1" role="dialog" "aria-labelledby"="modalforms" "aria-hidden"="true" "data-bs-backdrop"="false")
+    {
+        div(class= "modal-dialog modal-xs" role ="document")
+        {
+            div(class="modal-content")
+            {
+                div(class="modal-header")
+                {
+                    h5(class="modal-title" id="textomdl"){"Agregar usuario"}
+                    button(type="button" class="close border-0" "data-bs-dismiss"="modal" "aria-label"="Close")
+                    {
+                        span ("aria-hidden"="true") {$"&times;"}
+                    }
+                }
+                div(class="modal-body" id="bdymsg")
+                {
+                    label(style="color:red" id="lbl_alert_interchat_user" class="d-flex"){""}
+
+                    label{"Usuario:"}
+                    $'
+                        <input-key 
+                            id="usuario"
+                            name="usuario"
+                            data-key="sys_pk"
+                            data-search="userid"
+                            data-text="username"
+                            data-source="./?s=@search&_view=search-user"
+                            box-title-text="Seleccione un usuario"
+                            box-placeholder-text="Buscar datos..."
+                            box-nodata-text="No se encontraron datos"
+                            disabled="#<disabled>"
+                            columns="userid,username"
+                            colcaptions="ID usuario,Nombre"
+                            control-styles="" required="true">
+                        </input-key>
+                        '
+
+                    select(class="induxsoft-form-select mt-2" name="" id="list_user" size="5" multiple=""){$""}
+                }
+                div(class="modal-footer" id="ftrAddClt")
+                {
+                    button(type="button" class="btn btn-sm btn-secondary induxsoft-corners" id="btn_add_interchat") { "Aceptar"}
                 }
             }
         }		

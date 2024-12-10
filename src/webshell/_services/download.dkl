@@ -27,7 +27,7 @@ module ""
     id=@@(params,"$id")+file.extension(@@(detfile,"$nombre"))
     filepath=path.concat(filepath,id)
     
-    if not(file.exists(filepath)){do rise_error(500,"No se encontró el archivo indicado")}
+    if not(file.exists(filepath)){do rise_error(500,"No se encontró el archivo indicado ")}
 
     //Establecer encabezado de respuesta http
     @http_context<"response/headers/content-type">:"application/octet-stream;charset=utf-8"

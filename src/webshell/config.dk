@@ -25,6 +25,7 @@ program ""
     @URL_ACTIONS = "/!/webshell/action/"
     @URL_NOTIF = "/!/webshell/notif/"
     @URL_NOTIF_GO = "/!/webshell/notif/go/"
+    @URL_BITACORA="/!/webshell/log/@det/@guid/"
     
     @HREF_HELP = "https://docs.induxsoft.net/es/productos/v12/"
     @FOOTER_LEGEND = "V12 Copyright(c) Induxsoft 2024 | Powered by Devkron"
@@ -38,4 +39,6 @@ program ""
     @SERVICE_DOWNLOAD_FILE_CHAT="/webshell/_services/download.dkl?detid=@detid&guid=@guid&id=@id"
 
     @TIME_LOAD_BITACORA= 1000 //EN MILISEGUNDOS
+
+    @DET_INTERCHAT="DET08G"
 }
