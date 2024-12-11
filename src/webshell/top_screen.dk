@@ -93,15 +93,19 @@ module "webShell"
                 #$
                 a(href="/" class="btn btn-sm border-0 color-inherit #<d_none(webshell_hide_home)>" title="Inicio") {$"#<@ICON_HOUSE_DOOR>"}
                 button(class="btn btn-sm border-0 color-inherit #<d_none(webshell_hide_actfnd)>" title="Acciones" id="btn_navbar_lightning") {$"#<@ICON_LIGHTNING>"}
-                div(class="btn-group #<d_none(webshell_hide_notif)>")
+                div(class="btn-group #<d_none(webshell_hide_notif)>" id="dropdown-notis")
                 {
-                    button(class="btn btn-sm border-0 color-inherit " title="Notificaciones" id="btn_notis" "data-bs-toggle"="dropdown" "data-bs-auto-close"="outside"){
+                    button(class="btn btn-sm border-0 color-inherit" title="Notificaciones" id="btn_notis" "data-bs-toggle"="dropdown" "data-bs-auto-close"="outside"){
                         $"#<@ICON_BELL>"
                         div(id="notis_num" class="#<ifstr(notis_num=='','d-none','')>"){ small(id="notis_num_text"){$"#<notis_num>"} }
                     }
-                    ul(class="dropdown-menu dropdown-menu-lg-end" "aria-labelledby"="dropdownMenuClickableInside" id="notis_container")
+                    ul(class="dropdown-menu dropdown-menu-lg-end" "aria-labelledby"="btn_notis" id="notis_container")
                     {
-                        li{ a(class="dropdown-item" href="/!/webshell/notiman/"){$"Administrar"} }
+                        li(class="d-flex justify-content-between align-items-center")
+                        {
+                            button(class="btn-sm btn-close mx-2 no-shadow" type="button" "aria-label"="Close" onclick="top_screen.close_notis()"){$""}
+                            a(class="dropdown-item" href="#" onclick="top_screen.load('/!/webshell/notiman/'); top_screen.close_notis();"){$"Administrar"}
+                        }
                         #
                         do print_notis(notis)
                         #$

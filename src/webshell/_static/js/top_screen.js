@@ -46,6 +46,14 @@ var top_screen =
     },
 
     // =============== NOTIFICACIONES
+    close_notis()
+    {
+        const notis = document.getElementById("btn_notis")
+        let instance = bootstrap.Dropdown.getInstance(notis);
+        if (!instance) instance = new bootstrap.Dropdown(notis);
+
+        instance.hide();
+    },
     set_interval_refresh_notifs()
     {
         let time = 60;
@@ -72,11 +80,15 @@ var top_screen =
     },
     print_notif(data)
     {
-        let template = `<li><a class="dropdown-item text-end" href="#" onclick="top_screen.load('/!/webshell/notiman/')">Administrar</a></li>`;
         let containr = document.querySelector('#notis_container');
         let notisnum = document.querySelector('#notis_num');
         let num_text = document.querySelector('#notis_num_text');
         let total_nt = (data.length < 1 ? '' : data.length > 5 ? '+5': data.length).toString();
+        let template = `
+        <li class="d-flex justify-content-between align-items-center">
+            <button class="btn-sm btn-close mx-2 no-shadow" type="button" aria-label="Close" onclick="top_screen.close_notis()"></button>
+            <a class="dropdown-item text-end" href="#" onclick="top_screen.load('/!/webshell/notiman/'); top_screen.close_notis();">Administrar</a>
+        </li>`;
         
         notisnum.classList.toggle('d-none', (total_nt==''));
         num_text.textContent = total_nt;

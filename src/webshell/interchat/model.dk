@@ -3,17 +3,22 @@
 module ""
 {
     @table_name="interchat_topic"
-    @list_query="SELECT i.sys_pk,
-                i.sys_guid,
-                DATE_FORMAT(i.sys_dtcreated,'%Y-%m-%d') fecha,
-                DATE_FORMAT(i.sys_dtcreated,'%H:%i-%s')hora,
-                i.title,
-                IFNULL(i.closed,0)closed
-                FROM interchat_topic i
-                WHERE true
-                #<@conditional>
-                ORDER BY i.sys_dtcreated ASC
-                LIMIT 250"
+    @list_query="SELECT distinct i.sys_pk,
+       i.sys_guid,
+       DATE_FORMAT(i.sys_dtcreated,'%Y-%m-%d') fecha,
+       DATE_FORMAT(i.sys_dtcreated,'%H:%i-%s')hora,
+       i.title,
+       IFNULL(i.closed,0)closed,
+       IFNULL((
+       	SELECT MAX(sys_pk) FROM ws_det_log lg WHERE lg.guid=i.sys_guid
+		 ),0)last_massage
+
+       FROM interchat_topic i
+       INNER JOIN interchat_topic_topic_member tu ON i.sys_pk=tu.topic
+       WHERE ifnull(i.sys_deleted,0)=0
+       #<@conditional>
+       ORDER BY i.sys_dtcreated ASC
+       LIMIT 250"
 
     @sql_users = "
         SELECT
@@ -36,6 +41,8 @@ module ""
 
     list::&db,&params
     {
+        do dbr.apps.action.grant("XW30")
+
         @conditional="AND IFNULL(i.closed,0)=0 "
         if @@(params,"#from") > 0
         {
@@ -45,13 +52,159 @@ module ""
         {
             @conditional="AND IFNULL(i.closed,0)=1 "
         }
+        ref user=CurrentUser(db)
+        params<"user">:@@(user,"#sys_pk")
 
-        ref entity= entity.list(db,params)
-        return entity
+        @conditional=@conditional + " AND tu.user=@user"
+
+        return entity.list(db,params)
     }
     SearchUsers::&db,&params
     {
         return dbr.list(db,ftext(@sql_users),params)
     }
-    point @list to list
+    CurrentUser::&db
+    {
+        new p{@"uid":@@(@http_context,"$session/user/uid")}
+        return dbr.rec(db,"select * from tuser where userid=@uid",p)
+    }
+    create::&db,&params,&data
+    {
+        do dbr.apps.action.grant("XW31")
+
+        @use_transaction=@false
+        do dbr.begin(db)
+            ref entity= entity.create(db,params,data)
+            new interchat_topic_topic_member
+            {
+                @"topic":@@(entity,"#sys_pk")
+                @"user":@@(CurrentUser(db),"#sys_pk")
+                @"admin" : 1
+            }
+            do dbr.save(db,"interchat_topic_topic_member",interchat_topic_topic_member)
+        do dbr.commit(db)
+        
+        exception
+        {
+            if dbr.in_transaction(db){do dbr.rollback(db)}
+            do rise_error(last_error_code(),last_error())
+        }
+        
+       return entity
+    }
+    
+    
+    create.users::&db,&params,&data
+    {
+        params<"topic">:@@(data,"$topic")
+        ref topic=dbr.rec(db,"select sys_pk,sys_guid from interchat_topic where sys_guid=@topic",params)
+        if isnull(topic){do rise_error(500,"Debe indicar una conversación")}
+
+        ref users=@@(data,"&users")
+        params<"pk_topic">:@@(topic,"#sys_pk")
+
+        for i = 0; i < @count(users)
+        {
+            ref user=@item(users,i)
+            params<"user">:@@(user,"#user")
+
+            exist_user=dbr.num(db,"select user from interchat_topic_topic_member where topic=@pk_topic and user=@user",params)
+            
+            if exist_user < 1
+            {
+                new interchat_topic_topic_member
+                {
+                    @"topic":@@(topic,"#sys_pk")
+                    @"user":@@(user,"#user")
+                    @"admin" : parse.bool(@@(user,"admin"))
+                }
+                do dbr.save(db,"interchat_topic_topic_member",interchat_topic_topic_member)
+            }
+        }
+        return users
+    }
+    delete.interchat::&db,params
+    {
+        do dbr.apps.action.grant("XW34")
+        res=dbr.execute(db,"update interchat_topic set sys_deleted=1 where sys_guid=@_entity_id",params)
+        return res
+    }
+    close.interchat::&db,&params
+    {
+        do dbr.apps.action.grant("XW33")
+        res=dbr.execute(db,"update interchat_topic set closed=1 where sys_guid=@_entity_id",params)
+        return res
+    }
+    interchat.GetUser::&db,params
+    {
+        return dbr.list(db,"SELECT
+                        distinct u.sys_pk,
+                        u.userid,
+                        u.username,
+                        ifnull(it.admin, 0) isadmin
+                    FROM
+                        tuser u
+                        INNER JOIN interchat_topic_topic_member it ON u.sys_pk = it.user
+                        INNER JOIN interchat_topic t ON it.topic = t.sys_pk
+                    WHERE
+                        t.sys_guid = @_entity_id",params)
+    }
+
+    delete.users::&db,&params,&data
+    {   
+        ref topic=dbr.rec(db,"select sys_pk,sys_guid from interchat_topic where sys_guid=@_entity_id",params)
+        if isnull(topic){do rise_error(500,"Debe indicar una conversación")}
+
+        params<"pk_topic">:@@(topic,"#sys_pk")
+
+        ref users=@@(data,"&users")
+
+        ref users_deletes=list.create()
+        for i = 0; i < @count(users)
+        {
+            user=list.str(users,i)
+            params<"user">:user
+
+            res= dbr.execute(db,"delete from interchat_topic_topic_member where topic=@pk_topic and user=@user",params)
+            if res
+            {
+                new obj{@"user":user}
+                do list.add(users_deletes,obj)
+            }
+        }
+
+        return users_deletes
+    }
+    #!
+    get.last_messages::&db,&params,&data
+    {
+        ref chats=@@(data,"&chats")
+        ref user=CurrentUser(db)
+        params<"user">:@@(user,"#sys_pk")
+        for i = 0; i < @count(chats)
+        {
+            ref chat=@item(chats,i)
+
+            using params
+            {
+                @"chat":@@(chat,"#chat")
+                @"last_massage":@@(chat,"#last_massage")
+            }
+            last_massage= dbr.num(db,"SELECT DISTINCT
+                    ifnull(max(l.sys_pk),0)
+                    from ws_det_log l
+                    INNER JOIN interchat_topic t ON l.guid=t.sys_guid
+                    INNER JOIN interchat_topic_topic_member m ON t.sys_pk=m.topic
+                    WHERE t.sys_pk=@chat AND l.sys_pk>@last_massage
+                    AND m.user=@user",params)
+
+            if last_massage > 0
+            {
+                chat<"last_massage">:last_massage
+                chat<"read">:@true
+            }
+        }
+        return chats
+    }
+    
 }

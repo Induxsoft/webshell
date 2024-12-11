@@ -22,7 +22,7 @@ module ""
                     label(style="color:red" id="lbl_alert_interchat" class="d-flex"){""}
 
                     label{"Nombre:"}
-                    input(type="text" class="induxsoft-form-control" id="title" name="title" required="true" alert="El campo nombre es requerido")
+                    input(type="text" class="induxsoft-form-control" id="title" name="title" maxlength="50" required="true" alert="El campo nombre es requerido")
                 }
                 div(class="modal-footer" id="ftrAddClt")
                 {
@@ -34,13 +34,13 @@ module ""
 
     div(class="modal fade" id="modal_topic_add_user" tabindex="-1" role="dialog" "aria-labelledby"="modalforms" "aria-hidden"="true" "data-bs-backdrop"="false")
     {
-        div(class= "modal-dialog modal-xs" role ="document")
+        div(class= "modal-dialog modal-lg" role ="document")
         {
             div(class="modal-content")
             {
                 div(class="modal-header")
                 {
-                    h5(class="modal-title" id="textomdl"){"Agregar usuario"}
+                    h5(class="modal-title" id="textomdl"){"Usuarios"}
                     button(type="button" class="close border-0" "data-bs-dismiss"="modal" "aria-label"="Close")
                     {
                         span ("aria-hidden"="true") {$"&times;"}
@@ -50,30 +50,62 @@ module ""
                 {
                     label(style="color:red" id="lbl_alert_interchat_user" class="d-flex"){""}
 
-                    label{"Usuario:"}
-                    $'
-                        <input-key 
-                            id="usuario"
-                            name="usuario"
-                            data-key="sys_pk"
-                            data-search="userid"
-                            data-text="username"
-                            data-source="./?s=@search&_view=search-user"
-                            box-title-text="Seleccione un usuario"
-                            box-placeholder-text="Buscar datos..."
-                            box-nodata-text="No se encontraron datos"
-                            disabled="#<disabled>"
-                            columns="userid,username"
-                            colcaptions="ID usuario,Nombre"
-                            control-styles="" required="true">
-                        </input-key>
-                        '
-
-                    select(class="induxsoft-form-select mt-2" name="" id="list_user" size="5" multiple=""){$""}
+                    div(id="module-modal-users")
+                    {
+                        div(class="row")
+                        {
+                            div(class="col-lg-8")
+                            {
+                                label{"Usuario:"}
+                                $'
+                                    <input-key 
+                                        id="usuario"
+                                        name="usuario"
+                                        data-key="sys_pk"
+                                        data-search="userid"
+                                        data-text="username"
+                                        data-source="./?s=@search&_view=search-user"
+                                        box-title-text="Seleccione un usuario"
+                                        box-placeholder-text="Buscar datos..."
+                                        box-nodata-text="No se encontraron datos"
+                                        disabled=""
+                                        columns="userid,username"
+                                        colcaptions="ID usuario,Nombre"
+                                        control-styles="" required="true">
+                                    </input-key>
+                                    '
+                            }
+                            div(class="col-lg-2 mt-4")
+                            {
+                                label(class="me-2"){"Admin:"}
+                                input(type="checkbox" id="check_admin" name="admin")
+                            }
+                            div(class="col-lg-2 mt-4")
+                            {
+                                button(class="btn btn-sm btn-secondary induxsoft-corners" onclick="interchat.AddUser();"){"Agregar"}
+                            }
+                            
+                        }
+                        
+                        hr{}
+                    }
+                    
+                    div(class="d-flex justify-content-end")
+                    {
+                        button(class="border-0" title="Quitar usuario(s) seleccionados" onclick="interchat.DeleteUser();" id="hm_btn_del_user")
+                        {
+                            $'
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-x-fill" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m6.146-2.854a.5.5 0 0 1 .708 0L14 6.293l1.146-1.147a.5.5 0 0 1 .708.708L14.707 7l1.147 1.146a.5.5 0 0 1-.708.708L14 7.707l-1.146 1.147a.5.5 0 0 1-.708-.708L13.293 7l-1.147-1.146a.5.5 0 0 1 0-.708"/>
+                            </svg>
+                            '
+                        }
+                    }
+                    select(class="induxsoft-form-control mt-2" name="" id="list_user" size="5" multiple=""){$""}
                 }
                 div(class="modal-footer" id="ftrAddClt")
                 {
-                    button(type="button" class="btn btn-sm btn-secondary induxsoft-corners" id="btn_add_interchat") { "Aceptar"}
+                    button(type="button" class="btn btn-sm btn-secondary induxsoft-corners" id="btn_add_interchat_user") { "Aceptar"}
                 }
             }
         }		

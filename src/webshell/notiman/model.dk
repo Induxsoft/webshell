@@ -8,7 +8,7 @@ module "Administración de notificaciones:notiman"
     @list_query = "
     SELECT
         n.sys_guid id,
-        IFNULL(DATE_FORMAT(n.sys_dtcreated,'%Y-%m-%d %H:%i:%s'),'') created,
+        DATE_FORMAT(n.sys_dtcreated,'%Y-%m-%d %H:%i:%s') created,
         n.sndrid,
         n.title,
         n.body,
@@ -17,7 +17,10 @@ module "Administración de notificaciones:notiman"
         IF(IFNULL(n.target,0)=0, '', IF(n.target=1, '_blank', '_top')) target,
         IFNULL(DATE_FORMAT(n.start,'%Y-%m-%d %H:%i:%s'),'') start,
         IFNULL(DATE_FORMAT(n.end,'%Y-%m-%d %H:%i:%s'),'') end
+        #<fields>
     FROM sys_notif n
+        INNER JOIN sys_notif_usr nu ON nu.notif = n.sys_pk
+        INNER JOIN tuser u ON nu.user = u.sys_pk
         #<joins>
     WHERE
         #<conditions>
@@ -32,7 +35,11 @@ module "Administración de notificaciones:notiman"
         _show = tolower(trim(@@(params,"$_show")))
         limit = field.dnum(params,"limit",10)
         fdr_field = ""
+        fields = ""
+        joins = ""
         conditions = ""
+        groupby = ""
+        orderby = ""
 
         // Establecer filtros predeterminados y preparar consulta
         if limit < 1 && limit != -1 { limit = 10 }
@@ -47,7 +54,7 @@ module "Administración de notificaciones:notiman"
             {
                 //fdr_init
                 @"fdr_field": field.dnum(params,"fdr_field",1)
-                @"fdr_mode": field.dstr(params,"fdr_mode","month")
+                @"fdr_mode": field.dstr(params,"fdr_mode","lastdays")
                 // [month]
                 @"fdr_year": field.dnum(params,"fdr_year",curr_year)
                 @"fdr_month": field.dnum(params,"fdr_month",curr_month)
@@ -66,16 +73,13 @@ module "Administración de notificaciones:notiman"
             fdr_field = field.dstr(notif_date_fields, @@(params,"#fdr_field"), "n.start")
 
             if _show == "enviadas" {
+                fields = ",GROUP_CONCAT(CONCAT(':',nu.readed,u.userid) SEPARATOR ' ') usuarios"
                 conditions = conditions + "n.sndrid = CONCAT('@',@uid)"
+                groupby = "n.sys_pk"
             }
             else
             {
-                joins = "
-                INNER JOIN sys_notif_usr nu ON nu.notif = n.sys_pk
-                INNER JOIN tuser u ON nu.user = u.sys_pk
-                INNER JOIN sys_session ss ON ss.iuser = u.sys_pk
-                "
-
+                joins = "INNER JOIN sys_session ss ON ss.iuser = u.sys_pk"
                 conditions = conditions + "ss.sys_guid = @ids AND IFNULL(nu.readed,0)"
             }
 
@@ -102,11 +106,7 @@ module "Administración de notificaciones:notiman"
             _show = "pendientes"
             limit = 250
 
-            joins = "
-            INNER JOIN sys_notif_usr nu ON nu.notif = n.sys_pk
-            INNER JOIN tuser u ON nu.user = u.sys_pk
-            INNER JOIN sys_session ss ON ss.iuser = u.sys_pk
-            "
+            joins = "INNER JOIN sys_session ss ON ss.iuser = u.sys_pk"
 
             conditions = "
             ss.sys_guid = @ids
@@ -123,6 +123,8 @@ module "Administración de notificaciones:notiman"
             @"uid": @@(@http_context,"$session/user/uid")
         }
 
+        if groupby != "" { conditions = conditions + " GROUP BY "+groupby }
+        if orderby != "" { conditions = conditions + " ORDER BY "+orderby }
         if limit != -1 { conditions = conditions + " LIMIT @limit" }
 
         conditions = ftext(conditions)
@@ -172,6 +174,30 @@ module "Administración de notificaciones:notiman"
         resp<"url_redir"> : "/!/webshell/notiman/?_show=enviadas"
         
         return resp
+    }
+
+    function GetInfo(&db,&params)
+    {
+        ref notif = dbr.rec(db,"SELECT title, body FROM sys_notif WHERE (sys_pk = @_entity_id OR sys_guid = @_entity_id)",params)
+        sql = "
+        SELECT
+            u.userid,
+            u.username,
+            nu.readed,
+            DATE_FORMAT(nu.sys_timestamp,'%Y-%m-%d %H:%i:%s') readedAt
+        FROM sys_notif n
+            INNER JOIN sys_notif_usr nu ON nu.notif = n.sys_pk
+            INNER JOIN tuser u ON nu.user = u.sys_pk
+        WHERE (n.sys_pk = @_entity_id OR n.sys_guid = @_entity_id)
+        "
+        ref users = dbr.list(db,sql,params)
+
+        new data
+        {
+            @"notif*": notif
+            @"users*": users
+        }
+        return data
     }
 
     function GetMinis(&db,&params)

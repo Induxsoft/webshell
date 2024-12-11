@@ -29,12 +29,12 @@ module "Administración de notificaciones"
 
     new fdr_init
     {
-        @"fdr_mode": field.dstr(@_GET,"fdr_mode","month")
+        @"fdr_mode": field.dstr(@_GET,"fdr_mode","lastdays")
         // [month]
         @"fdr_year": field.dnum(@_GET,"fdr_year",curr_year)
         @"fdr_month": field.dnum(@_GET,"fdr_month",curr_month)
         // [lastdays]
-        @"fdr_range": field.dnum(@_GET,"fdr_range",30)
+        @"fdr_range": field.dnum(@_GET,"fdr_range",15)
         // [range]
         @"fdr_from": field.dstr(@_GET,"fdr_from","")
         @"fdr_to": field.dstr(@_GET,"fdr_to","")
@@ -185,6 +185,7 @@ module "Administración de notificaciones"
 
                 show_btn_go = (href != "")
                 show_btn_done = (show_tab == "pendientes")
+                show_btn_info = (show_tab == "enviadas")
 
                 #$
                 div(class="card mb-2 p-1 p-md-3 notif")
@@ -233,11 +234,28 @@ module "Administración de notificaciones"
                                 div(class="card-text"){$"#<@@(obj,'$body')>"}
                                 a(class="card-link text-decoration-none expand" href="#" onclick="notiman.vermas(this)"){$"Ver mas"}
                             }
+                            div(class="card-footer bg-white py-0")
+                            {
+                                div(class="d-flex justify-content-between align-items-center")
+                                {
+                                    div(class=""){ small(class="text-muted"){"#<@@(obj,'$start')>"} }
+                                    div(class="" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;")
+                                    {
+                                        #!
+                                        check0 = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-all" viewBox="0 0 16 16"><path d="M8.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L2.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093L8.95 4.992zm-.92 5.14.92.92a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 1 0-1.091-1.028L9.477 9.417l-.485-.486z"/></svg>'
+                                        check1 = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-all text-primary" viewBox="0 0 16 16"><path d="M8.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L2.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093L8.95 4.992zm-.92 5.14.92.92a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 1 0-1.091-1.028L9.477 9.417l-.485-.486z"/></svg>'
+
+                                        usuarios = replace(replace(@@(obj,"$usuarios"), ":0",check0), ":1",check1)
+                                        #$
+                                        small{$"#<usuarios>"}
+                                    }
+                                }
+                            }
                         }
                         div(class="col-md-auto notif-act-col")
                         {$""
                             #!
-                            if show_btn_go || show_btn_done
+                            if show_btn_go || show_btn_done || show_btn_info
                             {
                                 #$ 
                                 div(class="btn-goup d-sm-none notif-gp-act-cont2" role="group")
@@ -246,7 +264,12 @@ module "Administración de notificaciones"
                                     button(class="btn bg-transparent btn-sm rounded-0 no-shadow" type="button" id="notif-group-actions" "data-bs-toggle"="dropdown" "aria-expanded"="false")
                                     {$'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16"><path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"/></svg>'}
                                     ul(class="dropdown-menu" "aria-labelledby"="notif-group-actions")
-                                    {
+                                    {$""
+                                        #!
+                                        if show_btn_info {
+                                            // "data-bs-toggle"="offcanvas" "data-source"="#<notif_id>" "data-bs-target"="#notif-info" "aria-controls"="notif-info"
+                                            #$ li{ a(class="dropdown-item" href="#" onclick="notiman.getInfo('#<notif_id>')"){$"Info."} }
+                                        }
                                         #!
                                         if show_btn_go {
                                             #$ li{ a(class="dropdown-item" href="#" onclick="notiman.goto('#<href>','#<target>',event)"){$"Abrir vínculo"} }
@@ -258,8 +281,8 @@ module "Administración de notificaciones"
                                         #$
                                     }
                                 }
-                                div(class="d-none d-sm-flex flex-lg-row flex-sm-column justify-content-end gap-2 notif-gp-act-cont1")
-                                {
+                                div(class="d-none d-sm-flex flex-lg-row flex-sm-column justify-content-end gap-1 notif-gp-act-cont1")
+                                {$""
                                     #!
                                     if show_btn_go {
                                         #$ button(class="btn btn-primary btn-sm" type="button" onclick="notiman.goto('#<href>','#<target>',event)"){$"Abrir vínculo"}
@@ -321,7 +344,19 @@ module "Administración de notificaciones"
                 }
             }
             #$
-            $""
+            div(class="offcanvas offcanvas-end" tabindex="-1" id="notif-info" "aria-labelledby"="notif-info-title")
+            {
+                div(class="offcanvas-header")
+                {
+                    h5(id="notif-info-title mb-0"){"Información"}
+                    button(class="btn-close text-reset" type="button" "data-bs-dismiss"="offcanvas" "aria-label"="Close"){""}
+                }
+                div(class="offcanvas-body")
+                {
+                    div(class="px-2 mb-1" id="notif-info-message" style="white-space:pre-wrap;"){$""}
+                    div(class="card border-0"){div(class="card-body py-1" id="notif-info-users"){$""}}
+                }
+            }
         }
         // Resúmenes y datos al pie
         section(id="bottom_area")

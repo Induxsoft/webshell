@@ -10,6 +10,7 @@ var notiman =
     initiate:false,
     _config:{},
     _params:{},
+    _initialData:{},
 
     init()
     {
@@ -26,8 +27,18 @@ var notiman =
         // const img = document.getElementById("img");
         // const localimg = document.getElementById("local-img");
         const btn_show_media = document.getElementById("btn_show_media");
+        
+        this.dialog.addEventListener("shown.bs.modal", () => {
+            Object.entries(this._initialData).forEach(entry => {
+                const [name, value] = entry;
+                this.ff[name].value = value;
+            });
 
-        submit?.addEventListener("click", () => { this.send() });
+            let def = this.defdata();
+    
+            this.ff["title"].value ||= def.title;
+            this.ff["href"].value ||= def.href;
+        });
         this.dialog.addEventListener("hidden.bs.modal", () => { this.form.reset() });
         // targets_container.addEventListener("click", () => {
         //     targets_combo.hidden = !targets_combo.hidden;
@@ -46,10 +57,9 @@ var notiman =
 
         //     img.value = file?.name;
         // });
+        this.media.onClicking = (data) => { this.ff["img"].value = data.src; }
         btn_show_media.addEventListener("click", () => { this.media.hidden = !this.media.hidden });
-        this.media.onClicking = (data) => {
-            this.ff["img"].value = data.src;
-        }
+        submit?.addEventListener("click", () => { this.send() });
 
         this.getUsersAndGroups();
         this.getMinis();
@@ -75,7 +85,7 @@ var notiman =
             opt_gp_groups.innerHTML = "";
             groups.forEach(gpo => {
                 const option = document.createElement("option");
-                option.value = gpo.goupid;
+                option.value = gpo.groupid;
                 option.text = gpo.description;
                 option.setAttribute("type","group");
 
@@ -107,6 +117,60 @@ var notiman =
             this.media.setData(data);
         })
         .catch(error => alert(error.message ?? JSON.stringify(error)))
+    },
+
+    getInfo(id)
+    {
+        const openNotifInfo = function() {
+            const notif_info = document.getElementById("notif-info");
+            let instance = bootstrap.Offcanvas.getInstance(notif_info);
+            if (!instance) instance = new bootstrap.Offcanvas(notif_info);
+            instance.show();
+        }
+
+        let check0 = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-all" viewBox="0 0 16 16"><path d="M8.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L2.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093L8.95 4.992zm-.92 5.14.92.92a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 1 0-1.091-1.028L9.477 9.417l-.485-.486z"/></svg>'
+        let check1 = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-all text-primary" viewBox="0 0 16 16"><path d="M8.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L2.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093L8.95 4.992zm-.92 5.14.92.92a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 1 0-1.091-1.028L9.477 9.417l-.485-.486z"/></svg>'
+
+        let url = "/!/webshell/notiman/"+id+"/get-info/"
+        fetch(url).then(resp => resp.json())
+        .then(data => {
+            if (data?.message) {
+                alert(data.message);
+                return;
+            }
+
+            const notif_info_message = document.getElementById("notif-info-message");
+            const notif_info_users = document.getElementById("notif-info-users");
+            
+            notif_info_message.innerHTML = data.notif.body;
+            notif_info_users.innerHTML = "";
+            data.users.forEach(obj => {
+                let div = document.createElement("div")
+                div.classList.add("d-flex", "justify-content-between", "border-bottom", "mb-1");
+                
+                div.innerHTML = '<div class="d-flex align-items-center gap-1">'+(obj.readed ? check1 : check0)+'<span>'+obj.username+'</span></div>'
+                if (obj.readed) div.innerHTML += '<span>'+obj.readedAt+'</span>';
+
+                notif_info_users.appendChild(div);
+            });
+
+            openNotifInfo();
+        })
+        .catch(error => alert(error.message ?? JSON.stringify(error)))
+    },
+
+    defdata()
+    {
+        const _main_view = document.getElementById("_main_view");
+        const _view = _main_view.contentDocument || _main_view.contentWindow.document;
+
+        const v12navbar_title = _view.getElementById("v12FormBar_title");
+        let title = (v12navbar_title?.textContent ?? "").trim() || _view.title.trim();
+        
+        return {
+            title: title,
+            href: _view.location.href
+        }
     },
 
     vermas(el) {

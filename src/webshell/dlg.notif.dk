@@ -1,6 +1,6 @@
 #include "dkli.dkh"
 #$
-div(class="modal fade" id="new_notif_modal" tabindex="-1" "aria-hidden"="true" "data-bs-backdrop"="false")
+div(class="modal fade" id="new_notif_modal" tabindex="-1" "data-bs-backdrop"="false") //"aria-hidden"="true"
 {
     div(class="modal-dialog modal-lg") // modal-dialog-scrollable modal-dialog-centered
     {

@@ -4,11 +4,42 @@ module ""
 {
     @list_view="main.dk"
 
+    point @create to create
+    point @list to list
+
     switch @@(params,"$_view")
     {
         case "search-user"
         {
             point @list to SearchUsers
+            break
+        }
+        case "get-users"
+        {
+            point @read to interchat.GetUser
+            break
+        }
+        case "add-users"
+        {
+            point @create to create.users
+        }
+        case "del-users"
+        {
+            point @update to delete.users
+        }
+        case "del-interchat"
+        {
+            point @delete to delete.interchat
+            break
+        }
+        case "close-interchat"
+        {
+            point @delete to close.interchat
+            break
+        }
+        case "get-interchat"
+        {
+            point @update to get.last_messages
             break
         }
     }

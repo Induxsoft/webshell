@@ -16,5 +16,11 @@ module "NotimanController"
             point @list to notiman.GetMinis
             break
         }
+        case "get-info"
+        {
+            point @list to notiman.GetInfo
+            point @read to notiman.GetInfo
+            break
+        }
     }
 }

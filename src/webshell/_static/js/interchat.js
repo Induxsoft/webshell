@@ -17,6 +17,20 @@ var interchat=
         this.iframe_interchat=document.getElementById("iframe-interchat");
         this.usuario=document.getElementById("usuario");
         this.list_user=document.getElementById("list_user");
+        this.btn_add_interchat_user=document.getElementById("btn_add_interchat_user");
+        this.module_modal_users=document.getElementById("module-modal-users");
+        this.module_iframe_interchat=document.getElementById("module-iframe-interchat");
+        this.module_header=document.getElementById("module-header");
+        this.interchat_init_page=document.getElementById("interchat-init-page");
+
+        //botones headers chat
+        this.h_btn_add_user=document.getElementById("h_btn_add_user");
+        this.h_btn_list_user=document.getElementById("h_btn_list_user");
+        this.h_btn_close_chat=document.getElementById("h_btn_close_chat");
+        this.h_btn_del_chat=document.getElementById("h_btn_del_chat");
+        this.hm_btn_del_user=document.getElementById("hm_btn_del_user");
+
+        this.check_admin=document.getElementById("check_admin");
 
         if(this.btn_add_topic)this.btn_add_topic.addEventListener("click",()=>{interchat.OpenModal();});
         if(this.btn_add_interchat)this.btn_add_interchat.addEventListener("click",()=>{interchat.SaveTopic();});
@@ -25,7 +39,7 @@ var interchat=
                             <div class="d-flex align-items-center">
                                 <div class="interchat-img">
                                     <p>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="currentColor" class="bi bi-people-fill" viewBox="0 0 16 16">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="50" fill="currentColor" class="bi bi-people-fill" viewBox="0 0 16 16">
                                             <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"></path>
                                         </svg>
                                     </p>
@@ -34,12 +48,12 @@ var interchat=
                                 <h5 class="ms-2">@title</h5>
 
                                 <div class="flex-grow-1 d-flex justify-content-end">
-                                    <button class="border-0 me-2" onclick="interchat.OpenModalUser(event,'@guid');">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill-add" viewBox="0 0 16 16">
-                                            <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0m-2-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
-                                            <path d="M2 13c0 1 1 1 1 1h5.256A4.5 4.5 0 0 1 8 12.5a4.5 4.5 0 0 1 1.544-3.393Q8.844 9.002 8 9c-5 0-6 3-6 4"/>
-                                        </svg>
-                                    </button>
+
+                                    <svg class="me-2 notif-chat d-none" id="noti-@guid" xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-chat-dots" viewBox="0 0 16 16">
+                                    <path d="M5 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0m4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0m3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
+                                    <path d="m2.165 15.803.02-.004c1.83-.363 2.948-.842 3.468-1.105A9 9 0 0 0 8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6a10.4 10.4 0 0 1-.524 2.318l-.003.011a11 11 0 0 1-.244.637c-.079.186.074.394.273.362a22 22 0 0 0 .693-.125m.8-3.108a1 1 0 0 0-.287-.801C1.618 10.83 1 9.468 1 8c0-3.192 3.004-6 7-6s7 2.808 7 6-3.004 6-7 6a8 8 0 0 1-2.088-.272 1 1 0 0 0-.711.074c-.387.196-1.24.57-2.634.893a11 11 0 0 0 .398-2"/>
+                                    </svg>
+
                                     <small>@fecha</small>
                                 </div>                                
                             </div>
@@ -47,39 +61,353 @@ var interchat=
                         </div>`;
 
         if(this.module_interchat)this.module_interchat.innerHTML="";
-        if(this.usuario)this.usuario.addEventListener("change",()=>{interchat.AddUser();});
+        // if(this.usuario)this.usuario.addEventListener("change",()=>{});
+        if(this.btn_add_interchat_user)this.btn_add_interchat_user.addEventListener("click",()=>{interchat.SaveUsers();});
+        
+        this.PageInit();
 
         this.PrintChat(this.array);
         this.StartInterval();
         
     },
+
+    getFooterChat()
+    {
+        var bitacora=interchat.iframe_interchat;
+        const _view = bitacora.contentDocument || bitacora.contentWindow.document;
+
+        if(!_view)return null;
+
+        return _view.getElementById("chat-footer");
+    },
+    PageInit(_module="")
+    {
+        if(interchat.chatInternalSeleted)return;
+
+        if(this.h_btn_add_user)this.h_btn_add_user.classList.remove("d-none");
+        if(this.h_btn_list_user)this.h_btn_list_user.classList.remove("d-none");
+        if(this.h_btn_close_chat)this.h_btn_close_chat.classList.remove("d-none");
+        if(this.h_btn_del_chat)this.h_btn_del_chat.classList.remove("d-none");
+        if(this.hm_btn_del_user)this.hm_btn_del_user.classList.remove("d-none");
+
+        switch (_module) 
+        {
+            case "activas":
+                if(interchat.interchat_init_page)interchat.interchat_init_page.classList.add("d-none");
+                // if(interchat.module_header)interchat.module_header.classList.remove("d-none");
+                if(interchat.module_iframe_interchat)interchat.module_iframe_interchat.classList.remove("d-none");
+                break;
+            case "archivadas":
+                if(interchat.interchat_init_page)interchat.interchat_init_page.classList.add("d-none");
+                // if(interchat.module_header)interchat.module_header.classList.add("d-none");
+
+                if(this.h_btn_add_user)this.h_btn_add_user.classList.add("d-none");
+                if(this.h_btn_close_chat)this.h_btn_close_chat.classList.add("d-none");
+                if(this.h_btn_del_chat)this.h_btn_del_chat.classList.add("d-none");
+                if(this.hm_btn_del_user)this.hm_btn_del_user.classList.add("d-none");
+
+
+                if(interchat.module_iframe_interchat)interchat.module_iframe_interchat.classList.remove("d-none");
+                break;
+            default:
+                // if(interchat.module_header)interchat.module_header.classList.add("d-none");
+                if(interchat.module_iframe_interchat)interchat.module_iframe_interchat.classList.add("d-none");
+                if(interchat.interchat_init_page)interchat.interchat_init_page.classList.remove("d-none");
+
+                if(this.h_btn_add_user)this.h_btn_add_user.classList.add("d-none");
+                if(this.h_btn_list_user)this.h_btn_list_user.classList.add("d-none");
+                if(this.h_btn_close_chat)this.h_btn_close_chat.classList.add("d-none");
+                if(this.h_btn_del_chat)this.h_btn_del_chat.classList.add("d-none");
+                if(this.hm_btn_del_user)this.hm_btn_del_user.classList.add("d-none");
+                break;
+        }
+    },
     chatInternalSeleted:null,
+    addOptions(element,data,value="sys_pk",text="username")
+    {
+        for (let i = 0; i < data.length; i++) 
+        {
+            const row = data[i];
+            interchat.addOption(element,row);
+        }
+    },
+    addOption(element,row,value="sys_pk",text="username")
+    {
+        const option = document.createElement("option");
+        option.value = row[value];
+        option.text = row[text] + (row?.isadmin? " - [Admin]":"");
+        option.setAttribute("_id","item_"+(row[value]??""));
+        option.setAttribute("isadmin",(row?.isadmin));
+
+        element.appendChild(option);
+    },
     AddUser()
     {
         if(!this.usuario)return;
 
         var user=this.usuario.getValue();
-        if(!user || Object.keys(user).length<1)return;
-
-        const add = (data) => 
+        if(!user || Object.keys(user).length<1)
         {
-            const select = interchat.list_user;
-            const option = document.createElement("option");
-            option.value = data.sys_pk;
-            option.text = data.username;
-
-            select.appendChild(option);
+            interchat.alerText("#lbl_alert_interchat_user","Debe selecionar un usuario");
+            return;
         }
-        add(user);
+        user["isadmin"]=this.check_admin?.checked??false;
+
+        interchat.addOption(interchat.list_user,user);
         this.usuario.setValue({});
+        if(this.check_admin)this.check_admin.checked=false;
     },
-    OpenModalUser(e,guid)
+    CloseChat()
     {
+        let res=confirm("¿Esta seguro de cerrar la conversación?");
+        if(!res)return;
+
+        if(!this.chatInternalSeleted || this.chatInternalSeleted < 1)
+        {
+            alert("Debe seleccionar una conversación");
+            return;
+        }
+
+        var data=
+        {
+            enpoint:`./${this.chatInternalSeleted}/close-interchat/`,
+            use_url:true
+        }
+        var interchat=document.getElementById("interchat-"+this.chatInternalSeleted);
+        this.InvokeService("DELETE",data,
+        (data)=>
+        {
+            this.chatInternalSeleted=null;
+            this.PageInit();
+            if(interchat)interchat.remove();
+        });
+    },
+    DeleteChat()
+    {
+        let res=confirm("¿Esta seguro de eliminar la conversación?");
+        if(!res)return;
+
+        if(!this.chatInternalSeleted || this.chatInternalSeleted < 1)
+        {
+            alert("Debe seleccionar una conversación");
+            return;
+        }
+
+        var data=
+        {
+            enpoint:`./${this.chatInternalSeleted}/del-interchat/`,
+            use_url:true
+        }
+        var interchat=document.getElementById("interchat-"+this.chatInternalSeleted);
+        this.InvokeService("DELETE",data,
+        (data)=>
+        {
+            this.chatInternalSeleted=null;
+            this.PageInit();
+            if(interchat)interchat.remove();
+        });
+    },
+    DeleteUser()
+    {
+        let list = [];
+        let cound_admin=0;
+        let show_msg=false;
+        Array.from(this.list_user).forEach(opt => 
+        {
+            let isadmin=tools.ParseBool(opt.getAttribute("isadmin"));
+            if(isadmin)cound_admin++;
+
+            if(opt.selected)
+            {
+                if(this.ArrayUsers)
+                {
+                    list.push(opt.value);
+                    if(isadmin)
+                    {
+                        cound_admin--;
+                        show_msg=true;
+                    }
+                }
+                else
+                {
+                    opt.remove();
+                }
+            }
+        });
+        
+        if(!this.ArrayUsers)return
+
+        if(!this.chatInternalSeleted || this.chatInternalSeleted < 1)
+        {
+            interchat.alerText("#lbl_alert_interchat_user","Debe seleccionar una conversación");
+            return;
+        }
+        if(cound_admin<1 && show_msg)
+        {
+            interchat.alerText("#lbl_alert_interchat_user","Antes de eliminar el(los) administrador(es) debe elegir otro usuario como administrador");
+            return;
+        }
+        var data=
+        {
+            users:list,
+            enpoint:`./${this.chatInternalSeleted}/del-users/`,
+            use_url:true
+        }
+
+        this.InvokeService("PUT",data,
+        (data)=>
+        {
+            interchat.QuitOptionSelectUser(interchat.list_user,data);
+        });
+        
+    },
+    CheckMessage()
+    {
+        var list=[];
+        var dt={};
+        for (let i = 0; i < interchat.array.length; i++) 
+        {
+            const item = interchat.array[i];
+
+            if((dt[item.sys_pk]??0)<1)
+            {
+                var obj=
+                {
+                    chat:item.sys_pk,
+                    last_massage:item.last_massage
+                }
+                list.push(obj);
+                dt[item.sys_pk]=item.sys_pk;
+            }
+        }
+        
+        if(list.length<1)return;
+
+        var data=
+        {
+            enpoint:`./all/get-interchat/`,
+            use_url:true,
+            chats:list
+        }
+
+        this.InvokeService("PUT",data,
+            (data)=>
+            {
+                interchat.PrintNotifChat(data);
+            },(failed)=>{console.log(failed.message??JSON.stringify(failed));});
+    },
+    PrintNotifChat(data)
+    {
+        for (let i = 0; i < data.length; i++) 
+        {
+            const item = data[i];
+            var row=interchat.array.find((r)=>r.sys_pk==item.chat);
+            if(row && row.sys_guid!=interchat.chatInternalSeleted && Number(item.last_massage??0) > Number(row.last_massage??0))
+            {
+                var elem=document.getElementById("noti-"+row.sys_guid);
+                if(elem)elem.classList.remove("d-none");
+                row.last_massage=item.last_massage;
+            }
+            else if(row && interchat.chatInternalSeleted && row.sys_guid==interchat.chatInternalSeleted)
+            {
+                row.last_massage=item.last_massage;
+            }
+        }
+    },
+    QuitOptionSelectUser(select,data)
+    {
+        var options=select.options;
+
+        for (let i = 0; i < options.length; i++) 
+        {
+            const op = options[i];
+            if(op)
+            {
+                var row=data.find((r)=>r.user==op.value);
+                if(row)
+                {
+                    op.remove();
+                }
+            }
+        }
+    },
+    Users()
+    {
+        if(!this.chatInternalSeleted || this.chatInternalSeleted < 1)
+        {
+            alert("Debe seleccionar una conversación");
+            return;
+        }
+
+        var data=
+        {
+            enpoint:`./${this.chatInternalSeleted}/get-users/`,
+            use_url:true
+        }
+        
+        this.InvokeService("GET",data,
+        (data)=>
+        {
+            this.ArrayUsers=data;
+            interchat.OpenModalUser(null);
+            interchat.addOptions(interchat.list_user,data);
+        });
+    },
+    SaveUsers()
+    {
+        let list = [];
+        Array.from(this.list_user).forEach(opt => 
+        {
+            var obj=
+            {
+                user:opt.value,
+                admin:tools.ParseBool(opt.getAttribute("isadmin"))
+            }
+            list.push(obj);
+        });
+
+        if(list.length<1)
+        {
+            tools.alerText("#lbl_alert_interchat_user","Debe agregar usuarios");
+            return;
+        }
+        if(!this.chatInternalSeleted || this.chatInternalSeleted < 1)
+        {
+            tools.alerText("#lbl_alert_interchat_user","Debe seleccionar una conversación");
+            return;
+        }
+        if(list.length<1)
+        {
+            tools.alerText("#lbl_alert_interchat_user","Debe agregar uno o más usuario(s)");
+            return;
+        }
+        var data=
+        {
+            users:list,
+            topic:this.chatInternalSeleted,
+            enpoint:"./_new/add-users/",
+            use_url:true
+        }
+
+        this.InvokeService("POST",data,
+        (data)=>
+        {
+            tools.hideModal("modal_topic_add_user");
+            this.fields("#modal_topic_add_user","clear");
+        });
+    },
+    ArrayUsers:null,
+    OpenModalUser(e)
+    {
+        if(this.module_modal_users)this.module_modal_users.classList.add("d-none");
         if(e)
         {
             e.stopPropagation();
+            this.ArrayUsers=null;
+            if(this.module_modal_users)this.module_modal_users.classList.remove("d-none");
         }
-        this.chatInternalSeleted=guid;
+        this.list_user.innerHTML="";
+        interchat.fields("#modal_topic_add_user","clear");
         tools.showModal("modal_topic_add_user");
     },
     RemoveClassSelected()
@@ -102,16 +430,36 @@ var interchat=
         if(!this.iframe_interchat || this.url_bitacora.trim()=="")return;
 
         this.RemoveClassSelected();
+        //remover notificacion de mensajes
+        var elem=document.getElementById("noti-"+guid);
+        if(elem)elem.classList.add("d-none");
+        ///////
+        interchat.chatInternalSeleted=null;
 
+        this.PageInit(interchat.InterChatActivas ?"activas":"archivadas");
+        
         var divisor=document.getElementById("div_"+guid);
         if(divisor)
         {
             divisor.classList.add("div-selected");
             if(divisor.parentElement)divisor.parentElement.classList.add("interchat-selected");
         }
+        interchat.chatInternalSeleted=guid;
 
         let url_src=this.url_bitacora.replace("@det",det).replace("@guid",guid);
         this.iframe_interchat.src=url_src;
+
+        setTimeout(() => 
+        {
+            var footer=interchat.getFooterChat();
+            if(footer)footer.classList.remove("d-none");
+            
+            if(!interchat.InterChatActivas)
+            {    
+                if(footer)footer.classList.add("d-none");
+            }
+        }, 1100);
+        
     },
     StartInterval()
     {
@@ -122,6 +470,11 @@ var interchat=
                 interchat.GetMessages();
             }, interchat.time_load_bitacora);
         }
+
+        setInterval(() => 
+        {
+            interchat.CheckMessage();    
+        }, 3000);
     },
     ClearInterval()
     {
@@ -137,29 +490,37 @@ var interchat=
             console.warn("No hay un elemento interchat");
             return;
         }
-
-        for (let i = 0; i < array.length; i++) 
+        let lng=array.length;
+        for (let i = 0; i < lng; i++) 
         {
             const element = array[i];
             interchat.PrintItemChat(element);
         }
     },
-
+    InterChatActivas:true,
     ChatActivas()
     {
         if(!this.module_interchat)return;
 
         this.intervalGetChat=true;
+        this.InterChatActivas=true;
         this.module_interchat.innerHTML="";
         this.last_log=0;
         interchat.GetMessages();
         this.StartInterval();
+
+        this.PageInit("activas");
+        interchat.array=interchat.ArrayMessages;
+        if(!interchat.array)interchat.array=[];
     },
     ChatArchivadas()
     {
         if(!this.module_interchat)return;
 
+        this.PageInit("archivadas");
+
         this.intervalGetChat=false;
+        this.InterChatActivas=false;
         this.ClearInterval();
         this.module_interchat.innerHTML="";
         this.last_log=0;
@@ -167,23 +528,28 @@ var interchat=
     },
     PrintItemChat(row)
     {
-        if(!this.intervalGetChat)return;
+        if(!this.intervalGetChat && this.InterChatActivas)return;
 
         var html=this.item_HTML.replace("@title",row.title??"").replace("@fecha",row.fecha??"").replaceAll("@guid",row.sys_guid??"");
         this.module_interchat.insertAdjacentHTML("afterbegin",html);
 
+        if(!this.array)this.array=[];
+        this.array.push(row);
+
         if(Number(row.sys_pk??0)>this.last_log)this.last_log=Number(row.sys_pk??0);
     },
+    ArrayMessages:null,
     GetMessages(params="")
     {
         this.endpoint="";
         this.endpoint+="?from="+(Number(this.last_log) + 1)+params;
         
         this.InvokeService("GET",null,
-            (data)=>
-            {
-                interchat.PrintChat(data);
-            },(failure)=>{console.log(failure.message??JSON.stringify(failure))});
+        (data)=>
+        {
+            interchat.PrintChat(data);
+            interchat.ArrayMessages=data;
+        },(failure)=>{console.log(failure.message??JSON.stringify(failure))});
     },
     fields(idmodal,act,idalert="",array={},idelements="input,textarea,select")
     {
@@ -243,7 +609,7 @@ var interchat=
         this.InvokeService("POST",data,
             (data)=>
             {
-                tools.hideModalModal("modal_topic_main");
+                tools.hideModal("modal_topic_main");
                 this.fields("#modal_topic_main","clear");
             });
     },
@@ -266,7 +632,14 @@ var interchat=
 	},
     InvokeService(method,values=null,callbak_succes=null,callbak_failed=null,formdata=false)
     {
-        InduxsoftCrudlModel.InvokeService(this.endpoint, values, 
+        let url=this.endpoint;
+        if(values && (tools.ParseBool(values["use_url"]??"")) )
+        {
+            if((values["enpoint"]??"")!="")url=(values["enpoint"]??"");
+        }
+        if(method.toLowerCase()=="get")values=null;
+
+        InduxsoftCrudlModel.InvokeService(url, values, 
             success => 
             { 
                 if(callbak_succes)callbak_succes(success);

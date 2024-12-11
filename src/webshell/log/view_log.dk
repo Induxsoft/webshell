@@ -74,7 +74,7 @@ module ""
                 {
                     $""
                 }
-                div(class="card-footer sticky-bottom bg-white px-0")
+                div(class="card-footer sticky-bottom bg-white px-0" id="chat-footer")
                 {
                     div(class="input-group mb-3")
                     {
