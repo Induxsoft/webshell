@@ -83,8 +83,10 @@ module "lib"
         if url != "" { return url }
         // Determinar página del grupo con mayor relevancia a la cual pertenece el usuario.
         teams = trim(ranychars(to.json(@@(user,"&memberships/teams")),"[]"," "))
-        url = dbr.str(db,ftext("SELECT href FROM webshell_fpage WHERE `type` = 'groupid' AND id IN (#<teams>) ORDER BY relevance DESC LIMIT 1;"),@null)
-        if url != "" { return url }
+        if teams != "" {
+            url = dbr.str(db,ftext("SELECT href FROM webshell_fpage WHERE `type` = 'groupid' AND id IN (#<teams>) ORDER BY relevance DESC LIMIT 1;"),@null)
+            if url != "" { return url }
+        }
         // Devolver página predeterminada.
         url = dbr.vars.getd(db,"wsbkoff_frontpage","/webshell/frontpage.dkl")
         if url == "" { url = "/webshell/frontpage.dkl" }
