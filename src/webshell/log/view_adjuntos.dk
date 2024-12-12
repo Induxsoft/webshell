@@ -100,4 +100,6 @@ module ""
             '
         }
     }
+    #!
+    @http_context<"request/get/_view">:"Ajuntos"
 }

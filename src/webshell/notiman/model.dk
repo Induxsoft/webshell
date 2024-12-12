@@ -73,7 +73,7 @@ module "Administración de notificaciones:notiman"
             fdr_field = field.dstr(notif_date_fields, @@(params,"#fdr_field"), "n.start")
 
             if _show == "enviadas" {
-                fields = ",GROUP_CONCAT(CONCAT(':',nu.readed,u.userid) SEPARATOR ' ') usuarios"
+                fields = ",GROUP_CONCAT(CONCAT(u.userid,':',nu.readed) SEPARATOR ' ') usuarios"
                 conditions = conditions + "n.sndrid = CONCAT('@',@uid)"
                 groupby = "n.sys_pk"
             }
@@ -166,7 +166,15 @@ module "Administración de notificaciones:notiman"
             @"target": field.str(data,"target","_self")
         }
 
-        if url != "" { notif<"href"> : "/?go="+url_encode(url) }
+        if url != ""
+        {
+            hostname = @@(@http_context,"$request/headers/HTTP_HOST")
+            if hostname == "" { hostname = @@(@http_context,"$request/headers/SERVER_NAME") }
+
+            if contains(url,hostname) || contains(url,"/!/") { url = "/?go="+url_encode(url) }
+
+            notif<"href"> : url
+        }
         if img != "" { notif<"img"> : img }
 
         ref resp = dbr.notif.send(db,notif)
@@ -178,7 +186,7 @@ module "Administración de notificaciones:notiman"
 
     function GetInfo(&db,&params)
     {
-        ref notif = dbr.rec(db,"SELECT title, body FROM sys_notif WHERE (sys_pk = @_entity_id OR sys_guid = @_entity_id)",params)
+        ref notif = dbr.rec(db,"SELECT title, body FROM sys_notif WHERE sys_guid = @_entity_id",params)
         sql = "
         SELECT
             u.userid,
@@ -188,7 +196,7 @@ module "Administración de notificaciones:notiman"
         FROM sys_notif n
             INNER JOIN sys_notif_usr nu ON nu.notif = n.sys_pk
             INNER JOIN tuser u ON nu.user = u.sys_pk
-        WHERE (n.sys_pk = @_entity_id OR n.sys_guid = @_entity_id)
+        WHERE n.sys_guid = @_entity_id
         "
         ref users = dbr.list(db,sql,params)
 

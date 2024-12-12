@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded",()=>{log.init();});
 
-window.addEventListener("resize", function(event) {
+window.addEventListener("resize", function(event) 
+{
     log.AddHTML(log.header_counter,`<div class="d-none"></div>`);
     log.CalculeContador();
 }, true);
@@ -19,6 +20,11 @@ var log=
         this.counter_text=document.getElementById("counter-text");
         this.media_list=document.getElementById("media-list");
         this.iframe_top=window.top.document.getElementById("right-frame");
+
+        this.body_chat=document.getElementById("body-chat");
+
+        if(this.body_chat)this.body_chat.addEventListener("scroll", function (e){log.allowScroll=false;});
+
         if(this.media_list)this.media_list.onClicking=data=>
         {
             log.SelectedElement(data);
@@ -89,6 +95,7 @@ var log=
         {
             text:this.txt_message.value
         }
+        log.allowScroll=true;
         this.InvokeService("POST",data,
             (data)=>
             {
@@ -112,6 +119,7 @@ var log=
             const file = this.adjunto.files[i];
             data.append(file.name,file);
         }
+        log.allowScroll=true;
         this.endpoint=this.url_root_current;
         this.InvokeService("POST",data,
             (data)=>
@@ -130,7 +138,7 @@ var log=
     GetMessages()
     {
         log.PanelAvailable();
-        if(log.CountScroll<3)log.Scroll();
+        if(log.CountScroll<3)log.Scroll(true);
         
         this.endpoint="";
         this.endpoint+="?from="+(Number(this.last_log) + 1);
@@ -302,9 +310,15 @@ var log=
 		data["index"]= this.media_list.getData(false).findIndex(e=>e.__internal_id__==id);
 		return data;
 	},
+    allowScroll:true,
     Scroll(scrll=false,x=0,y=10000)
     {
-       if(scrll)window.scrollTo(x, y);
+        if(!log.allowScroll)return;
+        
+       if(scrll)
+       {
+            if(log.body_chat)log.body_chat.scrollTo(x, y);
+       }
        else 
        {
             var chat_body_h=700;//log.body_chat.clientHeight - 100
@@ -317,7 +331,10 @@ var log=
                 if(element)h+=element.clientHeight;
             }
             
-           if(h>=chat_body_h) window.scrollTo(x, y);
+           if(h>=chat_body_h) 
+           {
+                if(log.body_chat)log.body_chat.scrollTo(x, y);
+           }
        }
     },
     PanelAvailable()

@@ -1,4 +1,9 @@
 document.addEventListener("DOMContentLoaded",()=>{interchat.init();})
+window.addEventListener("resize", function(event) 
+{
+    console.log("12121");
+    interchat.MediaQuery(interchat.chatInternalSeleted!=null);
+}, true);
 
 var interchat=
 {
@@ -22,19 +27,34 @@ var interchat=
         this.module_iframe_interchat=document.getElementById("module-iframe-interchat");
         this.module_header=document.getElementById("module-header");
         this.interchat_init_page=document.getElementById("interchat-init-page");
-
+        this.btn_refresh_topic=document.getElementById("btn_refresh_topic");
         //botones headers chat
         this.h_btn_add_user=document.getElementById("h_btn_add_user");
         this.h_btn_list_user=document.getElementById("h_btn_list_user");
         this.h_btn_close_chat=document.getElementById("h_btn_close_chat");
         this.h_btn_del_chat=document.getElementById("h_btn_del_chat");
         this.hm_btn_del_user=document.getElementById("hm_btn_del_user");
-
+        this.col_1_chat=document.getElementById("col-1-chat");
+        this.col_2_chat=document.getElementById("col-2-chat");
+        this.card_body_interchat=document.getElementById("card-body-interchat");
+        this.btn_media_exit=document.getElementById("btn_media_exit");
+        this.module_exit_media=document.getElementById("module_exit_media");
+        this.name_chat=document.getElementById("name_chat");
         this.check_admin=document.getElementById("check_admin");
+        this.loading_chats=document.getElementById("loading-chats");
+        this.div_chat_and_header=document.getElementById("div-chat-and-header");
+        //CAMPOS DE ENTRADAS
+        this.title=document.getElementById("title");
 
+        if(this.title)this.title.addEventListener("keypress",(event)=>
+        {
+            var keycode = (event.keyCode ? event.keyCode : event.which);
+            if(keycode=="13")interchat.SaveTopic();
+        });
         if(this.btn_add_topic)this.btn_add_topic.addEventListener("click",()=>{interchat.OpenModal();});
         if(this.btn_add_interchat)this.btn_add_interchat.addEventListener("click",()=>{interchat.SaveTopic();});
-
+        if(this.btn_refresh_topic)this.btn_refresh_topic.addEventListener("click",()=>{interchat.Refresh();});;
+        
         this.item_HTML=`<div class="interchat-item pt-2 pe-2 ps-2" onclick="interchat.InterChatSelected('${interchat._DET}','@guid')" id="interchat-@guid">
                             <div class="d-flex align-items-center">
                                 <div class="interchat-img">
@@ -68,17 +88,46 @@ var interchat=
 
         this.PrintChat(this.array);
         this.StartInterval();
+
+        this.MediaQuery();
         
     },
 
     getFooterChat()
     {
-        var bitacora=interchat.iframe_interchat;
-        const _view = bitacora.contentDocument || bitacora.contentWindow.document;
+        return new Promise((res)=>
+        {
+            var bitacora=interchat.iframe_interchat;
+            if(!bitacora)
+            {
+                res(null);
+                return null;
+            }
 
-        if(!_view)return null;
+            var intfooter=setInterval(() => 
+            {
+                const _view = bitacora.contentDocument || bitacora.contentWindow.document;
 
-        return _view.getElementById("chat-footer");
+                if(!_view)
+                {
+                    res(null);
+                    clearInterval(intfooter);
+                    return null;
+                }
+
+                var footer=_view.getElementById("chat-footer");
+                if(footer)
+                {
+                    res(footer);
+                    clearInterval(intfooter);
+                    return footer;
+                }
+            }, 100);
+        });
+    },
+    Refresh()
+    {
+        window.location.reload();
     },
     PageInit(_module="")
     {
@@ -89,6 +138,7 @@ var interchat=
         if(this.h_btn_close_chat)this.h_btn_close_chat.classList.remove("d-none");
         if(this.h_btn_del_chat)this.h_btn_del_chat.classList.remove("d-none");
         if(this.hm_btn_del_user)this.hm_btn_del_user.classList.remove("d-none");
+        if(this.div_chat_and_header)this.div_chat_and_header.classList.remove("d-none");
 
         switch (_module) 
         {
@@ -119,6 +169,7 @@ var interchat=
                 if(this.h_btn_close_chat)this.h_btn_close_chat.classList.add("d-none");
                 if(this.h_btn_del_chat)this.h_btn_del_chat.classList.add("d-none");
                 if(this.hm_btn_del_user)this.hm_btn_del_user.classList.add("d-none");
+                if(this.div_chat_and_header)this.div_chat_and_header.classList.add("d-none");
                 break;
         }
     },
@@ -425,6 +476,81 @@ var interchat=
             }
         }
     },
+    MediaQuery(onclicking=false)
+    {
+        var w=document.body.offsetWidth;
+        var h=document.body.offsetHeight;
+
+        if(w>750)
+        {
+            if(this.col_1_chat)
+            {
+                this.col_1_chat.classList.add("h-100");
+            }
+            if(this.card_body_interchat)
+            {
+                this.card_body_interchat.classList.remove("d-none");
+            }
+            if(this.module_exit_media)
+            {
+                this.module_exit_media.classList.add("d-none");
+            }
+        }
+        else
+        {
+            if(this.module_exit_media)
+            {
+                this.module_exit_media.classList.remove("d-none");
+            }
+            if(!onclicking)
+            {
+                if(this.col_2_chat)
+                {
+                    this.col_2_chat.classList.add("d-none");
+                }
+                
+                if(this.col_1_chat)
+                {
+                    this.col_1_chat.classList.add("h-100");
+                }
+                if(this.card_body_interchat)
+                {
+                    this.card_body_interchat.classList.remove("d-none");
+                }
+                this.RemoveClassSelected();
+                return;
+            }
+
+            if(interchat.chatInternalSeleted)
+            {
+                var chat_selected=this.array.find((r)=>r.sys_guid==interchat.chatInternalSeleted);
+                if(chat_selected)
+                {
+                    let text=chat_selected.title??"";
+                    if(this.name_chat)this.name_chat.textContent=interchat.Cut(text,15)+ (text.length>15 ? "..." :"");
+                }
+            }
+
+            if(this.col_2_chat)
+            {
+                this.col_2_chat.classList.remove("d-none");
+            }
+            if(this.col_1_chat)
+            {
+                this.col_1_chat.classList.remove("h-100");
+            }
+            if(this.card_body_interchat)
+            {
+                this.card_body_interchat.classList.add("d-none");
+            }
+        }
+    },
+    Cut(text,length)
+    {
+        if(text.length<length)return text;
+
+        return text.substring(0,length);
+    },
     InterChatSelected(det,guid)
     {
         if(!this.iframe_interchat || this.url_bitacora.trim()=="")return;
@@ -437,7 +563,8 @@ var interchat=
         interchat.chatInternalSeleted=null;
 
         this.PageInit(interchat.InterChatActivas ?"activas":"archivadas");
-        
+        if(this.loading_chats)this.loading_chats.classList.remove("d-none");
+
         var divisor=document.getElementById("div_"+guid);
         if(divisor)
         {
@@ -445,20 +572,27 @@ var interchat=
             if(divisor.parentElement)divisor.parentElement.classList.add("interchat-selected");
         }
         interchat.chatInternalSeleted=guid;
+        this.MediaQuery(true);
 
         let url_src=this.url_bitacora.replace("@det",det).replace("@guid",guid);
         this.iframe_interchat.src=url_src;
-
-        setTimeout(() => 
+        
+        interchat.getFooterChat().then(footer=>
         {
-            var footer=interchat.getFooterChat();
-            if(footer)footer.classList.remove("d-none");
+            if(footer)
+            {
+                footer.classList.remove("d-none");
+                setTimeout(() => 
+                {
+                    if(interchat.loading_chats)interchat.loading_chats.classList.add("d-none");
+                }, 1000);
+            }
             
             if(!interchat.InterChatActivas)
             {    
                 if(footer)footer.classList.add("d-none");
             }
-        }, 1100);
+        });
         
     },
     StartInterval()
@@ -468,13 +602,13 @@ var interchat=
             this.interval=setInterval(() => 
             {
                 interchat.GetMessages();
-            }, interchat.time_load_bitacora);
+            }, interchat.time_load_interchat);
         }
 
         setInterval(() => 
         {
             interchat.CheckMessage();    
-        }, 3000);
+        }, interchat.time_load_interchat_notif);
     },
     ClearInterval()
     {
@@ -530,8 +664,10 @@ var interchat=
     {
         if(!this.intervalGetChat && this.InterChatActivas)return;
 
+        var exist_element=document.getElementById("interchat-",(row.sys_guid??""));
+
         var html=this.item_HTML.replace("@title",row.title??"").replace("@fecha",row.fecha??"").replaceAll("@guid",row.sys_guid??"");
-        this.module_interchat.insertAdjacentHTML("afterbegin",html);
+        if(!exist_element)this.module_interchat.insertAdjacentHTML("afterbegin",html);
 
         if(!this.array)this.array=[];
         this.array.push(row);
@@ -609,6 +745,7 @@ var interchat=
         this.InvokeService("POST",data,
             (data)=>
             {
+                interchat.GetMessages();
                 tools.hideModal("modal_topic_main");
                 this.fields("#modal_topic_main","clear");
             });

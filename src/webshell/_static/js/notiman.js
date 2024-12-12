@@ -29,13 +29,15 @@ var notiman =
         const btn_show_media = document.getElementById("btn_show_media");
         
         this.dialog.addEventListener("shown.bs.modal", () => {
+            if (this._params["_program"] === "notiman") return;
+
             Object.entries(this._initialData).forEach(entry => {
                 const [name, value] = entry;
                 this.ff[name].value = value;
             });
 
             let def = this.defdata();
-    
+            
             this.ff["title"].value ||= def.title;
             this.ff["href"].value ||= def.href;
         });
