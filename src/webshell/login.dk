@@ -3,36 +3,39 @@
 #!
 module "login"
 {
-
 	ReseponseJSON::&res
 	{
 		@http_context<"response/headers/content-type">:"application/json;charset=utf-8"
     	@http_context<"response/output">:"text"
 		@http_context<"response/text">:to.json(res)
 	}
+
 	ValidUser::&db,uid,pwd,ids
 	{
+		do errordet(@false)
+		
+		ref user = @null
 		new data
 		{
 			@"ids":ids
 			@"pwd":pwd
 			@"uid":uid
 		}
+
 		if trim(@@(data,"$ids"))!=""
 		{
-			sql="select 
-			u.sys_pk
+			ref user:dbr.rec(db,"select 
+			u.sys_pk, ifnull(u.locked,0) locked 
 			from tuser u 
 			inner join sys_session s on u.sys_pk=s.iuser 
 			where s.sys_guid=@ids
-			AND ifnull(u.sys_deleted,0)=0;"
-			user=dbr.num(db,sql,data)
+			and ifnull(u.sys_deleted,0)=0;",data)
 		}
 		else if @usehashmd5unicode
         {
             data<"pwdmd5u">:md5e(@@(data,"$pwd"),"unicode")
-            user=dbr.num(db,"select 
-			sys_pk 
+            ref user:dbr.rec(db,"select 
+			sys_pk, ifnull(locked,0) locked 
 			from tuser 
 			where lower(userid)=@uid 
 			and lower(pwd)=@pwdmd5u
@@ -41,14 +44,16 @@ module "login"
         else 
         {
             data<"pwdmd5">:md5(@@(data,"$pwd"))
-            user=dbr.num(db,"select 
-			sys_pk 
+            ref user:dbr.rec(db,"select 
+			sys_pk, ifnull(locked,0) locked 
 			from tuser 
 			where lower(userid)=@uid 
 			and lower(pwdmd5)=@pwdmd5
 			and ifnull(sys_deleted,0)=0",data)   
         }
-        if user < 1{do rise_error(500,"Error de inicio de sesión, verifique Usuario y Contraseña.")}
+
+        if isnull(user) { do rise_error(500,"Error de inicio de sesión, verifique Usuario y Contraseña.") }
+		if @@(user,"#locked") { do rise_error(593,"El usuario está bloqueado o suspendido") }
 	}
 	ref tmpdb = dbr.open(@@(@http_context,"$session/idp/qname"))
 
