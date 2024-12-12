@@ -1,7 +1,6 @@
 document.addEventListener("DOMContentLoaded",()=>{interchat.init();})
 window.addEventListener("resize", function(event) 
 {
-    console.log("12121");
     interchat.MediaQuery(interchat.chatInternalSeleted!=null);
 }, true);
 
@@ -93,7 +92,7 @@ var interchat=
         
     },
 
-    getFooterChat()
+    getFooterChat(guid)
     {
         return new Promise((res)=>
         {
@@ -115,7 +114,7 @@ var interchat=
                     return null;
                 }
 
-                var footer=_view.getElementById("chat-footer");
+                var footer=_view.getElementById("chat-footer-"+guid);
                 if(footer)
                 {
                     res(footer);
@@ -353,6 +352,15 @@ var interchat=
         {
             const item = data[i];
             var row=interchat.array.find((r)=>r.sys_pk==item.chat);
+
+            if(!tools.ParseBool(item["exist_user_in_topic"]??false) && row)
+            {
+                var element_interchat=document.getElementById("interchat-"+row.sys_guid);
+                if(element_interchat)element_interchat.remove();
+                interchat.chatInternalSeleted=null;
+                interchat.PageInit();
+            }
+
             if(row && row.sys_guid!=interchat.chatInternalSeleted && Number(item.last_massage??0) > Number(row.last_massage??0))
             {
                 var elem=document.getElementById("noti-"+row.sys_guid);
@@ -551,6 +559,16 @@ var interchat=
 
         return text.substring(0,length);
     },
+    SetDivisorChat(guid)
+    {
+        var divisor=document.getElementById("div_"+guid);
+        
+        if(divisor)
+        {
+            divisor.classList.add("div-selected");
+            if(divisor.parentElement)divisor.parentElement.classList.add("interchat-selected");
+        }
+    },
     InterChatSelected(det,guid)
     {
         if(!this.iframe_interchat || this.url_bitacora.trim()=="")return;
@@ -565,33 +583,34 @@ var interchat=
         this.PageInit(interchat.InterChatActivas ?"activas":"archivadas");
         if(this.loading_chats)this.loading_chats.classList.remove("d-none");
 
-        var divisor=document.getElementById("div_"+guid);
-        if(divisor)
-        {
-            divisor.classList.add("div-selected");
-            if(divisor.parentElement)divisor.parentElement.classList.add("interchat-selected");
-        }
+        interchat.SetDivisorChat(guid);
+
         interchat.chatInternalSeleted=guid;
         this.MediaQuery(true);
 
         let url_src=this.url_bitacora.replace("@det",det).replace("@guid",guid);
         this.iframe_interchat.src=url_src;
         
-        interchat.getFooterChat().then(footer=>
+        interchat.getFooterChat(guid).then(footer=>
         {
             if(footer)
             {
-                footer.classList.remove("d-none");
                 setTimeout(() => 
                 {
                     if(interchat.loading_chats)interchat.loading_chats.classList.add("d-none");
                 }, 1000);
+
+                if(!interchat.InterChatActivas)
+                {    
+                    footer.classList.add("d-none");
+                }
+                else
+                {
+                    footer.classList.remove("d-none");
+                } 
+                console.log(footer);
             }
             
-            if(!interchat.InterChatActivas)
-            {    
-                if(footer)footer.classList.add("d-none");
-            }
         });
         
     },
@@ -630,6 +649,15 @@ var interchat=
             const element = array[i];
             interchat.PrintItemChat(element);
         }
+        interchat.SelectChatCurrente();
+    },
+    SelectChatCurrente()
+    {
+        if(!interchat.chatInternalSeleted)return;
+
+        interchat.RemoveClassSelected();
+
+        interchat.SetDivisorChat(interchat.chatInternalSeleted);
     },
     InterChatActivas:true,
     ChatActivas()
@@ -645,6 +673,7 @@ var interchat=
 
         this.PageInit("activas");
         interchat.array=interchat.ArrayMessages;
+
         if(!interchat.array)interchat.array=[];
     },
     ChatArchivadas()

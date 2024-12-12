@@ -26,6 +26,7 @@ module ""
     url_download_adjuntos=replace(url_download_adjuntos,"@detid",@("$parameters/_entity_id"))
     url_download_adjuntos=replace(url_download_adjuntos,"@guid",@("$parameters/_view"))
 
+    guid=@("$parameters/_view")
     #$
     div(class="v12-form-view container-fluid" id="view" style="min-width: 290px;")
     {
@@ -74,7 +75,7 @@ module ""
                 {
                     $""
                 }
-                div(class="card-footer sticky-bottom bg-white px-0" id="chat-footer")
+                div(class="card-footer sticky-bottom bg-white px-0" id="chat-footer-#<guid>")
                 {
                     div(class="input-group mb-3")
                     {

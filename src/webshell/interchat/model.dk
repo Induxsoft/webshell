@@ -198,11 +198,14 @@ module ""
                     WHERE t.sys_pk=@chat AND l.sys_pk>@last_massage
                     AND m.user=@user",params)
 
+            exist_user_in_topic=dbr.num(db,"select ifnull(user,0) from interchat_topic_topic_member where topic=@chat and user=@user",params)
+
             if last_massage > 0
             {
                 chat<"last_massage">:last_massage
-                chat<"read">:@true
             }
+
+            chat<"exist_user_in_topic">: exist_user_in_topic > 0
         }
         return chats
     }
