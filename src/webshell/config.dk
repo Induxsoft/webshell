@@ -26,6 +26,7 @@ program ""
     @URL_NOTIF = "/!/webshell/notif/"
     @URL_NOTIF_GO = "/!/webshell/notif/go/"
     @URL_BITACORA="/!/webshell/log/@det/@guid/"
+    @URL_INTERCHAT="/!/webshell/interchat/"
     
     @HREF_HELP = "https://docs.induxsoft.net/es/productos/v12/"
     @FOOTER_LEGEND = "V12 Copyright(c) Induxsoft 2024 | Powered by Devkron"

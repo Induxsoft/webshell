@@ -101,6 +101,18 @@ model ""
             field "topic"
         }
     }
+    entity "interchat_readed"
+    {
+        @"tuser" ref : "tuser" required
+        @"topic" ref : "interchat_topic" required
+        @"last" int required
+        
+        index "interchat_readed_uq1" unique
+        {
+            field "tuser"
+            field "topic"
+        }
+    }
     // Categorías jerárquicas de variables
     entity "varcategory"
     {

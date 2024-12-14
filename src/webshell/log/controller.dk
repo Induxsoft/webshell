@@ -4,6 +4,14 @@ module ""
 {
     @form_view="view_log.dk"
 
+    point @delete   to log.delete
+    point @read     to log.read
+    point @create   to log.create
+
+    point @blank    to log.NoImplentation
+    point @list     to log.NoImplentation
+    point @update   to log.NoImplentation
+
     switch @@(params,"$_page")
     {
         case "download"
@@ -13,6 +21,11 @@ module ""
         case "adjuntos"
         {
             @form_view="view_adjuntos.dk"
+        }
+        case "del-msg"
+        {
+            point @delete to log.deleteMsg
+            break
         }
     }
 }

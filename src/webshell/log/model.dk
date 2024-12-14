@@ -115,13 +115,14 @@ module ":log"
         new p{@"pk":pksitem}
         return dbr.rec(db,"select description,itemid from sitem where sys_pk=@pk",p)
     }
+    
     read::&db,&params
     {
         do getDetParams(params)
         ref det=webshell.wsdet.get(@@(params,"$detid"))
         ref sitem=getSitem(db,@@(det,"#rpriv"))
         do dbr.apps.action.grant(@@(sitem,"$itemid"))
-
+        
         ref adjuntos=webshell.detlog.file.getall(@@(params,"$detid"),@@(params,"$guid"),@@(params,"#from"),@@(params,"#to"))
         for i = 0; i < @count(adjuntos)
         {
@@ -146,6 +147,8 @@ module ":log"
                 for i = 0; i < @count(ldata)
                 {
                     ref dt=@item(ldata,i)
+                    dt<"can_action">:@@(dt,"$usuario")==@@(@http_context,"$session/user/uid")
+
                     do adj.prop(dt,@@(dt,"$archivo"))
                 }
                 data<"data*">:ldata
@@ -192,12 +195,4 @@ module ":log"
         @http_context<"response/binary*">: file.rbytes(filepath) //Lee y devuelve el array de bytes del archivo
         return record.create()
     }
-    
-    point @delete   to log.delete
-    point @read     to log.read
-    point @create   to log.create
-
-    point @blank    to log.NoImplentation
-    point @list     to log.NoImplentation
-    point @update   to log.NoImplentation
 }

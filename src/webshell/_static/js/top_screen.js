@@ -98,18 +98,18 @@ var top_screen =
 
             if (noti.href)
             {
-                let nwhref = this.url_notif_go + noti.id + "/";
+                let nwhref = noti.href;//this.url_notif_go + noti.id + "/";
                 let target = (noti.target == undefined ? '' : (noti.target==1 ? '_blank': '_self'));
                 ver_mas = `<button class="btn btn-sm px-2 btn-link border-primary" title="Navegar hacia la url" onclick="top_screen.go_to('${nwhref}','${target}', event)">Ver más</button>`;
             }
-
+            let btn_readed=`<button class="btn btn-sm px-2 btn-primary" title="Marcar como leido" onclick="top_screen.set_readed_notify('${noti.id}', event)">Marcar como Leído</button>`;
             template += `
                 <li>
                     <a class="dropdown-item py-2">
                         <h6 class="notify-title">${noti.title}</h6>
                         <small class="notify-desc mb-2">${noti.body}</small>
                         <div class="notify-controls d-flex gap-2">
-                            <button class="btn btn-sm px-2 btn-primary" title="Marcar como leido" onclick="top_screen.set_readed_notify('${noti.id}', event)">Marcar como Leído</button>
+                            ${!noti.id.includes("@__") ? btn_readed:""}
                             ${ver_mas}
                         </div>
                     </a>

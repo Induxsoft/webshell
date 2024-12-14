@@ -67,10 +67,9 @@ var interchat=
                                 <h5 class="ms-2">@title</h5>
 
                                 <div class="flex-grow-1 d-flex justify-content-end">
-
-                                    <svg class="me-2 notif-chat d-none" id="noti-@guid" xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-chat-dots" viewBox="0 0 16 16">
-                                    <path d="M5 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0m4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0m3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
-                                    <path d="m2.165 15.803.02-.004c1.83-.363 2.948-.842 3.468-1.105A9 9 0 0 0 8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6a10.4 10.4 0 0 1-.524 2.318l-.003.011a11 11 0 0 1-.244.637c-.079.186.074.394.273.362a22 22 0 0 0 .693-.125m.8-3.108a1 1 0 0 0-.287-.801C1.618 10.83 1 9.468 1 8c0-3.192 3.004-6 7-6s7 2.808 7 6-3.004 6-7 6a8 8 0 0 1-2.088-.272 1 1 0 0 0-.711.074c-.387.196-1.24.57-2.634.893a11 11 0 0 0 .398-2"/>
+                                    
+                                    <svg class="me-2 notif-chat d-none" id="noti-@guid" xmlns="http://www.w3.org/2000/svg" width="25" height="24" fill="currentColor" class="bi bi-chat" viewBox="0 0 16 16">
+                                        <path d="M2.678 11.894a1 1 0 0 1 .287.801 11 11 0 0 1-.398 2c1.395-.323 2.247-.697 2.634-.893a1 1 0 0 1 .71-.074A8 8 0 0 0 8 14c3.996 0 7-2.807 7-6s-3.004-6-7-6-7 2.808-7 6c0 1.468.617 2.83 1.678 3.894m-.493 3.905a22 22 0 0 1-.713.129c-.2.032-.352-.176-.273-.362a10 10 0 0 0 .244-.637l.003-.01c.248-.72.45-1.548.524-2.319C.743 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7-3.582 7-8 7a9 9 0 0 1-2.347-.306c-.52.263-1.639.742-3.468 1.105"/>
                                     </svg>
 
                                     <small>@fecha</small>
@@ -559,7 +558,7 @@ var interchat=
 
         return text.substring(0,length);
     },
-    SetDivisorChat(guid)
+    SetDivisorChat(guid,InvokeService=false)
     {
         var divisor=document.getElementById("div_"+guid);
         
@@ -568,6 +567,24 @@ var interchat=
             divisor.classList.add("div-selected");
             if(divisor.parentElement)divisor.parentElement.classList.add("interchat-selected");
         }
+        if(!InvokeService)return;
+
+        // var row=interchat.array.find((r)=>r.sys_guid==guid);
+        // if(row && tools.ParseBool(row.show_notif??false))
+        // {
+        //     var data=
+        //     {
+        //         use_url:true,
+        //         endpoint:`./${guid}/interchat-readed/`
+        //     }
+        //     console.log(data)
+        //     this.InvokeService("PUT",data,
+        //         (data)=>
+        //         {
+        //             console.log(data)
+        //         },(failure)=>{console.log(failure.message??JSON.stringify(failure))});
+        // }
+        
     },
     InterChatSelected(det,guid)
     {
@@ -583,14 +600,15 @@ var interchat=
         this.PageInit(interchat.InterChatActivas ?"activas":"archivadas");
         if(this.loading_chats)this.loading_chats.classList.remove("d-none");
 
-        interchat.SetDivisorChat(guid);
+        interchat.SetDivisorChat(guid,true);
 
         interchat.chatInternalSeleted=guid;
         this.MediaQuery(true);
 
         let url_src=this.url_bitacora.replace("@det",det).replace("@guid",guid);
         this.iframe_interchat.src=url_src;
-        
+
+
         interchat.getFooterChat(guid).then(footer=>
         {
             if(footer)
@@ -607,8 +625,7 @@ var interchat=
                 else
                 {
                     footer.classList.remove("d-none");
-                } 
-                console.log(footer);
+                }
             }
             
         });
@@ -696,8 +713,16 @@ var interchat=
         var exist_element=document.getElementById("interchat-",(row.sys_guid??""));
 
         var html=this.item_HTML.replace("@title",row.title??"").replace("@fecha",row.fecha??"").replaceAll("@guid",row.sys_guid??"");
-        if(!exist_element)this.module_interchat.insertAdjacentHTML("afterbegin",html);
-
+        if(!exist_element)
+        {
+            this.module_interchat.insertAdjacentHTML("afterbegin",html);
+        }
+        if(tools.ParseBool((row.show_notif??false)))
+        {
+            var elem=document.getElementById("noti-"+row.sys_guid);
+            if(elem)elem.classList.remove("d-none");
+        }
+        
         if(!this.array)this.array=[];
         this.array.push(row);
 

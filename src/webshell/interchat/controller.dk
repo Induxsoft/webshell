@@ -42,5 +42,10 @@ module ""
             point @update to get.last_messages
             break
         }
+        case "interchat-readed"
+        {
+            point @update to chat.readed
+            break
+        }
     }
 }

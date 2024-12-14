@@ -9,12 +9,13 @@ module ""
        DATE_FORMAT(i.sys_dtcreated,'%H:%i-%s')hora,
        i.title,
        IFNULL(i.closed,0)closed,
-       IFNULL((
+       @last_massage := IFNULL((
        	SELECT MAX(sys_pk) FROM ws_det_log lg WHERE lg.guid=i.sys_guid
-		 ),0)last_massage
-
+		 ),0)last_massage,
+        (@last_massage > ifnull(ir.last,0) )show_notif
        FROM interchat_topic i
        INNER JOIN interchat_topic_topic_member tu ON i.sys_pk=tu.topic
+       LEFT JOIN interchat_readed ir on i.sys_pk=ir.topic and tu.user=ir.tuser
        WHERE ifnull(i.sys_deleted,0)=0
        #<@conditional>
        ORDER BY i.sys_dtcreated ASC
@@ -184,7 +185,7 @@ module ""
         for i = 0; i < @count(chats)
         {
             ref chat=@item(chats,i)
-
+            
             using params
             {
                 @"chat":@@(chat,"#chat")
@@ -203,11 +204,27 @@ module ""
             if last_massage > 0
             {
                 chat<"last_massage">:last_massage
+                last_massage >> params
             }
+            do dbr.execute(db,"INSERT INTO 
+                                            interchat_readed (tuser,topic,last) values(@user,@chat,@last_massage) 
+                                            ON DUPLICATE KEY UPDATE last=@last_massage",params)
 
             chat<"exist_user_in_topic">: exist_user_in_topic > 0
         }
         return chats
     }
-    
+    #!
+    chat.readed::&db,&params,&data
+    {
+        ref user=CurrentUser()
+        data<"user">:@@(user,"#sys_pk")
+
+        do dbr.execute(db,"update interchat_readed  ir
+            inner join interchat_topic i on ir.topic=i.sys_pk
+            set readed=now() 
+            where 
+            i.sys_guid=@_entity_id and ir.tuser=@user",data)
+            
+    }
 }

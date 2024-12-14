@@ -99,7 +99,7 @@ module "webShell"
                         $"#<@ICON_BELL>"
                         div(id="notis_num" class="#<ifstr(notis_num=='','d-none','')>"){ small(id="notis_num_text"){$"#<notis_num>"} }
                     }
-                    ul(class="dropdown-menu dropdown-menu-lg-end" "aria-labelledby"="btn_notis" id="notis_container")
+                    ul(class="dropdown-menu dropdown-menu-end" "aria-labelledby"="btn_notis" id="notis_container")
                     {
                         li(class="d-flex justify-content-between align-items-center")
                         {

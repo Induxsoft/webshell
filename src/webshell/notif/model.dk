@@ -5,11 +5,59 @@ module "model"
     #include "dbr.notif.dkl"
 
     @table_name = "sys_notif"
+    CurrentUser::&db
+    {
+        new p{@"uid":@@(@http_context,"$session/user/uid")}
+        return dbr.rec(db,"select * from tuser where userid=@uid",p)
+    }
+    function interchatNotif(&db)
+    {
+        sql="SELECT i.sys_pk,i.sys_guid,
+		 @last_massage := 
+		 IFNULL((
+       	    SELECT MAX(sys_pk) FROM ws_det_log lg WHERE lg.guid=i.sys_guid
+		 ),0)last_massage,
+		 
+		 (@last_massage > IFNULL(ir.last,0) )last_message_readed
+       FROM interchat_topic i
+       INNER JOIN interchat_topic_topic_member tu ON i.sys_pk=tu.topic
+       LEFT JOIN interchat_readed ir ON i.sys_pk=ir.topic AND tu.user=ir.tuser
+       WHERE ifnull(i.sys_deleted,0)=0
+       AND tu.user=@user
+       AND IFNULL(i.sys_deleted,0)=0
+       AND IFNULL(i.closed,0)=0
+       GROUP BY i.sys_pk
+		 HAVING last_massage > 0 AND last_message_readed ;"
 
+        new params{@"user":@@(CurrentUser(db),"#sys_pk")}
+
+        return dbr.rec(db,sql,params)
+
+    }
     function notif.list(&db, &params)
     {
         @__dbr.notif.no.readed = 10
-        return dbr.notif.list(db)
+        ref l= dbr.notif.list(db)
+        //checar si hay conversaciones
+        if not(isnull(interchatNotif(db)))
+        {
+            new notif_chat
+            {
+                @"body": "Hay nuevos mensajes sin leer en los temas de conversaciones internas a los que estás suscrito"
+                @"created": date_str(now(),"yyyy-MM-dd HH:mm:ss")
+                @"end": date_str(now(),"yyyy-MM-dd HH:mm:ss")
+                @"href": "/?go="+url_encode(@URL_INTERCHAT)
+                @"id": "@__interchat"
+                @"sndrid": "@__interchat"
+                @"start": date_str(now(),"yyyy-MM-dd HH:mm:ss")
+                @"target": 2
+                @"title": "Nuevos mensajes"
+            }
+            do list.ins(l,0,notif_chat)
+        }
+        
+
+        return l
     }
 
     function notif.update(&db, &params, &data)

@@ -108,6 +108,7 @@ module ""
             log.url_root_current="#<url_root_current>";
             log.current_user="#<current_user>";
             log.data=#<to.json(data)>;
+            log.action_current_user=#<parse.bool(@@(@http_context,"request/get/noaction"))>;
             '
         }
         

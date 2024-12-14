@@ -349,11 +349,47 @@ body {
     font-weight: bold;
 }
 /* interchat */
-
 @media screen and (max-width: 768px)
 {
     .category-shortcuts {
         gap: .7rem;
+    }
+}
+/* Ajustar menu de notificaciones (325px - 454px) */
+@media (max-width: 453px) {
+    #dropdown-notis .dropdown-menu {
+        right: auto;
+        left: 0;
+    }
+}
+@media (max-width: 421px) {
+    #dropdown-notis .dropdown-menu {
+        right: auto;
+        left: -100px;
+    }
+}
+@media (max-width: 410px) {
+    #dropdown-notis .dropdown-menu {
+        top: 18px;
+        right: auto;
+        left: -100px;
+        transform: scale(.9);
+    }
+}
+@media (max-width: 389px) {
+    #dropdown-notis .dropdown-menu {
+        top: 10px;
+        right: auto;
+        left: -150px;
+        transform: scale(.8);
+    }
+}
+@media (max-width: 325px) {
+    #dropdown-notis .dropdown-menu {
+        top: 0;
+        right: auto;
+        left: -150px;
+        transform: scale(.7);
     }
 }
 

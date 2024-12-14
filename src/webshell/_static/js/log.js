@@ -8,6 +8,7 @@ window.addEventListener("resize", function(event)
 
 var log=
 {
+    action_current_user:false,
     init()
     {
         this.endpoint="";
@@ -40,9 +41,28 @@ var log=
             </div>
         </div>`;
 
+        this.action_current_user_HTML=`
+                <div class="btn-goup d-flex justify-content-end" role="group" style="float: right;">
+                    <button class="btn bg-transparent btn-sm rounded-0 no-shadow" type="button" id="notif-group-actions" data-bs-toggle="dropdown" aria-expanded="false">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
+                            <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"></path>
+                        </svg>
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="notif-group-actions">
+                        <li>
+                            <button class="dropdown-item" onclick="log.DeleteMessage(@id_chat)">Eliminar</a>
+                        </li>
+                    </ul>
+                </div>`;
+
+        if(!this.action_current_user)this.action_current_user_HTML="";
+
         this.HTML_module_emisor=`
-        <div class="d-flex justify-content-end module_emisor">
+        <div class="d-flex justify-content-end module_emisor" id="chat-@id_chat">
             <div class="body-chat-emisor">
+                
+                ${this.action_current_user_HTML}
+                
                 <div class="chat">@adjunto 
                     <div class="div-img">@module_adjunto @message</div>
                 </div>
@@ -84,6 +104,22 @@ var log=
     },
     ScrollGen:true,
     CountScroll:0,
+    DeleteMessage(id,act="del-msg",method="DELETE")
+    {
+        var data=
+        {
+            use_url:true,
+            enpoint:`./?id=${id}&page=${act}/`
+        }
+        var elem=document.getElementById(`chat-${id}`);
+        if(!elem)return;
+
+        this.InvokeService(method,data,
+            (data)=>
+            {
+                elem.remove();
+            });
+    },
     SendMessage()
     {
         if(this.txt_message.value.trim()=="")
@@ -126,14 +162,6 @@ var log=
             {
                 this.adjunto.value="";
             },null,true);
-    },
-    DeleteMessage(msgid)
-    {
-        this.InvokeService("DELETE",null,
-            (data)=>
-            {
-                console.log(data);
-            });
     },
     GetMessages()
     {
@@ -215,6 +243,7 @@ var log=
             html=html.replace("@adjunto","");
             html=html.replace("@module_adjunto","");
         }
+        html=html.replaceAll("@id_chat",row.sys_pk);
 
         this.body_chat.innerHTML+=html;
 
@@ -350,7 +379,14 @@ var log=
     },
     InvokeService(method,values=null,callbak_succes=null,callbak_failed=null,formdata=false)
     {
-        InduxsoftCrudlModel.InvokeService(this.endpoint, values, 
+        let url=this.endpoint;
+        if(values && (tools.ParseBool(values["use_url"]??"")) )
+        {
+            if((values["enpoint"]??"")!="")url=(values["enpoint"]??"");
+        }
+        if(method.toLowerCase()=="get")values=null;
+
+        InduxsoftCrudlModel.InvokeService(url, values, 
             success => { 
                 if(callbak_succes)callbak_succes(success);
             },
