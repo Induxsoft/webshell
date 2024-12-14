@@ -206,6 +206,7 @@ module ""
                 chat<"last_massage">:last_massage
                 last_massage >> params
             }
+            
             do dbr.execute(db,"INSERT INTO 
                                             interchat_readed (tuser,topic,last) values(@user,@chat,@last_massage) 
                                             ON DUPLICATE KEY UPDATE last=@last_massage",params)

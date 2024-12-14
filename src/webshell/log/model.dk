@@ -152,6 +152,7 @@ module ":log"
                     do adj.prop(dt,@@(dt,"$archivo"))
                 }
                 data<"data*">:ldata
+                data<"eliminados*">:webshell.detlog.delete.getall(@@(params,"$detid"),@@(params,"$guid"))
             }
         }
         return data
@@ -162,6 +163,10 @@ module ":log"
     }
     delete::&db,&params
     {
+        if parse.bool(@@(params,"from-file"))
+        {
+            params<"id">:dbr.num(db,"select sys_pk from ws_det_log where idarchivo=@id",params)
+        }
        do webshell.detlog.delete(@@(params,"$id"),@@(@http_context,"$session/user/uid"))
     }
     download::&db,&params

@@ -94,26 +94,26 @@ module ""
                                     span(class="flex-grow-1"){""}
                                     div(class="justify-content-end")
                                     {
-                                        button(class="border-0 me-2" onclick="interchat.OpenModalUser(event);" title="Agregar usuarios" id="h_btn_add_user")
+                                        button(class="me-2 interchat-btn-action" onclick="interchat.OpenModalUser(event);" title="Agregar usuarios" id="h_btn_add_user")
                                         {
                                             $'<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-person-fill-add" viewBox="0 0 16 16">
                                                     <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0m-2-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
                                                     <path d="M2 13c0 1 1 1 1 1h5.256A4.5 4.5 0 0 1 8 12.5a4.5 4.5 0 0 1 1.544-3.393Q8.844 9.002 8 9c-5 0-6 3-6 4"/>
                                             </svg>'
                                         }
-                                        button(class="border-0 me-2" onclick="interchat.Users(event);" title="Usuarios" id="h_btn_list_user")
+                                        button(class="me-2 interchat-btn-action" onclick="interchat.Users(event);" title="Usuarios" id="h_btn_list_user")
                                         {
                                             $'<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-people-fill" viewBox="0 0 16 16">
                                             <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
                                             </svg>'
                                         }
-                                        button(class="border-0 me-2" onclick="interchat.CloseChat(event);" title="Cerrar conversación" id="h_btn_close_chat")
+                                        button(class="me-2 interchat-btn-action" onclick="interchat.CloseChat(event);" title="Cerrar conversación" id="h_btn_close_chat")
                                         {
                                             $'<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-lock-fill" viewBox="0 0 16 16">
                                             <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
                                             </svg>'
                                         }
-                                        button(class="border-0" onclick="interchat.DeleteChat(event);" title="Eliminar conversación" id="h_btn_del_chat")
+                                        button(class="interchat-btn-action" onclick="interchat.DeleteChat(event);" title="Eliminar conversación" id="h_btn_del_chat")
                                         {
                                             $'
                                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
@@ -210,6 +210,15 @@ module ""
                 -moz-animation: spin 1s linear infinite;
                 -o-animation: spin 1s linear infinite;
                 animation: spin 1s linear infinite;
+            }
+            .interchat-btn-action 
+            {
+                border-start-start-radius: 15px;
+                border:1px solid lightgray;
+            }
+            .interchat-btn-action svg:hover
+            {
+                color: blueviolet;
             }
             @-webkit-keyframes spin 
             {

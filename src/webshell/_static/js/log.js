@@ -31,7 +31,7 @@ var log=
             log.SelectedElement(data);
         }
         this.last_log = 0;
-        this.HTML_module_receptor=`<div class="d-flex justify-content-start module_receptor">
+        this.HTML_module_receptor=`<div class="d-flex justify-content-start module_receptor" id="chat-@id_chat">
             <div class="body-chat-receptor">
                 <div class="chat">@adjunto 
                     <div class="div-img">@module_adjunto @message</div>
@@ -50,13 +50,23 @@ var log=
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="notif-group-actions">
                         <li>
-                            <button class="dropdown-item" onclick="log.DeleteMessage(@id_chat)">Eliminar</a>
+                            <button class="dropdown-item" onclick="log.DeleteMessage('@id_chat','@idfile')">Eliminar</a>
                         </li>
                     </ul>
                 </div>`;
 
-        if(!this.action_current_user)this.action_current_user_HTML="";
+        this.action_adjunto_user_current_HTML=`
+                                <div class="btn-goup d-flex justify-content-center align-items-center btn-file-delete" onclick="log.DeleteFile('@idfile','',event);">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
+                                        <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5"></path>
+                                    </svg>
+                                </div>`;
 
+        if(!this.action_current_user || this.action_current_user < 1)
+        {
+            this.action_current_user_HTML="";
+            this.action_adjunto_user_current_HTML="";
+        }
         this.HTML_module_emisor=`
         <div class="d-flex justify-content-end module_emisor" id="chat-@id_chat">
             <div class="body-chat-emisor">
@@ -70,19 +80,31 @@ var log=
                 <small class="fecha-hour d-flex">@fecha_hora</small>
             </div>
         </div>`;
-
+        
+        
+        
+        
+        
         this.HTML_adjunto=`
-        <a class="btn btn-sm btn-adjunto" href="@url" target="_blank">
-            @module_adjunto
-            <div class="div-img">
-                <small class="chat-name-adjunto">@name_adjunto</small>
-            </div>
-        </a>`;
+        <div class="btn btn-sm btn-adjunto" title="@name_adjunto" id="adjunto-@idfile">
+            <a href="@url" target="_blank" >
+                <div class="d-flex">
+                    @module_adjunto
+                    ${this.action_adjunto_user_current_HTML}
+                </div>
+                <div class="div-img d-flex align-items-start">
+                    <small class="chat-name-adjunto">@name_adjunto</small>
+                </div>
+            </a>
+        </div>
+        `;
+
+        this.HTML_module_adjunto=`<div class="chat-div-adjunto"><img src="@src"/></div>`;
+
         this.HTML_redir_chat=`<a href="@url" target="_blank">@html</a>`;
-        this.HTML_module_adjunto=`<div class="chat-div-adjunto"><img src="@src"/></div>`
         this.HTML_name_adjunto=`<small class="chat-name-adjunto">@name_adjunto</small>`;
 
-        this.HTML_divider_fecha=`<div class="d-flex">
+        this.HTML_divider_fecha=`<div class="d-flex" id="div-@fecha">
                                     <hr class="fecha-divider">
                                     <small class="f-fecha">@fecha</small>
                                     <hr class="fecha-divider">
@@ -104,7 +126,13 @@ var log=
     },
     ScrollGen:true,
     CountScroll:0,
-    DeleteMessage(id,act="del-msg",method="DELETE")
+    Cut(text,length)
+    {
+        if(text.length<length)return text;
+
+        return text.substring(0,length);
+    },
+    DeleteMessage(id,idfile="",act="del-msg",method="DELETE")
     {
         var data=
         {
@@ -113,12 +141,74 @@ var log=
         }
         var elem=document.getElementById(`chat-${id}`);
         if(!elem)return;
-
+        
         this.InvokeService(method,data,
             (data)=>
             {
-                elem.remove();
+                log.DeleteFile(idfile,id,null,false);
             });
+    },
+    DeleteAdjunto()
+    {
+        var data=this.data_preview;
+		if(!data)
+		{
+			alert("Debe seleccionar un elemento");
+			return;
+		}
+        var request=
+        {
+            use_url:true,
+            enpoint:`./?id=${data.id??""}&from-file=true&page=del-msg`
+        }
+		this.InvokeService("DELETE",request,
+            (data)=>
+            {
+                window.location.reload()
+            });
+		
+    },
+    DeleteFile(idfile,guid="",event=null,ivkservice=true)
+    {
+        if(event)
+        {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+
+        let elemfile=document.getElementById(`adjunto-${idfile}`);
+        if(elemfile)elemfile.remove();
+
+        var row=null;
+
+        if(idfile.trim()!="")row=this.data.find((r)=>r.idarchivo==idfile);
+        else row=this.data.find((r)=>r.sys_pk==guid);
+       
+        if(row)
+        {
+            if(guid.toString().trim()=="")guid=(row.sys_pk??"").toString();
+            
+            var elem=document.getElementById(`chat-${guid}`);
+            if(!elem)return;
+
+            if(!ivkservice)
+            {
+                elem.remove();
+            }
+            else
+            {
+                log.DeleteMessage(row.sys_pk,idfile);
+            }
+            log.CheckDivisor(`div-${row.fecha??""}`);
+        }
+        
+    },
+    CheckDivisor(iddiv)
+    {
+        var divisor=document.getElementById(iddiv);
+        var elements=document.querySelectorAll(`#${iddiv} ~ *`);
+        
+        if(elements && elements.length <1 && divisor) divisor.remove();
     },
     SendMessage()
     {
@@ -176,8 +266,23 @@ var log=
             {
                 if(data.data)log.CreateBodyChat(data.data);
                 if(data.adjuntos)log.CreateBodyAdjuntos(data.adjuntos);
+                if(data.eliminados)log.ElementsRemove(data.eliminados);
+
                 log.CountScroll++;
             },(failure)=>{console.log(failure.message??JSON.stringify(failure))});
+    },
+    ElementsRemove(data)
+    {
+        if(!data || data.length<1)return
+
+        for (let i = 0; i < data.length; i++) 
+        {
+            var row = data[i];
+            var elem=document.getElementById(`chat-${row.pkmsg??""}`);
+            if(elem)elem.remove();
+
+            log.CheckDivisor(`div-${row.fecha??""}`);
+        }
     },
     CreateBodyAdjuntos(data)
     {
@@ -192,7 +297,8 @@ var log=
     {
         if(!item || !this.adjuntos)return;
         
-        var html=this.HTML_adjunto.replace("@module_adjunto",this.HTML_module_adjunto.replace("@src",item.mini??"")).replace("@name_adjunto",item.nombre??"").replace("@url",log.url_download_adjuntos.replace("@id",item.id??""));
+        var html=this.HTML_adjunto.replace("@module_adjunto",this.HTML_module_adjunto.replace("@src",item.mini??"")).replaceAll("@name_adjunto",log.Cut(item.nombre??"",10)).replace("@url",log.url_download_adjuntos.replace("@id",item.id??""));
+        html=html.replaceAll("@idfile",item.id??"");
 
         this.AddHTML(log.header_counter,html);
         log.count_adjuntos+=1;
@@ -226,9 +332,12 @@ var log=
         let nota=row.nota??"";
         // if(nota.trim()=="")nota=row.archivo??"";
         let fecha=(row.fecha??"");
-        if(this.last_fecha!=fecha)
+       
+
+        let divisor_fecha=document.getElementById(`div-${fecha}`);
+        if(this.last_fecha!=fecha || !divisor_fecha)
         {
-            this.body_chat.innerHTML+=this.HTML_divider_fecha.replace("@fecha",fecha);
+            this.body_chat.innerHTML+=this.HTML_divider_fecha.replaceAll("@fecha",fecha);
             this.last_fecha=fecha;
         }
         html=html.replace("@message",nota).replace("@user",row.usuario).replace("@fecha_hora",(row.hora??"").toLowerCase());
@@ -243,11 +352,16 @@ var log=
             html=html.replace("@adjunto","");
             html=html.replace("@module_adjunto","");
         }
-        html=html.replaceAll("@id_chat",row.sys_pk);
+        html=html.replaceAll("@id_chat",row.sys_pk).replace("@idfile",row.idarchivo??"");
 
         this.body_chat.innerHTML+=html;
 
         if(Number(row.sys_pk??0)>this.last_log)this.last_log=Number(row.sys_pk??0);
+
+        if(!this.data)this.data=[];
+        
+        var r=this.data.find((t)=>t.sys_guid==row.sys_guid);
+        if(!r)this.data.push(row);
     },
     ObserveScroll()
     {

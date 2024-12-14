@@ -27,11 +27,13 @@ module ""
     url_download_adjuntos=replace(url_download_adjuntos,"@guid",@("$parameters/_view"))
 
     guid=@("$parameters/_view")
+    bool_action=parse.bool(@@(@http_context,"request/get/noaction"))
+
     #$
     div(class="v12-form-view container-fluid" id="view" style="min-width: 290px;")
     {
         script(src="#<@JS_LOG>"){""}
-        link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
+        link(href="#<@CSS_WEBSHELL>" rel="stylesheet"){""}
 
         section(id="top_area"){$""}
         section(id="work_area")
@@ -46,22 +48,42 @@ module ""
                         for i = 0; i < count_adjuntos
                         {
                             ref adjunto=@item(adjuntos,i)
-                            // do rise_error(0,to.json(adjunto))
                             id=@@(adjunto,'$id')
                             #$
-                            a(class="btn btn-sm btn-adjunto" href="#<replace(url_download_adjuntos,'@id',id)>" target="_blank")
+                            div(class="btn btn-sm btn-adjunto" title="#<@@(adjunto,'$nombre')>" id="adjunto-#<id>")
                             {
-                                div(class="chat-div-adjunto")
-                                {$""
-                                    #! if trim(@@(adjunto,"$mini"))!=""
-                                    {
-                                        #$ img(src="#<@@(adjunto,'$mini')>"){""}
-                                    }
-                                }
-                                div(class="div-img")
+                                a(href="#<replace(url_download_adjuntos,'@id',id)>" target="_blank")
                                 {
-                                    small(class="chat-name-adjunto" ){$"#<@@(adjunto,'$nombre')>"}
+                                    div(class="d-flex")
+                                    {
+                                        div(class="chat-div-adjunto")
+                                        {$""
+                                            #! if trim(@@(adjunto,"$mini"))!=""
+                                            {
+                                                #$ img(src="#<@@(adjunto,'$mini')>"){""}
+                                            }
+                                        }
+                                        #!
+                                        if bool_action
+                                        {
+                                            #$
+                                            div(class="btn-goup d-flex justify-content-center align-items-center btn-file-delete" 
+                                            onclick="log.DeleteFile('#<id>','',event);")
+                                            {
+                                                $'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
+                                                    <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5"/>
+                                                </svg>'
+                                            }
+                                        }
+                                        
+                                    }
+                                    div(class="div-img d-flex align-items-start")
+                                    {
+                                        small(class="chat-name-adjunto" ){$"#<cut(@@(adjunto,'$nombre'),10)>"}
+                                    }
+                                    
                                 }
+                                
                             }
                         }
                         #$
@@ -108,7 +130,7 @@ module ""
             log.url_root_current="#<url_root_current>";
             log.current_user="#<current_user>";
             log.data=#<to.json(data)>;
-            log.action_current_user=#<parse.bool(@@(@http_context,"request/get/noaction"))>;
+            log.action_current_user=#<bool_action>;
             '
         }
         

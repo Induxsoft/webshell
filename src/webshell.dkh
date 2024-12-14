@@ -197,6 +197,36 @@ module ":webshell"
         
         return dbr.rec(db,sql,params)
     }
+    @webshell.max_rows= 5
+    detlog.delete.getall::detid,guid
+    {
+        ref db=getDB()
+
+        new params
+        {
+            @"detid":detid
+            @"guid":guid
+        }
+        sql="SELECT
+            wf.sys_pk pkfile,
+            wf.sys_guid guidfile,
+            wf.id idfile,
+            wf.nombre,
+            wl.sys_guid idmsg,
+            wl.sys_pk pkmsg,
+            date_format(wl.sys_dtcreated,'%Y-%m-%d')fecha
+        FROM ws_det_log wl
+            LEFT JOIN ws_det_log_file wf  ON wl.idarchivo=wf.id 
+            INNER JOIN ws_det_log_enable wd ON wl.origen = wd.sys_pk
+        WHERE 
+            wl.guid = @guid
+            AND wd.det = @detid
+            AND ifnull(wl.sys_deleted,0)=1
+        ORDER BY wl.sys_timestamp DESC
+        LIMIT #<@webshell.max_rows>"
+
+        return dbr.list(db,ftext(sql),params)
+    }
     detlog.file.getall::&detid,guid,from,to
     {
         ref db=getDB()
@@ -253,11 +283,12 @@ module ":webshell"
             @"id":msgid
             @"uid":userid
         }
-        do dbr.execute(db,"update ws_det_log set sys_deleted=1 where sys_pk=@id and usuario=@uid",params)
+
+        do dbr.execute(db,"update ws_det_log set sys_deleted=1,sys_timestamp=now() where sys_pk=@id and usuario=@uid",params)
 
         do dbr.execute(db,"UPDATE ws_det_log_file wf
                 INNER JOIN ws_det_log wl ON wf.id=wl.idarchivo
-                SET wf.sys_deleted=1
+                SET wf.sys_deleted=1,wf.sys_timestamp=now()
                 WHERE wl.sys_pk=@id and usuario=@uid",params)
     }
 
