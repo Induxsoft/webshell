@@ -72,7 +72,7 @@ module "webShell"
     
     ref rtpys=from.json(v12_feedback_tpys)
     ref tpys=list.create_from_fields(rtpys)
-
+    
     url_user = ftext("/!/dbext/user/#<@@(@_USER,'$uid')>/")
 
     if @isPrintView && open_database { do dbr.close(database) }

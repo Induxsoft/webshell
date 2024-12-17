@@ -154,13 +154,15 @@ module "Administración de notificaciones:notiman"
         
         if title == "" { do rise_error(511,"El valor del campo `Asunto` es requerido.") }
         if list.count(to) < 1 { do rise_error(512,"Es necesario indicar al menos un destinatario (`Para`).") }
+        if length(url) > 1024 { do rise_error(513,"La longitud de la URL asociado supera la cantidad de caracteres permitida (1024).") }
+        if length(img) > 1024 { do rise_error(514,"La longitud de la URL del icono supera la cantidad de caracteres permitida (1024).") }
         
         new notif
         {
-            @"sender": "@"+@@(@http_context,"$session/user/uid")
+            @"sender": cut("@"+@@(@http_context,"$session/user/uid"),50)
             @"to*": to
-            @"title": title
-            @"body": trim(@@(data,"$body"))
+            @"title": cut(title,50)
+            @"body": cut(trim(@@(data,"$body")),1024)
             @"start": @@(data,"$start")
             @"end": @@(data,"$end")
             @"target": field.str(data,"target","_self")
@@ -182,6 +184,16 @@ module "Administración de notificaciones:notiman"
         resp<"url_redir"> : "/!/webshell/notiman/?_show=enviadas"
         
         return resp
+
+        exception
+        {
+            do errordet(@false)
+            code = last_error_code()
+            error = last_error()
+
+            do clear_exceptions()
+            do rise_error(code,error)
+        }
     }
 
     function GetInfo(&db,&params)
