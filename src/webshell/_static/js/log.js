@@ -31,7 +31,7 @@ var log=
             log.SelectedElement(data);
         }
         this.last_log = 0;
-        this.HTML_module_receptor=`<div class="d-flex justify-content-start module_receptor" id="chat-@id_chat">
+        this.HTML_module_receptor=`<div class="d-flex justify-content-start module_receptor" id="chat-@id_chat" _date="@date">
             <div class="body-chat-receptor">
                 <div class="chat">@adjunto 
                     <div class="div-img">@module_adjunto @message</div>
@@ -68,7 +68,7 @@ var log=
             this.action_adjunto_user_current_HTML="";
         }
         this.HTML_module_emisor=`
-        <div class="d-flex justify-content-end module_emisor" id="chat-@id_chat">
+        <div class="d-flex justify-content-end module_emisor" id="chat-@id_chat" _date="@date">
             <div class="body-chat-emisor">
                 
                 ${this.action_current_user_HTML}
@@ -80,10 +80,6 @@ var log=
                 <small class="fecha-hour d-flex">@fecha_hora</small>
             </div>
         </div>`;
-        
-        
-        
-        
         
         this.HTML_adjunto=`
         <div class="btn btn-sm btn-adjunto" title="@name_adjunto" id="adjunto-@idfile">
@@ -199,14 +195,14 @@ var log=
             {
                 log.DeleteMessage(row.sys_pk,idfile);
             }
-            log.CheckDivisor(`div-${row.fecha??""}`);
+            log.CheckDivisor(`div-${row.fecha??""}`,(row.fecha??""));
         }
         
     },
-    CheckDivisor(iddiv)
+    CheckDivisor(iddiv,fecha)
     {
         var divisor=document.getElementById(iddiv);
-        var elements=document.querySelectorAll(`#${iddiv} ~ *`);
+        var elements=document.querySelectorAll(`#${iddiv} ~ [_date="${fecha}"]`);
         
         if(elements && elements.length <1 && divisor) divisor.remove();
     },
@@ -226,6 +222,7 @@ var log=
             (data)=>
             {
                 log.txt_message.value="";
+                log.GetMessages();
             });
     },
     SendFile()
@@ -251,13 +248,16 @@ var log=
             (data)=>
             {
                 this.adjunto.value="";
-            },null,true);
+                log.GetMessages();
+            },
+            (failed)=>
+            {
+                this.adjunto.value="";
+                alert(failed.message??JSON.stringify(failed));
+            },true);
     },
     GetMessages()
     {
-        log.PanelAvailable();
-        if(log.CountScroll<3)log.Scroll(true);
-        
         this.endpoint="";
         this.endpoint+="?from="+(Number(this.last_log) + 1);
         
@@ -281,13 +281,13 @@ var log=
             var elem=document.getElementById(`chat-${row.pkmsg??""}`);
             if(elem)elem.remove();
 
-            log.CheckDivisor(`div-${row.fecha??""}`);
+            log.CheckDivisor(`div-${row.fecha??""}`,(row.fecha??""));
         }
     },
     CreateBodyAdjuntos(data)
     {
         if(!data || data.length<1)return;
-        for (let i = 0; i < data.length; i++) 
+        for (let i = data.length; i >=0 ; i--) 
         {
             const item = data[i];
             this.CreateItemAdjunto(item);
@@ -296,6 +296,8 @@ var log=
     CreateItemAdjunto(item)
     {
         if(!item || !this.adjuntos)return;
+        var element=document.getElementById(`adjunto-${item.id}`);
+        if(element)return;
         
         var html=this.HTML_adjunto.replace("@module_adjunto",this.HTML_module_adjunto.replace("@src",item.mini??"")).replaceAll("@name_adjunto",log.Cut(item.nombre??"",10)).replace("@url",log.url_download_adjuntos.replace("@id",item.id??""));
         html=html.replaceAll("@idfile",item.id??"");
@@ -314,25 +316,29 @@ var log=
     CreateBodyChat(data)
     {
         if(!data || data.length<1)return;
-        for (let i = 0; i < data.length; i++) 
+
+        for (let i = data.length; i >= 0 ; i--) 
         {
             const item = data[i];
             this.CreateItemChat(item);
         }
-        this.Scroll();
+        log.allowScroll=true;
+        log.Scroll(true);   
     },
     last_fecha:"",
     CreateItemChat(row)
     {
         if(!row || !this.body_chat)return;
-        
+
+        var exit_elem=document.getElementById(`chat-${row.sys_pk}`);
+        if(exit_elem)return;
+
         var html="";
         if(row.usuario==log.current_user) html=this.HTML_module_emisor;
         else  html=this.HTML_module_receptor;
         let nota=row.nota??"";
         // if(nota.trim()=="")nota=row.archivo??"";
         let fecha=(row.fecha??"");
-       
 
         let divisor_fecha=document.getElementById(`div-${fecha}`);
         if(this.last_fecha!=fecha || !divisor_fecha)
@@ -353,6 +359,7 @@ var log=
             html=html.replace("@module_adjunto","");
         }
         html=html.replaceAll("@id_chat",row.sys_pk).replace("@idfile",row.idarchivo??"");
+        html=html.replaceAll("@date",fecha);
 
         this.body_chat.innerHTML+=html;
 
@@ -458,12 +465,16 @@ var log=
     {
         if(!log.allowScroll)return;
         
-       if(scrll)
-       {
+        var body_chat=document.getElementById("body-chat");
+
+        if(body_chat && (body_chat.scrollHeight??0)>y)y=(body_chat.scrollHeight??0);
+        
+        if(scrll)
+        {
             if(log.body_chat)log.body_chat.scrollTo(x, y);
-       }
-       else 
-       {
+        }
+        else 
+        {
             var chat_body_h=700;//log.body_chat.clientHeight - 100
             var elements=document.querySelectorAll("#body-chat > div");
 
@@ -473,12 +484,12 @@ var log=
                 const element = elements[i];
                 if(element)h+=element.clientHeight;
             }
-            
-           if(h>=chat_body_h) 
-           {
+                
+            if(h>=chat_body_h) 
+            {
                 if(log.body_chat)log.body_chat.scrollTo(x, y);
-           }
-       }
+            }
+        }
     },
     PanelAvailable()
     {

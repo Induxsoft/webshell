@@ -87,6 +87,10 @@ module "webShell"
             {
                 a(href="/"){ img(src="#<webshell_logo>"){$""} }
                 small(class="text-logo"){$"#<webshell_title>"}
+                audio(id="audio-notification" controls="true" class="d-none")
+                {
+                    source(src="#<@URL_AUDIO_NOTIFICATION>"){""}
+                }
             }
             #!
             if not(@isPrintView) {

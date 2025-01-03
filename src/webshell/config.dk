@@ -20,6 +20,10 @@ program ""
     @JS_LOG="/$/webshell/js/log.js"
     @INTER_CHAT="/$/webshell/js/interchat.js"
     
+    //sonidos
+    @URL_AUDIO_CHAT="/$/webshell/audio/chat.wav"
+    @URL_AUDIO_NOTIFICATION="/$/webshell/audio/notification.wav"
+
     @ICON_V12 = "/$/webshell/img/icons/v12_2.png"
 
     @URL_ACTIONS = "/!/webshell/action/"
@@ -36,6 +40,7 @@ program ""
 
     @FEEDBACK_SVG="/$/webshell/img/icons/feedback.svg"
     @var_files_log="ws_file_store" //var global por default
+    @URL_FILES_DATA="/$/data/@qname/attatchments/@det/@guid/"
 
     @SERVICE_DOWNLOAD_FILE_CHAT="/webshell/_services/download.dkl?detid=@detid&guid=@guid&id=@id"
 

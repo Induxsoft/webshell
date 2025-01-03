@@ -7,14 +7,15 @@ var top_screen =
     url_notif_go: '',
     requesting: false,
     notif_frq: 60,
-    
+    audio_notification:null,
     init()
     {
         this.ik_actions = document.querySelector('#ik_actions');
         this.btn_navbar_lightning = document.querySelector('#btn_navbar_lightning');
         this.iframe_view = document.querySelector('#_main_view');
         this.language_info = document.querySelector('#language_info');
-        
+        this.audio_notification=document.getElementById("audio-notification");
+
         this.set_ik_action_events();
         this.set_interval_refresh_notifs();
         this.set_loading_operation();
@@ -78,6 +79,7 @@ var top_screen =
             "GET", false
         );
     },
+    ArrayNotifycaded:[],
     print_notif(data)
     {
         let containr = document.querySelector('#notis_container');
@@ -93,7 +95,9 @@ var top_screen =
         notisnum.classList.toggle('d-none', (total_nt==''));
         num_text.textContent = total_nt;
 
-        data.forEach(noti => {
+        let playnotif=false;
+        data.forEach(noti => 
+        {
             let ver_mas = ``;
 
             if (noti.href)
@@ -115,9 +119,22 @@ var top_screen =
                     </a>
                 </li>
             `;
+
+            var rowNotificaded=top_screen.ArrayNotifycaded.find((r)=>r.id==noti.id);
+            if(!rowNotificaded || noti.id.includes("@__"))
+            {
+                top_screen.ArrayNotifycaded.push(noti);
+                playnotif=true;
+            }
         });
 
         containr.innerHTML = template;
+
+        if(playnotif)this.PlayNotif();
+    },
+    PlayNotif()
+    {
+        if(this.audio_notification)this.audio_notification.play();
     },
     go_to(url, target, event)
     {

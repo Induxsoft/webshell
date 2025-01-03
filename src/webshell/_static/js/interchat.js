@@ -45,6 +45,7 @@ var interchat=
         //CAMPOS DE ENTRADAS
         this.title=document.getElementById("title");
 
+        this.audio_alert=document.getElementById("audio-alert");
         if(this.title)this.title.addEventListener("keypress",(event)=>
         {
             var keycode = (event.keyCode ? event.keyCode : event.which);
@@ -365,12 +366,17 @@ var interchat=
                 var elem=document.getElementById("noti-"+row.sys_guid);
                 if(elem)elem.classList.remove("d-none");
                 row.last_massage=item.last_massage;
+                interchat.PlayAudio();
             }
             else if(row && interchat.chatInternalSeleted && row.sys_guid==interchat.chatInternalSeleted)
             {
                 row.last_massage=item.last_massage;
             }
         }
+    },
+    PlayAudio()
+    {
+        if(interchat.audio_alert)interchat.audio_alert.play();
     },
     QuitOptionSelectUser(select,data)
     {
@@ -607,7 +613,6 @@ var interchat=
 
         let url_src=this.url_bitacora.replace("@det",det).replace("@guid",guid);
         this.iframe_interchat.src=url_src;
-
 
         interchat.getFooterChat(guid).then(footer=>
         {

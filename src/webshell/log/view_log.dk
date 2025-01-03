@@ -28,7 +28,7 @@ module ""
 
     guid=@("$parameters/_view")
     bool_action=parse.bool(@@(@http_context,"request/get/noaction"))
-
+    
     #$
     div(class="v12-form-view container-fluid" id="view" style="min-width: 290px;")
     {
@@ -43,12 +43,13 @@ module ""
                 div(class="card-header sticky-top bg-white d-flex" id="card-header")
                 {
                     div(class="d-flex gap-2" id="adjuntos" style="overflow:hidden")
-                    {
+                    {$""
                         #!
                         for i = 0; i < count_adjuntos
                         {
                             ref adjunto=@item(adjuntos,i)
                             id=@@(adjunto,'$id')
+                            
                             #$
                             div(class="btn btn-sm btn-adjunto" title="#<@@(adjunto,'$nombre')>" id="adjunto-#<id>")
                             {
@@ -60,7 +61,7 @@ module ""
                                         {$""
                                             #! if trim(@@(adjunto,"$mini"))!=""
                                             {
-                                                #$ img(src="#<@@(adjunto,'$mini')>"){""}
+                                                #$ img(src="#<@@(adjunto,'$mini')>" onerror="this.src='#<@@(adjunto,'$def_mini')>' "){""}
                                             }
                                         }
                                         #!

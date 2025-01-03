@@ -7,6 +7,7 @@ module ":log"
     #include "dbr.vars.dkl"
     #include "dbr.apps.dkl"
     #include "dbr.security.dkl"
+    #include "magick.dkh"
 
     SaveFile::&db,&params
     {
@@ -35,8 +36,11 @@ module ":log"
                 params<"idarchivo">:uuid()
                 filename=tolower(@@(params,"$idarchivo")+file.extension(filename))
                 
+                _file_path=filepath
+                
                 filepath = path.concat(filepath,filename)
                 do file.copy(@@(file,"$temp_file"),filepath)
+                do webshell.magick.generar.img(_file_path,filename)
                 break
             }else{ref file=@null}
         }
@@ -66,6 +70,12 @@ module ":log"
             @"name": name
             @"ext": ext
             @"mini": path.concat(@IMG_MINIS,mini)
+        }
+        path_mini=@@(adj,"$path_mini")+file.extension(mini)
+        if file.exists(path_mini)
+        {
+            adj<"def_mini">:@@(adj,"$mini")
+            adj<"mini">:@@(adj,"$url_mini")+file.extension(mini)
         }
         return adj
     }
@@ -124,10 +134,22 @@ module ":log"
         do dbr.apps.action.grant(@@(sitem,"$itemid"))
         
         ref adjuntos=webshell.detlog.file.getall(@@(params,"$detid"),@@(params,"$guid"),@@(params,"#from"),@@(params,"#to"))
+
+        var_path_file=dbr.vars.get(db,@var_files_log)
+        var_path_file=replace(var_path_file,"@qname",@@(@http_context,"$session/idp/qname"))
+        var_path_file=replace(var_path_file,"@det",@@(params,"$detid"))
+        var_path_file=replace(var_path_file,"@guid",@@(params,"$guid"))
+        
+        url_file_min=replace(@URL_FILES_DATA,"@qname",@@(@http_context,"$session/idp/qname"))
+        url_file_min=replace(url_file_min,"@det",@@(params,"$detid"))
+        url_file_min=replace(url_file_min,"@guid",@@(params,"$guid"))
+
         for i = 0; i < @count(adjuntos)
         {
             ref adjunto=@item(adjuntos,i)
             adjunto<"idarchivo">:@@(adjunto,"$id")
+            adjunto<"path_mini">:path.concat(var_path_file,"mini."+@@(adjunto,"$id"))
+            adjunto<"url_mini">:path.concat(url_file_min,"mini."+@@(adjunto,"$id"))
             do adj.prop(adjunto,@@(adjunto,"$nombre"))
         }
         
@@ -148,7 +170,8 @@ module ":log"
                 {
                     ref dt=@item(ldata,i)
                     dt<"can_action">:@@(dt,"$usuario")==@@(@http_context,"$session/user/uid")
-
+                    dt<"path_min">:path.concat(var_path_file,"mini."+@@(dt,"$archivo"))
+                    dt<"url_mini">:path.concat(url_file_min,"mini."+@@(dt,"$id"))
                     do adj.prop(dt,@@(dt,"$archivo"))
                 }
                 data<"data*">:ldata

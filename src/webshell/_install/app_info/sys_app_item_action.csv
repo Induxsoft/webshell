@@ -1,7 +1,7 @@
 "id","title","shorttitle","icon16x16","href","_blank","appid","itemtype","req_context_item_id","act_type"
 XW20,Administración de notificaciones,Notificaciones,,"/!/webshell/notiman/",0,webshell.notiman,DET08E,0,shortcut
 
-XW40,Configuarción de página de inicio,"Frontpage",,"/!/webshell/cfgfpage/",0,webshell.cfgfpage,DET08F,0,shortcut
+XW40,Configuración de página de inicio,"Frontpage",,"/!/webshell/cfgfpage/",0,webshell.cfgfpage,DET08F,0,shortcut
 XW41,Agregar página de inicio,Agregar,,"/!/webshell/cfgfpage/_new/",0,webshell.cfgfpage,DET08F,0,action
 XW42,Editar página de inicio,Editar,,"/!/webshell/cfgfpage/@_src_context_item_id/",0,webshell.cfgfpage,DET08F,1,action
 XW43,Eliminar página de inicio,Eliminar,,"javascript:InduxsoftCrudlModel.Delete(@_src_context_item_id);",0,webshell.cfgfpage,DET08F,1,action
