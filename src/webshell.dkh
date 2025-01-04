@@ -174,12 +174,17 @@ module ":webshell"
         {
             sql=sql + " AND wl.sys_pk <= @to "
         }
-        else if trim(@@(params,"$to"))!="" && trim(@@(params,"$from"))==""
+        else if trim(@@(params,"$to"))!="" && trim(@@(params,"$from"))!=""
         {
             sql=sql + " AND wl.sys_pk >= @from AND wl.sys_pk <= @to "
         }
-
-        sql=sql + " ORDER BY wl.sys_dtcreated DESC LIMIT #<@webshell.max_rows>"
+        
+        _order="DESC"
+        if trim(@@(_get,"$_order"))!=""
+        {
+            _order=@@(_get,"$_order")
+        }
+        sql=sql + " ORDER BY wl.sys_pk "+_order+" LIMIT #<@webshell.max_rows>"
 
         return dbr.list(db,ftext(sql),params)
     }

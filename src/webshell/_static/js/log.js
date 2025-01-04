@@ -23,6 +23,9 @@ var log=
         this.iframe_top=window.top.document.getElementById("right-frame");
 
         this.body_chat=document.getElementById("body-chat");
+        this.modal_preview_img=document.getElementById("modal_preview_img");
+        this.img_modal_preview=document.getElementById("img-modal-preview");
+        this.btn_donwload_img_modal=document.getElementById("btn-donwload-img-modal");
 
         if(this.body_chat)this.body_chat.addEventListener("scroll", function (e){log.allowScroll=false;});
 
@@ -99,7 +102,7 @@ var log=
         `;
 
         this.STYLE_div_adjunto="display:contents;"
-        this.HTML_module_adjunto=`<div class="chat-div-adjunto" style="@style"><img src="@src" onerror="this.src='@def_min' "/></div>`;
+        this.HTML_module_adjunto=`<div class="chat-div-adjunto" style="@style">@__tag_o<img src="@src" onerror="this.src='@def_min' " />@__tag_c</div>`;
 
         this.HTML_redir_chat=`<a href="@url" target="_blank">@html</a>`;
         this.HTML_name_adjunto=`<small class="chat-name-adjunto">@name_adjunto</small>`;
@@ -109,11 +112,18 @@ var log=
                                     <small class="f-fecha">@fecha</small>
                                     <hr class="fecha-divider">
                                 </div>`;
+
         this.HTML_more_mjs=`<div class="d-flex" id="div-more-chat">
                                 <hr class="more-chat-divider">
-                                <button class="f-more">Ver mas mensajes</button>
+                                <button class="f-more" onclick="log.more_chat(@pk_max,@pk_min,'@act','@order')">Más mensajes</button>
                                 <hr class="more-chat-divider">
                             </div>`;
+ //<button class="f-rec-more" onclick="log.more_chat(@pk_max,@pk_min,'@act','@order')">Mensajes recientes</button>
+        this.HTML_more_rec_mjs=`<div class="d-flex" id="div-more-rec-chat">
+                            <hr class="more-chat-divider">
+                            <button class="f-rec-more ms-2" onclick="log.ir_al_actual()">Ir al actual</button>
+                            <hr class="more-chat-divider">
+                        </div>`;
 
         if(this.btn_send)this.btn_send.addEventListener("click",()=>{log.SendMessage();});
         if(this.adjunto)this.adjunto.addEventListener("change",()=>{log.SendFile();})
@@ -121,21 +131,25 @@ var log=
 
         if(this.data && this.data.length>0)
         {
-            this.PrintViewMore(this.chatArray);
             this.CreateBodyChat(this.data);
         }
-        if(this.body_chat)
-        {
-            setInterval(() => 
-            {
-                log.GetMessages();
-            }, log.time_load_bitacora);
-        }
+        this.interval_chat=null;
+        this.setInterval();
         this.ObserveScroll();
         log.CalculeContador();
     },
     ScrollGen:true,
     CountScroll:0,
+    setInterval()
+    {
+        if(this.body_chat)
+        {
+            this.interval_chat= setInterval(() => 
+            {
+                log.GetMessages();
+            }, log.time_load_bitacora);
+        }
+    },
     Cut(text,length)
     {
         if(text.length<length)return text;
@@ -232,6 +246,7 @@ var log=
             text:this.txt_message.value
         }
         log.allowScroll=true;
+        log.printMoreChat=false;
         this.InvokeService("POST",data,
             (data)=>
             {
@@ -257,6 +272,7 @@ var log=
             data.append(file.name,file);
         }
         log.allowScroll=true;
+        log.printMoreChat=false;
         this.endpoint=this.url_root_current;
         this.InvokeService("POST",data,
             (data)=>
@@ -270,14 +286,17 @@ var log=
                 alert(failed.message??JSON.stringify(failed));
             },true);
     },
-    GetMessages()
+    GetMessages(endpoint="")
     {
         this.endpoint="";
         this.endpoint+="?from="+(Number(this.last_log) + 1);
-        
+
+        if(endpoint.trim()!="")this.endpoint=endpoint;
+
         this.InvokeService("GET",null,
             (data)=>
             {
+                if(log.printMoreChat)log.chatArray=data;
                 if(data.data)log.CreateBodyChat(data.data);
                 if(data.adjuntos)log.CreateBodyAdjuntos(data.adjuntos);
                 if(data.eliminados)log.ElementsRemove(data.eliminados);
@@ -298,11 +317,36 @@ var log=
             log.CheckDivisor(`div-${row.fecha??""}`,(row.fecha??""));
         }
     },
-    PrintViewMore(data)
+    ir_al_actual()
     {
-        if((data.count_msj_pnd??0)<1)return;
+        this.body_chat.innerHTML="";
+        this.printMoreChat=false;
+        log.GetMessages(`?to=&from=`);
+        this.setInterval();
+    },
+    more_chat(from,to,act,_order="")
+    {
+        let url=`?to=${from}&_order=ASC`;
         
-        this.body_chat.innerHTML+=this.HTML_more_mjs;
+        if(this.interval_chat)clearInterval(this.interval_chat);
+        this.printMoreChat=act=="min"?true:false;
+        log.allowScroll=false;
+        log.GetMessages(url);
+    },
+    printMoreChat:false,
+    last_pk_chat:0,
+    PrintViewMore(data,footer=false)
+    {
+        return;
+        
+        if((data.count_msj_pnd??0)<1)return;
+
+        var div_more_chat=document.getElementById("div-more-chat");
+        if(div_more_chat)return;
+        
+        let html=this.HTML_more_mjs.replaceAll("@pk_max",(Number(log.last_pk_chat) - 1)).replaceAll("@act","min").replaceAll("@pk_min",0);
+        html=html.replace("@order","");
+        this.body_chat.innerHTML+=html;
     },
     CreateBodyAdjuntos(data)
     {
@@ -320,6 +364,16 @@ var log=
         if(element)return;
         
         let html_adj=this.HTML_module_adjunto.replace("@src",row.mini??"").replaceAll("@def_min",(row.def_mini??"")).replaceAll("@style","");
+        if((row.def_mini??"")!="")
+        {
+            html_adj=html_adj.replace("@__tag_o",`<button onclick="log.Preview('${row.idarchivo}${row.ext}','${log.url_download_adjuntos.replace("@id",row.idarchivo??"")}',event);" style="width: 50px;height: 50px;" >`);
+            html_adj=html_adj.replace("@__tag_c",`</button>`);
+        }
+        else
+        {
+            html_adj=html_adj.replaceAll("@__tag_o","");
+            html_adj=html_adj.replaceAll("@__tag_c","");
+        }
         var html=this.HTML_adjunto.replace("@module_adjunto",html_adj).replaceAll("@name_adjunto",log.Cut(row.nombre??"",10)).replace("@url",log.url_download_adjuntos.replace("@id",row.id??""));
         html=html.replaceAll("@idfile",row.id??"");
 
@@ -334,9 +388,29 @@ var log=
 
         element.insertAdjacentHTML("beforebegin",html);
     },
+    Preview(idarchivo,link,event=null)
+    {
+        if(event)
+        {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+        let url=tools.path_concat((log.chatArray?.url_file_data??""),`${idarchivo}`);
+        if(this.modal_preview_img)
+        {
+            if(this.img_modal_preview)this.img_modal_preview.src="";
+            if(this.img_modal_preview)this.img_modal_preview.src=url;
+            if(this.btn_donwload_img_modal)this.btn_donwload_img_modal.href=link;
+        }
+        tools.showModal('modal_preview_img');
+    },
     CreateBodyChat(data)
     {
         if(!data || data.length<1)return;
+        
+        let ult_row=data[data.length - 1];
+        log.last_pk_chat=ult_row?.sys_pk??0;
+        this.PrintViewMore(this.chatArray);
 
         for (let i = data.length; i >= 0 ; i--) 
         {
@@ -354,10 +428,10 @@ var log=
     CreateItemChat(row)
     {
         if(!row || !this.body_chat)return;
-
+        
         var exit_elem=document.getElementById(`chat-${row.sys_pk}`);
         if(exit_elem)return;
-
+        
         var html="";
         if(row.usuario==log.current_user) html=this.HTML_module_emisor;
         else  html=this.HTML_module_receptor;
@@ -378,6 +452,7 @@ var log=
         {
             //replace macros de src y img default para las imagenes
             let html_adj=this.HTML_module_adjunto.replace("@src",row.mini??"").replaceAll("@def_min",(row.def_mini??""));
+            html_adj=html_adj.replaceAll("@__tag_o","").replaceAll("@__tag_c","");
             //replace de style de las img para no afectar a los chat sin img
             if((row.def_mini??"")!="")
             {
@@ -390,6 +465,12 @@ var log=
             }
             //replace de url para las img y asi poder descargar
             let r=this.HTML_redir_chat.replace("@url",log.url_download_adjuntos.replace("@id",row.idarchivo??"")).replace("@html",html_adj);
+
+            if((row.def_mini??"")!="" && (log.chatArray?.url_file_data??"")!="")
+            {
+                r=r.replace("<a" ,`<button onclick="log.Preview('${row.idarchivo}${row.ext}','${log.url_download_adjuntos.replace("@id",row.idarchivo??"")}');"`);
+                r=r.replace("a>" ,"button>");
+            }
             //replace del adjunto con el html ya formado de las img
             html=html.replace("@adjunto",r);
             html=html.replace("@module_adjunto",this.HTML_name_adjunto.replace("@name_adjunto",row.archivo));
@@ -403,8 +484,11 @@ var log=
         html=html.replaceAll("@id_chat",row.sys_pk).replace("@idfile",row.idarchivo??"");
         html=html.replaceAll("@date",fecha);
 
-        this.body_chat.innerHTML+=html;
-
+        var div_more_chat=document.getElementById("div-more-chat");
+       
+        if(log.printMoreChat && div_more_chat)div_more_chat.insertAdjacentHTML("afterend",html);
+        else  this.body_chat.innerHTML+=html;
+        
         if(Number(row.sys_pk??0)>this.last_log)this.last_log=Number(row.sys_pk??0);
 
         if(!this.data)this.data=[];
@@ -505,7 +589,7 @@ var log=
     allowScroll:true,
     Scroll(scrll=false,x=0,y=10000)
     {
-        if(!log.allowScroll)return;
+        if(!log.allowScroll || log.printMoreChat)return;
         
         var body_chat=document.getElementById("body-chat");
 

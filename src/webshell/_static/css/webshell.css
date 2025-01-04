@@ -346,11 +346,11 @@ body {
     justify-content: center;
     align-items: center;
 }
-.more-chat-divider
+.more-chat-divider,.div-more-rec-chat
 {
     width: 50%;
 }
-#div-more-chat button
+#div-more-chat button,#div-more-rec-chat button
 {
     display: flex;
     width: 100%;

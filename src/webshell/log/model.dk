@@ -34,19 +34,24 @@ module ":log"
                 filename = limpiarTexto(@@(file,"$filename"))
                 params<"filename">:filename
                 params<"idarchivo">:uuid()
-                filename=tolower(@@(params,"$idarchivo")+file.extension(filename))
+
+                ext=file.extension(filename)
+                filename=tolower(@@(params,"$idarchivo")+ext)
                 
                 _file_path=filepath
                 
                 filepath = path.concat(filepath,filename)
                 do file.copy(@@(file,"$temp_file"),filepath)
-                do webshell.magick.generar.img(_file_path,filename)
+                if containsword(ext,@__exts_img){ do webshell.magick.generar.img(_file_path,filename)}
+                
                 break
             }else{ref file=@null}
         }
 
         return file
     }
+    @__exts_img="jpg,jpeg,png,gif,webp,tiff,bmp,svg"
+
     function adj.prop(&adj,filepath)
     {
         if isnull(adj) { ref adj:record.create() }
@@ -60,7 +65,7 @@ module ":log"
         else if ext == ".xml" { mini = "xml.png" }
         else if ext == ".csv" { mini = "csv.png" }
         else if containsword(ext,"zip,rar") { mini = "zip.png" }
-        else if containsword(ext,"jpg,jpeg,png") { mini = "img.png" }
+        else if containsword(ext,@__exts_img) { mini = "img.png" }
         else if containsword(ext,"docx,docm,dotx,dotm,doc,dot,wbk,wll,wwl") { mini = "word.png" }
         else if containsword(ext,"xlsx,xlsm,xltx,xltm,xls,xlt,xlm,xlsb,xla,xlam,xll,xlw,xll_,xla_,xla5,xla8") { mini = "excel.png" }
 
@@ -155,6 +160,7 @@ module ":log"
         
         new data
         {
+            @"url_file_data":url_file_min
             @"adjuntos*":adjuntos
         }
         switch @@(params,"$_page")
@@ -167,19 +173,33 @@ module ":log"
             {
                 ref ldata=webshell.detlog.getall(@@(params,"$detid"),@@(params,"$guid"),@@(params,"#from"),@@(params,"#to"))
                 sys_pk_last= 0
+                sys_pk_fisrt= 0
                 count=@count(ldata)
                 for i = 0; i < count
                 {
                     ref dt=@item(ldata,i)
+                    if i== 0{sys_pk_last=@@(dt,"#sys_pk")}
+
                     dt<"can_action">:@@(dt,"$usuario")==@@(@http_context,"$session/user/uid")
                     dt<"path_mini">:path.concat(var_path_file,"mini."+@@(dt,"$idarchivo"))
                     dt<"url_mini">:path.concat(url_file_min,"mini."+@@(dt,"$idarchivo"))
                     do adj.prop(dt,@@(dt,"$archivo"))
 
-                    if i==(count -1 ){sys_pk_last=@@(dt,"#sys_pk")}
+                    if i==(count -1 ){sys_pk_fisrt=@@(dt,"#sys_pk")}
                 }
-                params<"ult_msj">:sys_pk_last
-                data<"count_msj_pnd">:dbr.num(db,"select count(*) from ws_det_log where sys_pk < @ult_msj and ifnull(sys_deleted,0)=0",params)
+                params<"pk_min">:sys_pk_fisrt
+                data<"pk_min">:sys_pk_fisrt
+                data<"pk_max">:sys_pk_last
+
+                data<"count_msj_pnd">:dbr.num(db,"select count(*) 
+                FROM
+                    ws_det_log wl
+                    INNER JOIN ws_det_log_enable wle ON wl.origen = wle.sys_pk
+                WHERE 
+                    wle.det=@detid
+                AND wl.guid=@guid
+                AND ifnull(wl.sys_deleted,0)=0
+                and wl.sys_pk < @pk_min ",params)
                 
                 data<"data*">:ldata
                 data<"eliminados*">:webshell.detlog.delete.getall(@@(params,"$detid"),@@(params,"$guid"))
