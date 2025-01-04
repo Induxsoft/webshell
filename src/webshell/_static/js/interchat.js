@@ -376,7 +376,7 @@ var interchat=
     },
     PlayAudio()
     {
-        if(interchat.audio_alert)interchat.audio_alert.play();
+        // if(interchat.audio_alert)interchat.audio_alert.play();
     },
     QuitOptionSelectUser(select,data)
     {

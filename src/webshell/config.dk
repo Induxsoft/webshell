@@ -19,10 +19,7 @@ program ""
     @JS_CFGFPAGE = "/$/webshell/js/cfgfpage.js"
     @JS_LOG="/$/webshell/js/log.js"
     @INTER_CHAT="/$/webshell/js/interchat.js"
-    
-    //sonidos
-    @URL_AUDIO_CHAT="/$/webshell/audio/chat.wav"
-    @URL_AUDIO_NOTIFICATION="/$/webshell/audio/notification.wav"
+    @API_NOTIF="/$/webshell/js/api.notif.js"
 
     @ICON_V12 = "/$/webshell/img/icons/v12_2.png"
 

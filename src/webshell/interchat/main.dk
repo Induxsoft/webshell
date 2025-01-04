@@ -26,10 +26,6 @@ module ""
                     div(class="d-flex align-items-center")
                     {
                         h3{"Chats"}
-                        audio(id="audio-alert" controls="true" class="d-none")
-                        {
-                            source(src="#<@URL_AUDIO_CHAT>"){""}
-                        }
                         span(class="flex-grow-1"){""}
                         button(class="chat-btn-action" id="btn_add_topic")
                         {

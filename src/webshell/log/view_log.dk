@@ -11,6 +11,8 @@ module ""
     ref @http_context=@("&http")
 
     current_user=@@(@http_context,"$session/user/uid")
+    
+    ref chatArray=@("&.")
     ref data=@("&./data")
     ref adjuntos=@("&./adjuntos")
 
@@ -132,6 +134,7 @@ module ""
             log.current_user="#<current_user>";
             log.data=#<to.json(data)>;
             log.action_current_user=#<bool_action>;
+            log.chatArray=#<to.json(chatArray)>;
             '
         }
         

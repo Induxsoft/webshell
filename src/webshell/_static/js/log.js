@@ -33,7 +33,7 @@ var log=
         this.last_log = 0;
         this.HTML_module_receptor=`<div class="d-flex justify-content-start module_receptor" id="chat-@id_chat" _date="@date">
             <div class="body-chat-receptor">
-                <div class="chat">@adjunto 
+                <div class="chat" style="@style_chat">@adjunto 
                     <div class="div-img">@module_adjunto @message</div>
                 </div>
                 <small class="user">@user</small>
@@ -67,13 +67,16 @@ var log=
             this.action_current_user_HTML="";
             this.action_adjunto_user_current_HTML="";
         }
+
+        this.STYLE_ADJ_emisor_receptor="display: table-row-group;"
+
         this.HTML_module_emisor=`
         <div class="d-flex justify-content-end module_emisor" id="chat-@id_chat" _date="@date">
             <div class="body-chat-emisor">
                 
                 ${this.action_current_user_HTML}
                 
-                <div class="chat">@adjunto 
+                <div class="chat" style="@style_chat">@adjunto 
                     <div class="div-img">@module_adjunto @message</div>
                 </div>
                 <small class="user">@user</small>
@@ -95,7 +98,8 @@ var log=
         </div>
         `;
 
-        this.HTML_module_adjunto=`<div class="chat-div-adjunto"><img src="@src"/></div>`;
+        this.STYLE_div_adjunto="display:contents;"
+        this.HTML_module_adjunto=`<div class="chat-div-adjunto" style="@style"><img src="@src" onerror="this.src='@def_min' "/></div>`;
 
         this.HTML_redir_chat=`<a href="@url" target="_blank">@html</a>`;
         this.HTML_name_adjunto=`<small class="chat-name-adjunto">@name_adjunto</small>`;
@@ -105,11 +109,21 @@ var log=
                                     <small class="f-fecha">@fecha</small>
                                     <hr class="fecha-divider">
                                 </div>`;
+        this.HTML_more_mjs=`<div class="d-flex" id="div-more-chat">
+                                <hr class="more-chat-divider">
+                                <button class="f-more">Ver mas mensajes</button>
+                                <hr class="more-chat-divider">
+                            </div>`;
+
         if(this.btn_send)this.btn_send.addEventListener("click",()=>{log.SendMessage();});
         if(this.adjunto)this.adjunto.addEventListener("change",()=>{log.SendFile();})
         if(this.txt_message)this.txt_message.addEventListener("keydown",(e)=>{if(e.keyCode ===13)log.SendMessage();});
 
-        if(this.data && this.data.length>0)this.CreateBodyChat(this.data);
+        if(this.data && this.data.length>0)
+        {
+            this.PrintViewMore(this.chatArray);
+            this.CreateBodyChat(this.data);
+        }
         if(this.body_chat)
         {
             setInterval(() => 
@@ -284,6 +298,12 @@ var log=
             log.CheckDivisor(`div-${row.fecha??""}`,(row.fecha??""));
         }
     },
+    PrintViewMore(data)
+    {
+        if((data.count_msj_pnd??0)<1)return;
+        
+        this.body_chat.innerHTML+=this.HTML_more_mjs;
+    },
     CreateBodyAdjuntos(data)
     {
         if(!data || data.length<1)return;
@@ -293,14 +313,15 @@ var log=
             this.CreateItemAdjunto(item);
         }
     },
-    CreateItemAdjunto(item)
+    CreateItemAdjunto(row)
     {
-        if(!item || !this.adjuntos)return;
-        var element=document.getElementById(`adjunto-${item.id}`);
+        if(!row || !this.adjuntos)return;
+        var element=document.getElementById(`adjunto-${row.id}`);
         if(element)return;
         
-        var html=this.HTML_adjunto.replace("@module_adjunto",this.HTML_module_adjunto.replace("@src",item.mini??"")).replaceAll("@name_adjunto",log.Cut(item.nombre??"",10)).replace("@url",log.url_download_adjuntos.replace("@id",item.id??""));
-        html=html.replaceAll("@idfile",item.id??"");
+        let html_adj=this.HTML_module_adjunto.replace("@src",row.mini??"").replaceAll("@def_min",(row.def_mini??"")).replaceAll("@style","");
+        var html=this.HTML_adjunto.replace("@module_adjunto",html_adj).replaceAll("@name_adjunto",log.Cut(row.nombre??"",10)).replace("@url",log.url_download_adjuntos.replace("@id",row.id??""));
+        html=html.replaceAll("@idfile",row.id??"");
 
         this.AddHTML(log.header_counter,html);
         log.count_adjuntos+=1;
@@ -322,8 +343,12 @@ var log=
             const item = data[i];
             this.CreateItemChat(item);
         }
-        log.allowScroll=true;
-        log.Scroll(true);   
+
+        setTimeout(() => 
+        {
+            log.allowScroll=true;
+            log.Scroll(true);  
+        }, 500);
     },
     last_fecha:"",
     CreateItemChat(row)
@@ -336,8 +361,9 @@ var log=
         var html="";
         if(row.usuario==log.current_user) html=this.HTML_module_emisor;
         else  html=this.HTML_module_receptor;
+
         let nota=row.nota??"";
-        // if(nota.trim()=="")nota=row.archivo??"";
+        
         let fecha=(row.fecha??"");
 
         let divisor_fecha=document.getElementById(`div-${fecha}`);
@@ -346,17 +372,33 @@ var log=
             this.body_chat.innerHTML+=this.HTML_divider_fecha.replaceAll("@fecha",fecha);
             this.last_fecha=fecha;
         }
+        //replace macros de mensajes, usuarios y fechahora
         html=html.replace("@message",nota).replace("@user",row.usuario).replace("@fecha_hora",(row.hora??"").toLowerCase());
         if((row.archivo??"")!="")
         {
-            let r=this.HTML_redir_chat.replace("@url",log.url_download_adjuntos.replace("@id",row.idarchivo??"")).replace("@html",this.HTML_module_adjunto.replace("@src",row.mini??""));
+            //replace macros de src y img default para las imagenes
+            let html_adj=this.HTML_module_adjunto.replace("@src",row.mini??"").replaceAll("@def_min",(row.def_mini??""));
+            //replace de style de las img para no afectar a los chat sin img
+            if((row.def_mini??"")!="")
+            {
+                html_adj=html_adj.replaceAll("@style",this.STYLE_div_adjunto);
+                html=html.replaceAll("@style_chat",this.STYLE_ADJ_emisor_receptor);
+            }
+            else
+            {
+                html=html.replaceAll("@style_chat","");
+            }
+            //replace de url para las img y asi poder descargar
+            let r=this.HTML_redir_chat.replace("@url",log.url_download_adjuntos.replace("@id",row.idarchivo??"")).replace("@html",html_adj);
+            //replace del adjunto con el html ya formado de las img
             html=html.replace("@adjunto",r);
-            html=html.replace("@module_adjunto",this.HTML_name_adjunto.replace("@name_adjunto",row.archivo))
+            html=html.replace("@module_adjunto",this.HTML_name_adjunto.replace("@name_adjunto",row.archivo));
         }
         else
         {
             html=html.replace("@adjunto","");
             html=html.replace("@module_adjunto","");
+            html=html.replaceAll("@style_chat","");
         }
         html=html.replaceAll("@id_chat",row.sys_pk).replace("@idfile",row.idarchivo??"");
         html=html.replaceAll("@date",fecha);
@@ -468,7 +510,7 @@ var log=
         var body_chat=document.getElementById("body-chat");
 
         if(body_chat && (body_chat.scrollHeight??0)>y)y=(body_chat.scrollHeight??0);
-        
+
         if(scrll)
         {
             if(log.body_chat)log.body_chat.scrollTo(x, y);

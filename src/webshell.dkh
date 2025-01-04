@@ -3,6 +3,9 @@
 module ":webshell"
 {
     ref @DB=@null
+    @webshell.delete_max_rows= 5
+    @webshell.max_rows= 200
+    @webShell.tamanio_img= 300 //img en px
 
     getDB::
     {
@@ -176,9 +179,9 @@ module ":webshell"
             sql=sql + " AND wl.sys_pk >= @from AND wl.sys_pk <= @to "
         }
 
-        sql=sql + " ORDER BY wl.sys_pk ASC "
+        sql=sql + " ORDER BY wl.sys_dtcreated DESC LIMIT #<@webshell.max_rows>"
 
-        return dbr.list(db,sql,params)
+        return dbr.list(db,ftext(sql),params)
     }
     detlog.file.get::id
     {
@@ -197,7 +200,7 @@ module ":webshell"
         
         return dbr.rec(db,sql,params)
     }
-    @webshell.max_rows= 5
+    
     detlog.delete.getall::detid,guid
     {
         ref db=getDB()
@@ -223,7 +226,7 @@ module ":webshell"
             AND wd.det = @detid
             AND ifnull(wl.sys_deleted,0)=1
         ORDER BY wl.sys_timestamp DESC
-        LIMIT #<@webshell.max_rows>"
+        LIMIT #<@webshell.delete_max_rows>"
 
         return dbr.list(db,ftext(sql),params)
     }
@@ -271,9 +274,9 @@ module ":webshell"
             sql=sql + " AND wl.sys_pk >= @from AND wl.sys_pk <= @to "
         }
 
-        sql=sql + " ORDER BY wl.sys_pk ASC "
+        sql=sql + " ORDER BY wl.sys_dtcreated DESC LIMIT #<@webshell.max_rows>"
 
-        return dbr.list(db,sql,params)
+        return dbr.list(db,ftext(sql),params)
     }
     detlog.delete::msgid,userid
     {
@@ -374,6 +377,90 @@ module ":webshell"
             }
 
             return data
+        }
+    }
+
+    module ":webshell.magick"
+    {
+
+        cache.file_name::id,w,h
+        {
+            return "mini."+id //+str(w)+"x"+str(h)+"."
+        }
+        generar.img::path, fileName
+        {
+            img=cache.file_name(fileName,@webShell.tamanio_img,0)
+
+            file=path.concat(path,fileName)
+            
+            if not(file.exists(file))
+            {
+                return
+            }
+            
+            ref size=image.size(file)
+            
+            if isnull(size)
+            {
+                return
+            }
+
+            width=field.num(size,"width")
+            if width >@webShell.tamanio_img
+            {
+                width=@webShell.tamanio_img
+            }
+            
+            do generar.archivo(file,path.concat(path,img), width)
+            exception{}
+        }
+        #!
+        wichIsNewer::f1,f2
+        {
+            if not(file.exists(f1))
+            {
+                return -1
+            }
+
+            if not(file.exists(f2))
+            {
+                return -2
+            }
+
+            return file.newer(f1,f2)
+        }
+        generar.archivo::original, copia, w
+        {
+            v=wichIsNewer(original,copia)
+            
+            if v==1 || v==-2
+            {
+                do file.copy(original,copia)
+                do image.resize(copia,w,0)
+                do image.compress(copia,@true,@false)
+            }
+        }
+        #!
+        img.secureDel::file
+        {
+            if file.exists(file)
+            {
+                do file.delete(file)
+            }
+
+            exception { }
+        }
+        img.eliminar::path, fileName
+        {
+            if trim(fileName)==""
+            {
+                return
+            }
+
+            img=cache.file_name(fileName,@webShell.tamanio_img,0)
+
+            do cache.secureDel(path.concat(path,fileName))
+            do cache.secureDel(path.concat(path,img))
         }
     }
 }

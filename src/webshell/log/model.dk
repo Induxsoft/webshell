@@ -71,11 +71,11 @@ module ":log"
             @"ext": ext
             @"mini": path.concat(@IMG_MINIS,mini)
         }
-        path_mini=@@(adj,"$path_mini")+file.extension(mini)
+        path_mini=@@(adj,"$path_mini")+ext
         if file.exists(path_mini)
         {
             adj<"def_mini">:@@(adj,"$mini")
-            adj<"mini">:@@(adj,"$url_mini")+file.extension(mini)
+            adj<"mini">:@@(adj,"$url_mini")+ext
         }
         return adj
     }
@@ -166,14 +166,21 @@ module ":log"
             default
             {
                 ref ldata=webshell.detlog.getall(@@(params,"$detid"),@@(params,"$guid"),@@(params,"#from"),@@(params,"#to"))
-                for i = 0; i < @count(ldata)
+                sys_pk_last= 0
+                count=@count(ldata)
+                for i = 0; i < count
                 {
                     ref dt=@item(ldata,i)
                     dt<"can_action">:@@(dt,"$usuario")==@@(@http_context,"$session/user/uid")
-                    dt<"path_min">:path.concat(var_path_file,"mini."+@@(dt,"$archivo"))
-                    dt<"url_mini">:path.concat(url_file_min,"mini."+@@(dt,"$id"))
+                    dt<"path_mini">:path.concat(var_path_file,"mini."+@@(dt,"$idarchivo"))
+                    dt<"url_mini">:path.concat(url_file_min,"mini."+@@(dt,"$idarchivo"))
                     do adj.prop(dt,@@(dt,"$archivo"))
+
+                    if i==(count -1 ){sys_pk_last=@@(dt,"#sys_pk")}
                 }
+                params<"ult_msj">:sys_pk_last
+                data<"count_msj_pnd">:dbr.num(db,"select count(*) from ws_det_log where sys_pk < @ult_msj and ifnull(sys_deleted,0)=0",params)
+                
                 data<"data*">:ldata
                 data<"eliminados*">:webshell.detlog.delete.getall(@@(params,"$detid"),@@(params,"$guid"))
             }

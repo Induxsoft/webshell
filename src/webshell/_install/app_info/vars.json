@@ -86,6 +86,71 @@
                 "varcaption": "ID v12 instalado",
                 "vartype": "string",
                 "varinput": { "control": "text" }
+            },
+            {
+                "varname": "webshell_sound_notif",
+                "vardefault": "true",
+                "varvalue": "true",
+                "varcaption": "Permitir Sonido al recibir una notificación",
+                "varhelp":"Permitir sonido al recibir una notificacíon",
+                "vartype": "bool",
+                "varinput": {
+                    "control": "select",
+                    "source":{
+                        "type":"list",
+                        "values":
+                        [
+                            {"val":"true", "text":"Sí"},
+                            {"val":"false", "text":"No"}
+                        ],
+                        "showfield":"text",
+                        "keyfield":"val"
+                    }
+                }
+            },
+            {
+                "varname": "webshell_sound_list",
+                "vardefault": "/$/webshell/audio/notification.wav",
+                "varvalue": "/$/webshell/audio/notification.wav",
+                "varcaption": "Sonidos",
+                "varhelp":"Permite seleccionar sonidos",
+                "vartype": "string",
+                "varinput": 
+                { 
+                    "control": "audio",
+                    "source" :
+                    {
+                        "showfield":"text",
+                        "keyfield":"val",
+                        "values":
+                        [
+                            {"text":"Notificación","val":"/$/webshell/audio/notification.wav"},
+                            {"text":"Chat-notificación","val":"/$/webshell/audio/chat.wav"}
+                        ]
+                    }
+                }
+            },
+            {
+                "varname": "webshell_notif_nav",
+                "vardefault": "true",
+                "varvalue": "true",
+                "varcaption": "Notificación del navegador",
+                "varhelp":"Permite mostrar alerta de notificaciónes",
+                "vartype": "bool",
+                "varinput": 
+                {
+                    "control": "select",
+                    "source":{
+                        "type":"list",
+                        "values":
+                        [
+                            {"val":"true", "text":"Sí"},
+                            {"val":"false", "text":"No"}
+                        ],
+                        "showfield":"text",
+                        "keyfield":"val"
+                    }
+                }
             }
         ]
     }

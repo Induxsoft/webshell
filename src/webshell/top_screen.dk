@@ -46,6 +46,11 @@ module "webShell"
     webshell_hide_notif = parse.bool(dbr.vars.getd(database,"webshell_hide_notif",@false))
     webshell_hide_help = parse.bool(dbr.vars.getd(database,"webshell_hide_help",@false))
     
+    //sonidos de notificación
+    webshell_sound_notif=parse.bool(dbr.vars.getd(database,"webshell_sound_notif",@false))
+    webshell_sound_list=dbr.vars.getd(database,"webshell_sound_list","")
+    webshell_notif_nav=parse.bool(dbr.vars.getd(database,"webshell_notif_nav",@false))
+
     webshell_help_url = dbr.vars.getd(database,"webshell_help_url",@HREF_HELP)
     if trim(webshell_help_url)==""{webshell_help_url=@HREF_HELP}
 
@@ -79,6 +84,7 @@ module "webShell"
     
     #$
     link(href="#<@CSS_WEBSHELL>" rel="stylesheet")
+    script(src="#<@API_NOTIF>"){""}
     nav(class="navbar border-bottom sticky-top m-0" style="#<navfoot_style>" id="nav_main")
     {
         div(class="container-fluid")
@@ -87,10 +93,6 @@ module "webShell"
             {
                 a(href="/"){ img(src="#<webshell_logo>"){$""} }
                 small(class="text-logo"){$"#<webshell_title>"}
-                audio(id="audio-notification" controls="true" class="d-none")
-                {
-                    source(src="#<@URL_AUDIO_NOTIFICATION>"){""}
-                }
             }
             #!
             if not(@isPrintView) {
@@ -275,7 +277,13 @@ module "webShell"
         const main = document.getElementById("main-sec");
         const footer = document.getElementById("nav_footer");
         const iframe = document.getElementById("_main_view");
-        
+
+        //notificaciones
+        api_notif.icon="#<webshell_logo>";
+        api_notif.audio="#<webshell_sound_list>";
+        api_notif.play_audio=#<webshell_sound_notif>;
+        api_notif.show_notif=#<webshell_notif_nav>;
+
         try
         {
             // resuelve la url, para pasar todos los párametros a la vista, definidos en la url

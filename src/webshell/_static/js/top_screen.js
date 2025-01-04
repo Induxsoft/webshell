@@ -7,14 +7,12 @@ var top_screen =
     url_notif_go: '',
     requesting: false,
     notif_frq: 60,
-    audio_notification:null,
     init()
     {
         this.ik_actions = document.querySelector('#ik_actions');
         this.btn_navbar_lightning = document.querySelector('#btn_navbar_lightning');
         this.iframe_view = document.querySelector('#_main_view');
         this.language_info = document.querySelector('#language_info');
-        this.audio_notification=document.getElementById("audio-notification");
 
         this.set_ik_action_events();
         this.set_interval_refresh_notifs();
@@ -106,6 +104,7 @@ var top_screen =
                 let target = (noti.target == undefined ? '' : (noti.target==1 ? '_blank': '_self'));
                 ver_mas = `<button class="btn btn-sm px-2 btn-link border-primary" title="Navegar hacia la url" onclick="top_screen.go_to('${nwhref}','${target}', event)">Ver más</button>`;
             }
+            
             let btn_readed=`<button class="btn btn-sm px-2 btn-primary" title="Marcar como leido" onclick="top_screen.set_readed_notify('${noti.id}', event)">Marcar como Leído</button>`;
             template += `
                 <li>
@@ -130,11 +129,7 @@ var top_screen =
 
         containr.innerHTML = template;
 
-        if(playnotif)this.PlayNotif();
-    },
-    PlayNotif()
-    {
-        if(this.audio_notification)this.audio_notification.play();
+        if(playnotif)api_notif.notifyMe();
     },
     go_to(url, target, event)
     {
