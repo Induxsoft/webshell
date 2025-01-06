@@ -21,7 +21,7 @@ var api_notif=
         //Vamos a comprobar si el navegador es compatible con las notificaciones
         if (!("Notification" in window)) 
         {
-            console.warn("El navegador no no soporta las notificación");
+            console.warn("El navegador no soporta las notificación");
         }
 
         // Vamos a ver si ya se han concedido permisos de notificación
