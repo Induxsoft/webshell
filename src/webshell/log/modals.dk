@@ -3,9 +3,9 @@
 module ""
 {
     #$
-    div(class="modal fade" id="modal_preview_img" tabindex="-1" role="dialog" "aria-labelledby"="modalforms" "aria-bs-hidden"="true" "data-bs-backdrop"="false")
+    div(class="modal fade" id="modal_preview_img" tabindex="-1" role="dialog" "aria-bs-labelledby"="modalforms" "aria-bs-hidden"="true" "data-bs-backdrop"="false")
     {
-        div(class= "modal-dialog" role ="document")
+        div(class= "modal-dialog modal-lg" role ="document")
         {
             div(class="modal-content")
             {
@@ -19,7 +19,7 @@ module ""
                         <path d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708z"/>
                         </svg>'
                     }
-                    button(type="button" title="Cerrar ventana" class="close border-0 ms-2" "data-bs-dismiss"="modal" "aria-label"="Close" style="width:30px;height:30px;")
+                    button(type="button" title="Cerrar ventana" class="close border-0 ms-2" "data-bs-dismiss"="modal" "aria-bs-label"="Close" style="width:30px;height:30px;")
                     {
                         span ("aria-hidden"="true") {$"&times;"}
                     }

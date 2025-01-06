@@ -259,7 +259,7 @@ body {
     border-radius: 5px;
     border: 1px solid #003399;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-    min-width: 20%;
+    min-width: 25%;
     max-width: 80%;
 }
 .body-chat-receptor
@@ -286,6 +286,10 @@ body {
 {
     height: 100%;
     width: 100%;
+}
+.chat-div-adjunto button,.chat button
+{
+    border: 1px solid lightgray;
 }
 .chat-div-adjunto
 {

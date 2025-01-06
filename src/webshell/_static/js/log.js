@@ -115,7 +115,7 @@ var log=
 
         this.HTML_more_mjs=`<div class="d-flex" id="div-more-chat">
                                 <hr class="more-chat-divider">
-                                <button class="f-more" onclick="log.more_chat(@pk_max,@pk_min,'@act','@order')">Más mensajes</button>
+                                <button id="btn-more-chat" class="f-more" onclick="log.more_chat(@pk_max,@pk_min,'@act','@order')">Más mensajes</button>
                                 <hr class="more-chat-divider">
                             </div>`;
  //<button class="f-rec-more" onclick="log.more_chat(@pk_max,@pk_min,'@act','@order')">Mensajes recientes</button>
@@ -286,7 +286,7 @@ var log=
                 alert(failed.message??JSON.stringify(failed));
             },true);
     },
-    GetMessages(endpoint="")
+    GetMessages(endpoint="",callbak_succes=null)
     {
         this.endpoint="";
         this.endpoint+="?from="+(Number(this.last_log) + 1);
@@ -296,11 +296,13 @@ var log=
         this.InvokeService("GET",null,
             (data)=>
             {
-                if(log.printMoreChat)log.chatArray=data;
-                if(data.data)log.CreateBodyChat(data.data);
-                if(data.adjuntos)log.CreateBodyAdjuntos(data.adjuntos);
-                if(data.eliminados)log.ElementsRemove(data.eliminados);
-
+                if(callbak_succes)callbak_succes(data)
+                else
+                {
+                    if(data.data)log.CreateBodyChat(data.data);
+                    if(data.adjuntos)log.CreateBodyAdjuntos(data.adjuntos);
+                    if(data.eliminados)log.ElementsRemove(data.eliminados);
+                }
                 log.CountScroll++;
             },(failure)=>{console.log(failure.message??JSON.stringify(failure))});
     },
@@ -317,34 +319,50 @@ var log=
             log.CheckDivisor(`div-${row.fecha??""}`,(row.fecha??""));
         }
     },
-    ir_al_actual()
-    {
-        this.body_chat.innerHTML="";
-        this.printMoreChat=false;
-        log.GetMessages(`?to=&from=`);
-        this.setInterval();
-    },
     more_chat(from,to,act,_order="")
     {
-        let url=`?to=${from}&_order=ASC`;
-        
-        if(this.interval_chat)clearInterval(this.interval_chat);
-        this.printMoreChat=act=="min"?true:false;
+        let url=`?to=${from}`;
+
+        this.printMoreChat=true;
         log.allowScroll=false;
-        log.GetMessages(url);
+
+        let hscroll=(log.body_chat.scrollHeight??0);
+
+        log.GetMessages(url,
+        (data)=>
+        {
+            this.chatArray=data;
+            log.CreateBodyChat(data.data,false,false,"div-more-chat");
+            this.printMoreChat=false;
+            
+            log.allowScroll=true;
+            if((log.body_chat.scrollHeight??0)>hscroll)hscroll=(log.body_chat.scrollHeight??0) - hscroll;
+
+            log.Scroll(true,0,hscroll,false);
+            log.allowScroll=false;
+        });
     },
     printMoreChat:false,
     last_pk_chat:0,
     PrintViewMore(data,footer=false)
     {
-        return;
+        let last_pk=(Number(log.last_pk_chat) - 1);
+        if(last_pk < 1 && (data.count_msj_pnd??0)<1)return;
         
-        if((data.count_msj_pnd??0)<1)return;
-
         var div_more_chat=document.getElementById("div-more-chat");
-        if(div_more_chat)return;
+        if(div_more_chat)
+        {
+            if((data.count_msj_pnd??0)<1){div_more_chat.classList.add("disable-element");}
+            else 
+            {
+                let btn=document.getElementById("btn-more-chat");
+                if(btn)btn.setAttribute("onclick",`log.more_chat(${last_pk},0,'min','')`);
+            }
+            return;
+        }
+        else if ((data.count_msj_pnd??0)<1)return;
         
-        let html=this.HTML_more_mjs.replaceAll("@pk_max",(Number(log.last_pk_chat) - 1)).replaceAll("@act","min").replaceAll("@pk_min",0);
+        let html=this.HTML_more_mjs.replaceAll("@pk_max",last_pk).replaceAll("@act","min").replaceAll("@pk_min",0);
         html=html.replace("@order","");
         this.body_chat.innerHTML+=html;
     },
@@ -404,28 +422,47 @@ var log=
         }
         tools.showModal('modal_preview_img');
     },
-    CreateBodyChat(data)
+    CreateBodyChat(data,scroll=true,indecrement=true,id_element_insert="")
     {
         if(!data || data.length<1)return;
         
-        let ult_row=data[data.length - 1];
-        log.last_pk_chat=ult_row?.sys_pk??0;
+        let ult_row=null;
+        ult_row=data[data.length - 1];
+        
+        if(log.last_pk_chat > 0 && (ult_row?.sys_pk??0)<log.last_pk_chat)log.last_pk_chat=ult_row?.sys_pk??0;
+        else if(log.last_pk_chat == 0) log.last_pk_chat=ult_row?.sys_pk??0;
+
         this.PrintViewMore(this.chatArray);
 
-        for (let i = data.length; i >= 0 ; i--) 
+        if(indecrement)
         {
-            const item = data[i];
-            this.CreateItemChat(item);
+            for (let i = data.length; i >= 0 ; i--) 
+            {
+                const item = data[i];
+                this.CreateItemChat(item,id_element_insert);
+            }
         }
-
-        setTimeout(() => 
+        else
         {
-            log.allowScroll=true;
-            log.Scroll(true);  
-        }, 500);
+            for (let i = 0; i < data.length ; i++) 
+            {
+                const item = data[i];
+                this.CreateItemChat(item,id_element_insert);
+            }
+        }
+        
+
+        if(scroll)
+        {
+            setTimeout(() => 
+            {
+                log.allowScroll=true;
+                log.Scroll(true);  
+            }, 500);
+        }
     },
     last_fecha:"",
-    CreateItemChat(row)
+    CreateItemChat(row,id_element_insert="")
     {
         if(!row || !this.body_chat)return;
         
@@ -441,9 +478,10 @@ var log=
         let fecha=(row.fecha??"");
 
         let divisor_fecha=document.getElementById(`div-${fecha}`);
+        let html_fecha="";
         if(this.last_fecha!=fecha || !divisor_fecha)
         {
-            this.body_chat.innerHTML+=this.HTML_divider_fecha.replaceAll("@fecha",fecha);
+            html_fecha=this.HTML_divider_fecha.replaceAll("@fecha",fecha);
             this.last_fecha=fecha;
         }
         //replace macros de mensajes, usuarios y fechahora
@@ -484,10 +522,27 @@ var log=
         html=html.replaceAll("@id_chat",row.sys_pk).replace("@idfile",row.idarchivo??"");
         html=html.replaceAll("@date",fecha);
 
-        var div_more_chat=document.getElementById("div-more-chat");
-       
-        if(log.printMoreChat && div_more_chat)div_more_chat.insertAdjacentHTML("afterend",html);
-        else  this.body_chat.innerHTML+=html;
+        if(id_element_insert.trim()!="")
+        {
+            var elemet_insert_html=document.getElementById(id_element_insert);
+            if(elemet_insert_html)
+            {
+                if(html_fecha!="" && !divisor_fecha)
+                {
+                    elemet_insert_html.insertAdjacentHTML("afterend",html_fecha);
+                    divisor_fecha=document.getElementById(`div-${fecha}`);
+                }
+                
+                if(divisor_fecha)divisor_fecha.insertAdjacentHTML("afterend",html);
+                else elemet_insert_html.insertAdjacentHTML("afterend",html);
+            }
+        }
+        else 
+        {
+            if(html_fecha!="")this.body_chat.innerHTML+=html_fecha;
+
+            this.body_chat.innerHTML+=html;
+        }
         
         if(Number(row.sys_pk??0)>this.last_log)this.last_log=Number(row.sys_pk??0);
 
@@ -587,13 +642,13 @@ var log=
 		return data;
 	},
     allowScroll:true,
-    Scroll(scrll=false,x=0,y=10000)
+    Scroll(scrll=false,x=0,y=10000,check_y=true)
     {
-        if(!log.allowScroll || log.printMoreChat)return;
+        if(!log.allowScroll)return;
         
         var body_chat=document.getElementById("body-chat");
 
-        if(body_chat && (body_chat.scrollHeight??0)>y)y=(body_chat.scrollHeight??0);
+        if(body_chat && (body_chat.scrollHeight??0)>y && check_y)y=(body_chat.scrollHeight??0);
 
         if(scrll)
         {
