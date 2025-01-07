@@ -391,6 +391,15 @@ body {
     .category-shortcuts {
         gap: .7rem;
     }
+    .chat-div-adjunto img
+    {
+        max-width: 190px;
+    }
+    .chat-name-adjunto
+    {
+        width: 190px;
+        display: block;
+    }
 }
 /* Ajustar menu de notificaciones (325px - 454px) */
 @media (max-width: 453px) {
