@@ -79,7 +79,16 @@ module "model"
         if notif_id == "" { do rise_error(0, "Se esperaba el id de la notificación") }
         if not(dbr.notif.readed(db,notif_id)) { do rise_error(0, "No fué posible marcar la notificación como leída, verifique la url.") }
     }
-
+    function notif.check_all(&db,&params,&data)
+    {
+        ref notifs=@@(data,"&notifs")
+        for i = 0; i < @count(notifs)
+        {
+            ref notif=@item(notifs,i)
+            do dbr.notif.readed(db,@@(notif,"$id"))
+        }
+        return notifs
+    }
     point @list to notif.list
     point @update to notif.update
     point @create to notif.update

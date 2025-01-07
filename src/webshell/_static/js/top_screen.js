@@ -77,6 +77,7 @@ var top_screen =
             "GET", false
         );
     },
+    ArrayAllNotify:[],
     ArrayNotifycaded:[],
     print_notif(data)
     {
@@ -87,12 +88,18 @@ var top_screen =
         let template = `
         <li class="d-flex justify-content-between align-items-center">
             <button class="btn-sm btn-close mx-2 no-shadow" type="button" aria-label="Close" onclick="top_screen.close_notis()"></button>
+            <button class="no-shadow border-0 bg-white" title="Marcar todos como leido" onclick="top_screen.set_readed_notify_all()">
+                <svg xmlns="http://www.w3.org/2000/svg" style="fill: gray;" width="21" height="21" fill="currentColor" class="bi bi-check2-square" viewBox="0 0 16 16">
+                    <path d="M3 14.5A1.5 1.5 0 0 1 1.5 13V3A1.5 1.5 0 0 1 3 1.5h8a.5.5 0 0 1 0 1H3a.5.5 0 0 0-.5.5v10a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V8a.5.5 0 0 1 1 0v5a1.5 1.5 0 0 1-1.5 1.5z"/>
+                    <path d="m8.354 10.354 7-7a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0"/>
+                </svg>
+            </button>
             <a class="dropdown-item text-end" href="#" onclick="top_screen.load('/!/webshell/notiman/'); top_screen.close_notis();">Administrar</a>
         </li>`;
         
         notisnum.classList.toggle('d-none', (total_nt==''));
         num_text.textContent = total_nt;
-
+        
         let playnotif=false;
         data.forEach(noti => 
         {
@@ -118,6 +125,8 @@ var top_screen =
                     </a>
                 </li>
             `;
+            var exit_notif=top_screen.ArrayAllNotify.find((r)=>r.id==noti.id);
+            if(!exit_notif)top_screen.ArrayAllNotify.push(noti);
 
             var rowNotificaded=top_screen.ArrayNotifycaded.find((r)=>r.id==noti.id);
             if(!rowNotificaded || noti.id.includes("@__"))
@@ -160,7 +169,35 @@ var top_screen =
             "POST", false
         );
     },
+    set_readed_notify_all()
+    {
+        if(top_screen.ArrayAllNotify.length<1)
+        {
+            alert("No hay notificaciónes pendientes");
+            return;
+        }
+        let endpoint = this.url_notif + "all_notif/check_readed/";
 
+        var data=
+        {
+            notifs:top_screen.ArrayAllNotify
+        }
+        this.requesting = true;
+        InduxsoftCrudlModel.InvokeService(endpoint, data,
+            success => 
+            { 
+                top_screen.ArrayAllNotify=[];
+                this.requesting = false; 
+                this.get_notif(); 
+            },
+            failure => 
+            { 
+                this.requesting = false; 
+                alert('No fue posible marcar la notificación como leída. ' + (failure.message??JSON.stringify(failure))); 
+            },
+            "PATCH", false
+        );
+    },
     // =============== LOADING ANIMATION
     set_loading_operation()
     {

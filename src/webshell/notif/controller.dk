@@ -9,5 +9,10 @@ module "controller"
             point @read to notif.check_redir
             break
         }
+        case "check_readed"
+        {
+            point @update to notif.check_all
+            break
+        }
     }
 }
