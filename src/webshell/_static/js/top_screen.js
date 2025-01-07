@@ -88,7 +88,7 @@ var top_screen =
         let template = `
         <li class="d-flex justify-content-between align-items-center">
             <button class="btn-sm btn-close mx-2 no-shadow" type="button" aria-label="Close" title="Cerrar ventana" onclick="top_screen.close_notis()"></button>
-            <button class="no-shadow border-0 bg-white btn-check-all-notif" title="Marcar todos como leído" onclick="top_screen.set_readed_notify_all()">
+            <button class="no-shadow border-0 bg-white btn-check-all-notif" title="Marcar todos como leídos" onclick="top_screen.set_readed_notify_all()">
                 <svg xmlns="http://www.w3.org/2000/svg" style="fill:gray" width="21" height="21" fill="currentColor" class="bi bi-ui-checks" viewBox="0 0 16 16">
                     <path d="M7 2.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5zM2 1a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2zm0 8a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2zm.854-3.646a.5.5 0 0 1-.708 0l-1-1a.5.5 0 1 1 .708-.708l.646.647 1.646-1.647a.5.5 0 1 1 .708.708zm0 8a.5.5 0 0 1-.708 0l-1-1a.5.5 0 0 1 .708-.708l.646.647 1.646-1.647a.5.5 0 0 1 .708.708zM7 10.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5zm0-5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 8a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/>
                 </svg>
