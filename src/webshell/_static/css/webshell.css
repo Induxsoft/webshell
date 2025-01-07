@@ -395,7 +395,7 @@ body {
     {
         max-width: 190px;
     }
-    .chat-name-adjunto
+    .chat .chat-name-adjunto
     {
         width: 190px;
         display: block;
