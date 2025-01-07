@@ -37,7 +37,7 @@ var log=
         this.HTML_module_receptor=`<div class="d-flex justify-content-start module_receptor" id="chat-@id_chat" _date="@date">
             <div class="body-chat-receptor">
                 <div class="chat" style="@style_chat">@adjunto 
-                    <div class="div-img">@module_adjunto @message</div>
+                    <div class="div-img">@module_adjunto@message</div>
                 </div>
                 <small class="user">@user</small>
                 <small class="fecha-hour d-flex">@fecha_hora</small>
@@ -80,7 +80,7 @@ var log=
                 ${this.action_current_user_HTML}
                 
                 <div class="chat" style="@style_chat">@adjunto 
-                    <div class="div-img">@module_adjunto @message</div>
+                    <div class="div-img">@module_adjunto@message</div>
                 </div>
                 <small class="user">@user</small>
                 <small class="fecha-hour d-flex">@fecha_hora</small>
