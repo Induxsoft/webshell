@@ -109,6 +109,12 @@ body {
 .dropdown-item:hover {
     background-color: rgba(102, 177, 253, 0.1) !important;
 }
+.btn-check-all-notif:hover
+{
+    color: #000;
+    text-decoration: none;
+    opacity: .75;
+}
 #btn_notis {
     position: relative;
 }

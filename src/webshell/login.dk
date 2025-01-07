@@ -176,12 +176,12 @@ module "login"
 						div(class="col-12")
 						{
 							label(class="form-label fw-bold" "for"="user"){$"Usuario:"}
-							input(class="form-control" type="text" name="user" id="user")
+							input(class="induxsoft-form-control" type="text" name="user" id="user")
 						}
 						div(class="col-12")
 						{
 							label(class="form-label fw-bold" "for"="pwd"){$"Contraseña:"}
-							input(class="form-control" type="password" name="pwd" id="pwd" placeholder="")
+							input(class="induxsoft-form-control" type="password" name="pwd" id="pwd" placeholder="")
 
 							div(class="form-check")
 							{
@@ -196,7 +196,7 @@ module "login"
 
 					div(class="text-start mt-2")
 					{
-						button(class="btn btn-success" type="submit" id="btnlogin"){$"Ingresar"}
+						button(class="btn btn-success induxsoft-corners" type="submit" id="btnlogin"){$"Ingresar"}
 					}
 				}
 			}
