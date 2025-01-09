@@ -66,6 +66,7 @@ module ":webshell"
 
         return ws_det_log
     }
+    @__exts_img="jpg,jpeg,png,gif,webp,tiff,bmp,svg"
     detlog.files.save::detid, _entity_id
     {
         ref files = @@(@http_context,"&request/files")
@@ -81,8 +82,8 @@ module ":webshell"
         attachment_path=replace(attachment_path,"@qname",@@(@http_context,"$session/idp/qname"))
         attachment_path=replace(attachment_path,"@det",detid)
         attachment_path=replace(attachment_path,"@guid",_entity_id)
-
-        do dir.ensure(tolower(attachment_path))
+        attachment_path=tolower(attachment_path)
+        do dir.ensure(attachment_path)
 
         for i = 0; i < @count(files)
         {
@@ -92,11 +93,13 @@ module ":webshell"
                 userid = @@(@http_context,"$session/user/uid")
                 fileid = uuid()
                 filename = trim(replace(ranychars(@@(file,"$filename"),'\\/:*?"<>|(-)[+]#$%&=,'," ")," ","_"))
-                filepath = path.concat(attachment_path,fileid+file.extension(filename))
+                ext=file.extension(filename)
+                filepath = path.concat(attachment_path,fileid+ext)
 
                 do webshell.detlog.add(@@(det,"#sys_pk"),_entity_id,userid,"",filename,fileid)
                 do webshell.detlog.file.add(fileid,filename)
                 do file.copy(@@(file,"$temp_file"),filepath)
+                if containsword(ext,@__exts_img){ do webshell.magick.generar.img(attachment_path,fileid+ext)}
             }
         }
     }
@@ -185,7 +188,7 @@ module ":webshell"
             _order=@@(_get,"$_order")
         }
         sql=sql + " ORDER BY wl.sys_pk "+_order+" LIMIT #<@webshell.max_rows>"
-
+    
         return dbr.list(db,ftext(sql),params)
     }
     detlog.file.get::id
