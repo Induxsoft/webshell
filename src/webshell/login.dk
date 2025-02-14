@@ -59,7 +59,7 @@ module "login"
 
 	method=toupper(@@(@http_context,"request/headers/REQUEST_METHOD"))
 	success=url_encode("./?ids=@ids") //@@(@http_context,"request/get/success")
-	message=""
+	message=@@(@http_context,'$session/idp/error')
 	
 	login_css = dbr.vars.getd(tmpdb,"webshell_login_css","")
 	login_img = dbr.vars.getd(tmpdb,"webshell_login_img","")
