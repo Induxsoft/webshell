@@ -253,7 +253,7 @@ module "login"
 							er.innerHTML=error;
 						setTimeout(function(){
 							er.innerHTML="";
-						}, 4000);
+						}, 8000);
 						
 					},
 					showpwd:function(e)
@@ -267,7 +267,7 @@ module "login"
 						}
 					}
 				}
-				setTimeout(access.setError, 4000);
+				setTimeout(access.setError, 8000);
 			'}
 		}
 	}
