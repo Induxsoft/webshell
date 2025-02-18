@@ -21,7 +21,7 @@ module ""
         {
             div(class="card rounded-0 p-0 m-0")
             {
-                div(class="card-header")
+                div(class="card-header bg-white")
                 {
                     div(class="d-flex align-items-center")
                     {
@@ -74,9 +74,9 @@ module ""
                 {
                     div(class="card h-100 rounded-0" id="card-bitacora")
                     {
-                        div(class="card-body ps-0 pe-0 pb-0" id="card-body-bitacora")
+                        div(class="card-body px-0 py-2" id="card-body-bitacora")
                         {
-                            div(id="module-header" class="ps-2 pe-2")
+                            div(id="module-header" class="px-2")
                             {
                                 div(class="d-flex" id="module-header-start")
                                 {
@@ -124,7 +124,7 @@ module ""
                                     }
                                     
                                 }
-                                hr(class="p-0 m-0" id="div-chat-and-header"){}
+                                hr(class="mt-2 mb-0" id="div-chat-and-header"){}
                             }
                             div(class="h-100" id="module-iframe-interchat")
                             {
@@ -182,13 +182,13 @@ module ""
                 background-color: #F0F8FF !important;
             }
 
-            .div-selected
+            /* .div-selected
             {
                 border: 2px solid blue;
-            }
+            } */
             .interchat-selected
             {
-                background: lightgray;
+                background: #F0F2F5;
             }
             
             .notif-chat
@@ -213,8 +213,14 @@ module ""
             }
             .interchat-btn-action 
             {
-                border-start-start-radius: 15px;
-                border:1px solid lightgray;
+                /* border-start-start-radius: 15px; */
+                border: 1px solid transparent;
+                background-color: transparent;
+                transition: background 0.3s;
+            }
+            .interchat-btn-action:hover {
+                background-color: #F0F2F5;
+                border: 1px solid lightgray;
             }
             .interchat-btn-action svg:hover
             {

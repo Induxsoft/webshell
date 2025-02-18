@@ -34,19 +34,10 @@ var log=
             log.SelectedElement(data);
         }
         this.last_log = 0;
-        this.HTML_module_receptor=`<div class="d-flex justify-content-start module_receptor" id="chat-@id_chat" _date="@date">
-            <div class="body-chat-receptor">
-                <div class="chat" style="@style_chat">@adjunto 
-                    <div class="div-img">@module_adjunto@message</div>
-                </div>
-                <small class="user">@user</small>
-                <small class="fecha-hour d-flex">@fecha_hora</small>
-            </div>
-        </div>`;
 
         this.action_current_user_HTML=`
                 <div class="btn-goup d-flex justify-content-end" role="group" style="float: right;">
-                    <button class="btn bg-transparent btn-sm rounded-0 no-shadow" type="button" id="notif-group-actions" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button class="btn bg-transparent btn-sm rounded-0 no-shadow py-0" type="button" id="notif-group-actions" data-bs-toggle="dropdown" aria-expanded="false">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
                             <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"></path>
                         </svg>
@@ -73,17 +64,33 @@ var log=
 
         this.STYLE_ADJ_emisor_receptor="display: table-row-group;"
 
+        this.HTML_module_receptor=`<div class="d-flex justify-content-start module_receptor" id="chat-@id_chat" _date="@date">
+            <div class="body-chat-receptor">
+                <div class="d-flex align-items-center gap-2">
+                    <small class="username">@user</small>
+                    <small class="fecha-hour d-flex">@fecha_hora</small>
+                </div>
+                <div class="chat" style="@style_chat">
+                    <div style="white-space:pre-wrap;">@message</div>
+                    <div class="div-img">@adjunto @module_adjunto</div>
+                </div>
+            </div>
+        </div>`;
+
         this.HTML_module_emisor=`
         <div class="d-flex justify-content-end module_emisor" id="chat-@id_chat" _date="@date">
             <div class="body-chat-emisor">
-                
-                ${this.action_current_user_HTML}
-                
-                <div class="chat" style="@style_chat">@adjunto 
-                    <div class="div-img">@module_adjunto@message</div>
+                <div class="d-flex align-items-center gap-2">
+                    <small class="username">@user</small>
+                    <small class="fecha-hour d-flex">@fecha_hora</small>
+                    <span class="flex-grow-1"></span>
+                    ${this.action_current_user_HTML}
                 </div>
-                <small class="user">@user</small>
-                <small class="fecha-hour d-flex">@fecha_hora</small>
+                
+                <div class="chat" style="@style_chat">
+                    <div style="white-space:pre-wrap;">@message</div>
+                    <div class="div-img">@adjunto @module_adjunto</div>
+                </div>
             </div>
         </div>`;
         
@@ -94,7 +101,7 @@ var log=
                     @module_adjunto
                     ${this.action_adjunto_user_current_HTML}
                 </div>
-                <div class="div-img d-flex align-items-start">
+                <div class="d-flex align-items-start">
                     <small class="chat-name-adjunto">@name_adjunto</small>
                 </div>
             </a>
@@ -118,16 +125,38 @@ var log=
                                 <button id="btn-more-chat" class="f-more" onclick="log.more_chat(@pk_max,@pk_min,'@act','@order')">Más mensajes</button>
                                 <hr class="more-chat-divider">
                             </div>`;
- //<button class="f-rec-more" onclick="log.more_chat(@pk_max,@pk_min,'@act','@order')">Mensajes recientes</button>
+        //<button class="f-rec-more" onclick="log.more_chat(@pk_max,@pk_min,'@act','@order')">Mensajes recientes</button>
         this.HTML_more_rec_mjs=`<div class="d-flex" id="div-more-rec-chat">
                             <hr class="more-chat-divider">
                             <button class="f-rec-more ms-2" onclick="log.ir_al_actual()">Ir al actual</button>
                             <hr class="more-chat-divider">
                         </div>`;
 
-        if(this.btn_send)this.btn_send.addEventListener("click",()=>{log.SendMessage();});
-        if(this.adjunto)this.adjunto.addEventListener("change",()=>{log.SendFile();})
-        if(this.txt_message)this.txt_message.addEventListener("keydown",(e)=>{if(e.keyCode ===13)log.SendMessage();});
+        if (this.btn_send) this.btn_send.addEventListener("click", () => { log.SendMessage(); });
+        if (this.adjunto) this.adjunto.addEventListener("change", () => { log.SendFile(); })
+        if (this.txt_message) this.txt_message.addEventListener("keydown", (e) => {
+            if (e.shiftKey && e.key === 'Enter') {}
+            else if (e.key === 'Enter') {
+                e.preventDefault();
+                log.SendMessage();
+            }
+        });
+        if (this.txt_message) this.txt_message.addEventListener("input", function(event) {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+        if (this.txt_message) this.txt_message.addEventListener("paste", (event) => {
+            const items = event.clipboardData.items;
+            for (const item of items) {
+                if (item.kind === "file") {
+                    const file = item.getAsFile();
+                    if (file) {
+                        // console.log("Archivo pegado:", file);
+                        log.SendFile(file);
+                    }
+                }
+            }
+        });
 
         if(this.data && this.data.length>0)
         {
@@ -138,6 +167,7 @@ var log=
         this.ObserveScroll();
         log.CalculeContador();
     },
+
     ScrollGen:true,
     CountScroll:0,
     setInterval()
@@ -236,55 +266,60 @@ var log=
     },
     SendMessage()
     {
-        if(this.txt_message.value.trim()=="")
-        {
+        if (this.txt_message.value.trim() == "") {
             this.txt_message.focus();
             return;
         }
+
         var data=
         {
             text:this.txt_message.value
         }
+
         log.allowScroll=true;
         log.printMoreChat=false;
+        
         this.InvokeService("POST",data,
-            (data)=>
-            {
+            (data) => {
                 log.txt_message.value="";
                 log.GetMessages();
-            });
+                tools.trigger(log.txt_message,"input");
+            }
+        );
     },
-    SendFile()
+    SendFile(attachment=null)
     {
-        if(this.adjunto.value.trim()=="")return;
-        
-        if(this.adjunto.files.length<1)
-        {
+        if (!attachment && this.adjunto.value.trim() == "") return;
+        if (!attachment && this.adjunto.files.length < 1) {
             alert("No hay adjuntos por enviar")
             return;
         }
-        var data=new FormData();
+
+        var data = new FormData();
         data.append("text",this.txt_message.value);
 
+        if (attachment) { data.append(attachment.name, attachment); }
         for (let i = 0; i < this.adjunto.files.length; i++) 
         {
             const file = this.adjunto.files[i];
+            // console.log("Archivo adjunto:",file);
             data.append(file.name,file);
         }
+
         log.allowScroll=true;
         log.printMoreChat=false;
+
         this.endpoint=this.url_root_current;
         this.InvokeService("POST",data,
-            (data)=>
-            {
+            (data) => {
                 this.adjunto.value="";
                 log.GetMessages();
             },
-            (failed)=>
-            {
+            (failed) => {
                 this.adjunto.value="";
                 alert(failed.message??JSON.stringify(failed));
-            },true);
+            },
+        true);
     },
     GetMessages(endpoint="",callbak_succes=null)
     {
@@ -510,8 +545,9 @@ var log=
                 r=r.replace("a>" ,"button>");
             }
             //replace del adjunto con el html ya formado de las img
+            let name_adjunto = ((row.def_mini??"") == "") ? row.archivo : "";
             html=html.replace("@adjunto",r);
-            html=html.replace("@module_adjunto",this.HTML_name_adjunto.replace("@name_adjunto",row.archivo));
+            html=html.replace("@module_adjunto",this.HTML_name_adjunto.replace("@name_adjunto",name_adjunto));
         }
         else
         {
