@@ -9,6 +9,7 @@ window.addEventListener("resize", function(event)
 var log=
 {
     action_current_user:false,
+    current_user:"",
     guid:"",
     requesting:false,
     sending:false,
@@ -43,35 +44,35 @@ var log=
         this.last_log = 0;
 
         this.action_current_user_HTML=`
-                <div class="btn-goup d-flex justify-content-end" role="group" style="float: right;">
-                    <button class="btn bg-transparent btn-sm rounded-0 no-shadow py-0" type="button" id="notif-group-actions" data-bs-toggle="dropdown" aria-expanded="false">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
-                            <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"></path>
-                        </svg>
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="notif-group-actions">
-                        <li>
-                            <button class="dropdown-item" onclick="log.DeleteMessage('@id_chat','@idfile')">Eliminar</a>
-                        </li>
-                    </ul>
-                </div>`;
+        <div class="btn-goup d-flex justify-content-end" role="group" style="float: right;">
+            <button class="btn bg-transparent btn-sm rounded-0 no-shadow py-0" type="button" id="notif-group-actions" data-bs-toggle="dropdown" aria-expanded="false">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
+                    <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"></path>
+                </svg>
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="notif-group-actions">
+                <li>
+                    <button class="dropdown-item" onclick="log.DeleteMessage('@id_chat','@idfile')">Eliminar</a>
+                </li>
+            </ul>
+        </div>`;
 
         this.action_adjunto_user_current_HTML=`
-                                <div class="btn-goup d-flex justify-content-center align-items-center btn-file-delete" onclick="log.DeleteFile('@idfile','',event);">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
-                                        <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5"></path>
-                                    </svg>
-                                </div>`;
+        <div class="btn-goup d-flex justify-content-center align-items-center btn-file-delete" onclick="log.DeleteFile('@idfile','',event);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
+                <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5"></path>
+            </svg>
+        </div>`;
 
-        if(!this.action_current_user || this.action_current_user < 1)
-        {
+        if (!this.action_current_user) {
             this.action_current_user_HTML="";
             this.action_adjunto_user_current_HTML="";
         }
 
         this.STYLE_ADJ_emisor_receptor="display: table-row-group;"
 
-        this.HTML_module_receptor=`<div class="d-flex justify-content-start module_receptor" id="chat-@id_chat" _date="@date">
+        this.HTML_module_receptor=`
+        <div class="d-flex justify-content-start module_receptor" id="chat-@id_chat" _date="@date">
             <div class="body-chat-receptor">
                 <div class="d-flex align-items-center gap-2">
                     <small class="username">@user</small>
@@ -106,7 +107,7 @@ var log=
             <a href="@url" target="_blank" >
                 <div class="d-flex">
                     @module_adjunto
-                    ${this.action_adjunto_user_current_HTML}
+                    @action_adjunto
                 </div>
                 <div class="d-flex align-items-start">
                     <small class="chat-name-adjunto">@name_adjunto</small>
@@ -195,16 +196,16 @@ var log=
     {
         if(!this.guid) {
             alert("Debe seleccionar una conversación");
+            this.users = [];
             return;
         }
 
-        let data =
-        {
+        let params = {
             enpoint:`/!/webshell/interchat/${this.guid}/get-users/`,
             use_url:true
-        }
+        };
         
-        this.InvokeService("GET",data,
+        this.InvokeService("GET",params,
             (data) => {
                 this.users = data;
             }
@@ -575,7 +576,7 @@ var log=
     CreateItemAdjunto(row)
     {
         if(!row || !this.adjuntos)return;
-        var element=document.getElementById(`adjunto-${row.id}`);
+        let element=document.getElementById(`adjunto-${row.id}`);
         if(element)return;
         
         let html_adj=this.HTML_module_adjunto.replace("@src",row.mini??"").replaceAll("@def_min",(row.def_mini??"")).replaceAll("@style","");
@@ -589,7 +590,8 @@ var log=
             html_adj=html_adj.replaceAll("@__tag_o","");
             html_adj=html_adj.replaceAll("@__tag_c","");
         }
-        var html=this.HTML_adjunto.replace("@module_adjunto",html_adj).replaceAll("@name_adjunto",log.Cut(row.nombre??"",10)).replace("@url",log.url_download_adjuntos.replace("@id",row.id??""));
+        let action = (row?.usuario == this.current_user) ? this.action_adjunto_user_current_HTML : "";
+        let html=this.HTML_adjunto.replace("@module_adjunto",html_adj).replace("@action_adjunto",action).replaceAll("@name_adjunto",log.Cut(row.nombre??"",10)).replace("@url",log.url_download_adjuntos.replace("@id",row.id??""));
         html=html.replaceAll("@idfile",row.id??"");
 
         this.AddHTML(log.header_counter,html);

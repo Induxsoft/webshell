@@ -5,7 +5,9 @@ module ""
     @list_view="main.dk"
 
     point @create to create
+    point @update to update
     point @list to list
+    point @read to read
 
     switch @@(params,"$_view")
     {

@@ -7,6 +7,7 @@ window.addEventListener("resize", function(event)
 var interchat=
 {
     endpoint:"",
+    current_user:"",
     array:[],
     last_log:0,
     intervalGetChat:true,
@@ -15,6 +16,8 @@ var interchat=
     _DET:"",
     init()
     {
+        const modal_topic_main = document.getElementById("modal_topic_main");
+        this.btn_edt_topic=document.getElementById("btn_edt_topic");
         this.btn_add_topic=document.getElementById("btn_add_topic");
         this.btn_add_interchat=document.getElementById("btn_add_interchat");
         this.module_interchat=document.getElementById("module-interchat");
@@ -43,15 +46,20 @@ var interchat=
         this.loading_chats=document.getElementById("loading-chats");
         this.div_chat_and_header=document.getElementById("div-chat-and-header");
         //CAMPOS DE ENTRADAS
-        this.title=document.getElementById("title");
+        this.title=document.getElementById("title_topic");
 
         this.audio_alert=document.getElementById("audio-alert");
+        
+        if (modal_topic_main) modal_topic_main.addEventListener("hidden.bs.modal", () => {
+            this.fields("#modal_topic_main","clear");
+        });
         if(this.title)this.title.addEventListener("keypress",(event)=>
         {
             var keycode = (event.keyCode ? event.keyCode : event.which);
             if(keycode=="13")interchat.SaveTopic();
         });
         if(this.btn_add_topic)this.btn_add_topic.addEventListener("click",()=>{interchat.OpenModal();});
+        if(this.btn_edt_topic)this.btn_edt_topic.addEventListener("click", ()=>{interchat.LoadModal();});
         if(this.btn_add_interchat)this.btn_add_interchat.addEventListener("click",()=>{interchat.SaveTopic();});
         if(this.btn_refresh_topic)this.btn_refresh_topic.addEventListener("click",()=>{interchat.Refresh();});;
         
@@ -65,7 +73,7 @@ var interchat=
                                     </p>
                                 </div>
                                 
-                                <h5 class="ms-2">@title</h5>
+                                <h5 class="topic-title ms-2">@title</h5>
 
                                 <div class="flex-grow-1 d-flex justify-content-end">
                                     
@@ -431,17 +439,17 @@ var interchat=
 
         if(list.length<1)
         {
-            tools.alerText("#lbl_alert_interchat_user","Debe agregar usuarios");
+            alert("¡Debe agregar usuarios!");
             return;
         }
         if(!this.chatInternalSeleted || this.chatInternalSeleted < 1)
         {
-            tools.alerText("#lbl_alert_interchat_user","Debe seleccionar una conversación");
+            alert("¡Debe seleccionar una conversación!");
             return;
         }
         if(list.length<1)
         {
-            tools.alerText("#lbl_alert_interchat_user","Debe agregar uno o más usuario(s)");
+            alert("¡Debe agregar uno o más usuario(s)!");
             return;
         }
         var data=
@@ -596,6 +604,7 @@ var interchat=
         if(!this.iframe_interchat || this.url_bitacora.trim()=="")return;
 
         this.RemoveClassSelected();
+        // if (this.btn_edt_topic) btn_edt_topic.hidden = true;
         //remover notificacion de mensajes
         var elem=document.getElementById("noti-"+guid);
         if(elem)elem.classList.add("d-none");
@@ -609,6 +618,29 @@ var interchat=
 
         interchat.chatInternalSeleted=guid;
         this.MediaQuery(true);
+
+        try {
+            let params=
+            {
+                enpoint:`./${this.chatInternalSeleted}/get-users/`,
+                use_url:true
+            };
+            this.InvokeService("GET",params,
+                (data) => {
+                    let user = data.find(u => u.userid == this.current_user);
+                    let topic = this.array.find(t => t.sys_guid == this.chatInternalSeleted);
+                    let isAdminOrOwner = (user.isadmin || topic.sys_user == this.current_user);
+                    if (this.btn_edt_topic) btn_edt_topic.hidden = !isAdminOrOwner;
+                },
+                (error) => {
+                    if (this.btn_edt_topic) btn_edt_topic.hidden = true;
+                    console.log(error);
+                }
+            );
+        } catch (error) {
+            if (this.btn_edt_topic) btn_edt_topic.hidden = true;
+            console.error(error);
+        }
 
         let url_src=this.url_bitacora.replace("@det",det).replace("@guid",guid);
         this.iframe_interchat.src=url_src;
@@ -713,6 +745,7 @@ var interchat=
     PrintItemChat(row)
     {
         if(!this.intervalGetChat && this.InterChatActivas)return;
+        if(!this.array)this.array=[];
 
         var exist_element=document.getElementById("interchat-",(row.sys_guid??""));
 
@@ -720,15 +753,13 @@ var interchat=
         if(!exist_element)
         {
             this.module_interchat.insertAdjacentHTML("afterbegin",html);
+            if (this.array.findIndex(t => t.sys_guid == row.sys_guid) < 0) this.array.push(row);
         }
         if(tools.ParseBool((row.show_notif??false)))
         {
             var elem=document.getElementById("noti-"+row.sys_guid);
             if(elem)elem.classList.remove("d-none");
         }
-        
-        if(!this.array)this.array=[];
-        this.array.push(row);
 
         if(Number(row.sys_pk??0)>this.last_log)this.last_log=Number(row.sys_pk??0);
     },
@@ -795,18 +826,40 @@ var interchat=
     {
         tools.showModal("modal_topic_main");
     },
+    LoadModal()
+    {
+        if (!this.chatInternalSeleted || this.chatInternalSeleted < 1) {
+            alert("Debe seleccionar una conversación");
+            return;
+        }
+
+        let selected = this.array.find(topic => topic.sys_guid == this.chatInternalSeleted);
+        document.getElementById("sys_pk_topic").value = selected.sys_pk;
+        document.getElementById("sys_guid_topic").value = selected.sys_guid;
+        document.getElementById("sys_recver_topic").value = selected.sys_recver;
+        document.getElementById("title_topic").value = selected.title;
+
+        tools.showModal("modal_topic_main");
+    },
     SaveTopic()
     {
         var data=this.fields("#modal_topic_main","","#lbl_alert_interchat");
         if(!data || Object.keys(data).length<1)return;
+        let method = (Number(data.sys_pk) <= 0) ? "POST" : "PATCH";
 
-        this.InvokeService("POST",data,
-            (data)=>
-            {
+        this.InvokeService(method,data,
+            (data) => {
                 interchat.GetMessages();
                 tools.hideModal("modal_topic_main");
                 this.fields("#modal_topic_main","clear");
-            });
+
+                if (method == "PATCH") {
+                    const topic_title = document.querySelector(`#interchat-${data.sys_guid} .topic-title`);
+                    if (topic_title) topic_title.textContent = data.title;
+                    else window.location.reload();
+                }
+            }
+        );
     },
     alerText:function(idelem,text="",css="",time=5000)
 	{

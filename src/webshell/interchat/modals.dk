@@ -20,9 +20,12 @@ module ""
                 div(class="modal-body" id="bdymsg")
                 {
                     label(style="color:red" id="lbl_alert_interchat" class="d-flex"){""}
+                    input(type="hidden" name="sys_pk" value="0" id="sys_pk_topic")
+                    input(type="hidden" name="sys_guid" value="" id="sys_guid_topic")
+                    input(type="hidden" name="sys_recver" value="0" id="sys_recver_topic")
 
                     label{"Nombre:"}
-                    input(type="text" class="induxsoft-form-control" id="title" name="title" maxlength="50" required="true" alert="El campo nombre es requerido")
+                    input(type="text" class="induxsoft-form-control" id="title_topic" name="title" maxlength="50" required="true" alert="El campo nombre es requerido")
                 }
                 div(class="modal-footer" id="ftrAddClt")
                 {

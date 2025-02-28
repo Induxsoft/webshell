@@ -3,42 +3,47 @@
 module ""
 {
     @table_name="interchat_topic"
-    @list_query="SELECT distinct i.sys_pk,
-       i.sys_guid,
-       DATE_FORMAT(i.sys_dtcreated,'%Y-%m-%d') fecha,
-       DATE_FORMAT(i.sys_dtcreated,'%H:%i-%s')hora,
-       i.title,
-       IFNULL(i.closed,0)closed,
-       @last_massage := IFNULL((
-       	SELECT MAX(sys_pk) FROM ws_det_log lg WHERE lg.guid=i.sys_guid
-		 ),0)last_massage,
-        (@last_massage > ifnull(ir.last,0) )show_notif
-       FROM interchat_topic i
-       INNER JOIN interchat_topic_topic_member tu ON i.sys_pk=tu.topic
-       LEFT JOIN interchat_readed ir on i.sys_pk=ir.topic and tu.user=ir.tuser
-       WHERE ifnull(i.sys_deleted,0)=0
+
+    @list_query = "
+    SELECT DISTINCT
+        i.sys_pk,
+        i.sys_guid,
+        i.sys_recver,
+        IFNULL(i.sys_user,'') sys_user,
+        IFNULL(i.sys_lastuser,'') sys_lastuser,
+        DATE_FORMAT(i.sys_dtcreated,'%Y-%m-%d') fecha,
+        DATE_FORMAT(i.sys_dtcreated,'%H:%i-%s') hora,
+        i.title,
+        IFNULL(i.closed,0) closed,
+        @last_massage := IFNULL((SELECT MAX(sys_pk) FROM ws_det_log lg WHERE lg.guid=i.sys_guid),0) last_massage,
+        (@last_massage > ifnull(ir.last,0)) show_notif
+    FROM interchat_topic i
+        INNER JOIN interchat_topic_topic_member tu ON i.sys_pk=tu.topic
+        LEFT JOIN interchat_readed ir on i.sys_pk=ir.topic and tu.user=ir.tuser
+    WHERE ifnull(i.sys_deleted,0)=0
        #<@conditional>
-       ORDER BY i.sys_dtcreated ASC
-       LIMIT 250"
+    ORDER BY i.sys_dtcreated ASC
+    LIMIT 250
+    "
 
     @sql_users = "
-        SELECT
-            u.sys_pk,
-            u.userid,
-            u.username,
-            GROUP_CONCAT(g.groupid SEPARATOR '; ') _grupos,
-            GROUP_CONCAT(g.description SEPARATOR '; ') grupos
-        FROM tuser u
-            LEFT JOIN user_usergroup_ ug ON ug.users = u.sys_pk
-            LEFT JOIN usergroup g ON ug.groups=g.sys_pk
-        WHERE NOT IFNULL(u.sys_deleted,0)
-            AND NOT IFNULL(u.external,0)
-            AND IF(IFNULL(@fil_gpo,'-1')='-1', TRUE, ug.groups = @fil_gpo)
-            AND IF(IFNULL(@s,'')='', TRUE, (u.userid = @s OR u.username LIKE CONCAT('%',@s,'%')))
-        GROUP BY u.userid
-        ORDER BY u.username ASC
-        LIMIT 250;
-        "
+    SELECT
+        u.sys_pk,
+        u.userid,
+        u.username,
+        GROUP_CONCAT(g.groupid SEPARATOR '; ') _grupos,
+        GROUP_CONCAT(g.description SEPARATOR '; ') grupos
+    FROM tuser u
+        LEFT JOIN user_usergroup_ ug ON ug.users = u.sys_pk
+        LEFT JOIN usergroup g ON ug.groups=g.sys_pk
+    WHERE NOT IFNULL(u.sys_deleted,0)
+        AND NOT IFNULL(u.external,0)
+        AND IF(IFNULL(@fil_gpo,'-1')='-1', TRUE, ug.groups = @fil_gpo)
+        AND IF(IFNULL(@s,'')='', TRUE, (u.userid = @s OR u.username LIKE CONCAT('%',@s,'%')))
+    GROUP BY u.userid
+    ORDER BY u.username ASC
+    LIMIT 250;
+    "
 
     list::&db,&params
     {
@@ -69,12 +74,18 @@ module ""
         new p{@"uid":@@(@http_context,"$session/user/uid")}
         return dbr.rec(db,"select * from tuser where userid=@uid",p)
     }
+    
+    read::&db,&params
+    {
+        return dbr.rec(db,"select * from interchat_topic where (sys_pk = @_entity_id or sys_guid = @_entity_id)",params)
+    }
     create::&db,&params,&data
     {
         do dbr.apps.action.grant("XW31")
 
         @use_transaction=@false
         do dbr.begin(db)
+            data<"sys_user"> : @@(@http_context,"$session/user/uid")
             ref entity= entity.create(db,params,data)
             new interchat_topic_topic_member
             {
@@ -93,7 +104,30 @@ module ""
         
        return entity
     }
-    
+    update::&db,&params,&data
+    {
+        do errordet(@false)
+
+        params<"_entity_id"> : @@(data,"$sys_guid")
+        userid = @@(@http_context,"$session/user/uid")
+        isadmin = @false
+        @keyfield = "sys_guid"
+        
+        ref members = interchat.GetUser(db,params)
+        for i = 0; i < list.count(members); i+1
+        {
+            ref u = list.obj(members,i)
+            if @@(u,"$userid") == userid {
+                isadmin = @@(u,"#isadmin")
+                break
+            }
+        }
+
+        if not(isadmin) { do rise_error(511,"Esta acción solo puede realizarlo un administrador.") }
+
+        data<"sys_lastuser"> : userid
+        return entity.update(db,params,data)
+    }
     
     create.users::&db,&params,&data
     {
@@ -138,17 +172,20 @@ module ""
     }
     interchat.GetUser::&db,params
     {
-        return dbr.list(db,"SELECT
-                        distinct u.sys_pk,
-                        u.userid,
-                        u.username,
-                        ifnull(it.admin, 0) isadmin
-                    FROM
-                        tuser u
-                        INNER JOIN interchat_topic_topic_member it ON u.sys_pk = it.user
-                        INNER JOIN interchat_topic t ON it.topic = t.sys_pk
-                    WHERE
-                        t.sys_guid = @_entity_id",params)
+        return dbr.list(db,"
+            SELECT
+                distinct u.sys_pk,
+                u.userid,
+                u.username,
+                ifnull(it.admin, 0) isadmin
+            FROM
+                tuser u
+                INNER JOIN interchat_topic_topic_member it ON u.sys_pk = it.user
+                INNER JOIN interchat_topic t ON it.topic = t.sys_pk
+            WHERE
+                NOT IFNULL(u.sys_deleted,0)
+                AND t.sys_guid = @_entity_id
+        ",params)
     }
 
     delete.users::&db,&params,&data
