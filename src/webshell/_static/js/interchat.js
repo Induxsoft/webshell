@@ -828,7 +828,7 @@ var interchat=
     InvokeService(method,values=null,callbak_succes=null,callbak_failed=null,formdata=false)
     {
         let url=this.endpoint;
-        if(values && (tools.ParseBool(values["use_url"]??"")) )
+        if(values && (tools.ParseBool(values["use_url"]??"").toString()) )
         {
             if((values["enpoint"]??"")!="")url=(values["enpoint"]??"");
         }

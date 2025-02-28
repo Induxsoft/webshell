@@ -6,6 +6,7 @@ module ""
     #include "serialize.dkh"
     #include "webshell/config.dk"
     #include "webshell/_lib/lib.dk"
+    #include "webshell/_lib/icons.dk"
 
     do @context.begin(@crud_context)
     ref @http_context=@("&http")
@@ -118,9 +119,25 @@ module ""
                 {
                     $""
                 }
-                div(class="card-footer sticky-bottom px-0" id="chat-footer-#<guid>" style="background-color:#F0F2F5; height:auto;")
+                fieldset(class="card-footer sticky-bottom px-0" id="chat-footer-#<guid>" style="background-color:#F0F2F5; height:auto;")
                 {
-                    // img(class="card-img-bottom" src="" alt="Vista previa")
+                    div(id="preview-gallery")
+                    {""
+                        // div(class="gallery-item")
+                        // {
+                        //     figure(class="figure")
+                        //     {
+                        //         div(class="item-action-bar")
+                        //         {
+                        //             button(class="btn btn-xs btn-see-prev" type="button"){$"#<@ICON_EYE>"}
+                        //             button(class="btn btn-xs btn-edt-prev" type="button"){$"#<@ICON_EDIT>"}
+                        //             button(class="btn btn-xs btn-del-prev" type="button"){$"#<@ICON_TRASH>"}
+                        //         }
+                        //         img(class="figure-img img-fluid rounded ratio ratio-1x1 m-0" src="/$/webshell/img/minis/file.png" alt="Vista previa"){""}
+                        //         figcaption(class="figure-caption"){"archivo.ext"}
+                        //     }
+                        // }
+                    }
                     div(class="d-flex align-items-end")
                     {
                         label(class="btn" id="btn-adjunto" "for"="adjunto")
@@ -132,7 +149,7 @@ module ""
                         div(class="input-group")
                         {
                             textarea(class="form-control rounded border-0" name="nota" id="txt-message" rows="1" maxlength="2048" placeholder="Escribe un mensaje" style="min-height:31px; max-height:220px; resize:none;"){$""}
-                            input(class="d-none" type="file" name="adjunto" id="adjunto") //multiple="true"
+                            input(class="d-none" type="file" name="adjunto" id="adjunto" multiple="true")
                         }
                         span(class="btn" id="btn-send")
                         {
@@ -148,6 +165,7 @@ module ""
         script
         {
             $'
+            log.guid = "#<guid>";
             log.time_load_bitacora=#<@TIME_LOAD_BITACORA>;
             log.url_download_adjuntos="#<url_download_adjuntos>";
             log.count_adjuntos=#<count_adjuntos>;

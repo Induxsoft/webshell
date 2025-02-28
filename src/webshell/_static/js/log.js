@@ -9,11 +9,18 @@ window.addEventListener("resize", function(event)
 var log=
 {
     action_current_user:false,
+    guid:"",
+    requesting:false,
+    sending:false,
+    attachments:[],
+    users:[],
+
     init()
     {
         this.endpoint="";
         this.adjuntos=document.getElementById("adjuntos");
         this.body_chat=document.getElementById("body-chat");
+        this.footer_chat=document.getElementById("chat-footer-"+this.guid);
         this.txt_message=document.getElementById("txt-message");
         this.btn_send=document.getElementById("btn-send");
         this.adjunto=document.getElementById("adjunto");
@@ -133,7 +140,18 @@ var log=
                         </div>`;
 
         if (this.btn_send) this.btn_send.addEventListener("click", () => { log.SendMessage(); });
-        if (this.adjunto) this.adjunto.addEventListener("change", () => { log.SendFile(); })
+        if (this.adjunto) this.adjunto.addEventListener("change", () => {
+            const gallery = document.getElementById("preview-gallery");
+
+            for (let i = 0; i < this.adjunto.files.length; i++) {
+                const file = this.adjunto.files[i];
+                // console.log("Archivo adjunto:",file);
+                this.attachments.push(file);
+                gallery.appendChild(this.getGalleryItem(file));
+            }
+            this.adjunto.value = "";
+            // log.SendFile();
+        });
         if (this.txt_message) this.txt_message.addEventListener("keydown", (e) => {
             if (e.shiftKey && e.key === 'Enter') {}
             else if (e.key === 'Enter') {
@@ -146,13 +164,17 @@ var log=
             this.style.height = this.scrollHeight + 'px';
         });
         if (this.txt_message) this.txt_message.addEventListener("paste", (event) => {
+            const gallery = document.getElementById("preview-gallery");
             const items = event.clipboardData.items;
+
             for (const item of items) {
                 if (item.kind === "file") {
                     const file = item.getAsFile();
                     if (file) {
                         // console.log("Archivo pegado:", file);
-                        log.SendFile(file);
+                        this.attachments.push(file);
+                        gallery.appendChild(this.getGalleryItem(file));
+                        // log.SendFile(file);
                     }
                 }
             }
@@ -165,7 +187,92 @@ var log=
         this.interval_chat=null;
         this.setInterval();
         this.ObserveScroll();
+        log.getUsers();
         log.CalculeContador();
+    },
+
+    getUsers()
+    {
+        if(!this.guid) {
+            alert("Debe seleccionar una conversación");
+            return;
+        }
+
+        let data =
+        {
+            enpoint:`/!/webshell/interchat/${this.guid}/get-users/`,
+            use_url:true
+        }
+        
+        this.InvokeService("GET",data,
+            (data) => {
+                this.users = data;
+            }
+        );
+    },
+
+    getGalleryItem(file)
+    {
+        if (!file || typeof file != "object") return;
+
+        const item = document.createElement('div');
+        const figure = document.createElement('figure');
+        const actions = document.createElement('div');
+        const img = document.createElement('img');
+        const caption = document.createElement('figcaption');
+
+        let id = tools.uuid();
+        let alt = file.name;
+        let ext = file.name.split(".").pop();
+
+        if (["image/jpeg","image/jpg","image/png"].includes(file.type)) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        else if (file.type == "application/pdf") img.src = "/$/webshell/img/minis/pdf.png";
+        else if (file.type == "text/xml") img.src = "/$/webshell/img/minis/xml.png";
+        else if (file.type == "text/csv") img.src = "/$/webshell/img/minis/csv.png";
+        else if (["zip","rar"].includes(ext)) img.src = "/$/webshell/img/minis/zip.png";
+        else if (["docx","docm","dotx","dotm","doc","dot","wbk","wll","wwl"].includes(ext)) img.src = "/$/webshell/img/minis/word.png";
+        else if (["xlsx","xlsm","xltx","xltm","xls","xlt","xlm","xlsb","xla","xlam","xll","xlw","xll_","xla_","xla5","xla8"].includes(ext)) img.src = "/$/webshell/img/minis/excel.png";
+        else img.src = "/$/webshell/img/minis/file.png";
+
+        file.id = id;
+        item.id = id;
+        item.classList.add('gallery-item');
+        figure.classList.add('figure');
+        actions.classList.add('item-action-bar');
+        img.classList.add('figure-img','img-fluid','rounded','ratio','ratio-1x1','m-0');
+        caption.classList.add('figure-caption');
+        img.setAttribute('alt',alt);
+        caption.textContent = alt;
+
+        actions.innerHTML = `
+            <button class="btn btn-xs btn-del-prev" type="button" onclick="log.deletePrev('${id}')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3" viewBox="0 0 16 16">
+                    <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5M11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5"></path>
+                </svg>
+            </button>
+        `;
+        figure.appendChild(actions);
+        figure.appendChild(img);
+        figure.appendChild(caption);
+        item.appendChild(figure);
+
+        return item;
+    },
+
+    deletePrev(id) {
+        try {
+            let index = this.attachments.findIndex(f => f.id == id);
+            this.attachments.splice(index,1);
+            document.getElementById(id)?.remove();
+        } catch (error) {
+            console.error(error);
+        }
     },
 
     ScrollGen:true,
@@ -266,60 +373,115 @@ var log=
     },
     SendMessage()
     {
-        if (this.txt_message.value.trim() == "") {
-            this.txt_message.focus();
-            return;
+        // Enviar todos los adjuntos disponibles.
+        for (let i = 0; i < this.attachments.length; i++) {
+            const file = this.attachments[i];
+            this.SendFile(file,"");
         }
-
-        var data=
+        if (this.attachments.length > 0)
         {
-            text:this.txt_message.value
+            const gallery = document.getElementById("preview-gallery");
+            this.attachments = [];
+            gallery.innerHTML = "";
         }
+        // Enviar mensaje
+        if (this.sending) return;
+        try {
+            if (this.footer_chat) this.footer_chat.disabled = true;
+            this.sending = true;
 
-        log.allowScroll=true;
-        log.printMoreChat=false;
-        
-        this.InvokeService("POST",data,
-            (data) => {
-                log.txt_message.value="";
-                log.GetMessages();
-                tools.trigger(log.txt_message,"input");
+            let message = this.txt_message.value.trim();
+            if (message == "") {
+                this.txt_message.focus();
+                return
             }
-        );
-    },
-    SendFile(attachment=null)
-    {
-        if (!attachment && this.adjunto.value.trim() == "") return;
-        if (!attachment && this.adjunto.files.length < 1) {
-            alert("No hay adjuntos por enviar")
-            return;
+            // Busca URLs válidas y las transforma en etiquetas <a>
+            const urlPattern = /(https?:\/\/[^\s]+)/g;
+            message = message.replaceAll(urlPattern, function(url) {
+                return `<a href="${url}" target="_blank">${url}</a>`;
+            });
+            // Busca menciones `@` y las transforma en etiquetas <span>
+            if (message.includes("@")) {
+                let palabras = message.split(" ");
+                message = palabras.map(palabra => {
+                    if (!palabra.startsWith("@")) return palabra;
+                    
+                    let mention = palabra.replace("@","");
+                    let found = this.users.find(u => u.userid.toLowerCase() == mention.toLowerCase());
+                    if (found || ["cua","devs","everyone","todos"].includes(mention.toLowerCase()))
+                        return `<span class="mention">@${(found?.userid ?? mention)}</span>`;
+                    
+                    return palabra;
+                }).join(" ");
+            }
+
+            log.allowScroll=true;
+            log.printMoreChat=false;
+            
+            this.InvokeService("POST", {text:message},
+                (data) => {
+                    log.txt_message.value="";
+                    log.GetMessages();
+                    tools.trigger(log.txt_message,"input");
+                }
+            );
         }
-
-        var data = new FormData();
-        data.append("text",this.txt_message.value);
-
-        if (attachment) { data.append(attachment.name, attachment); }
-        for (let i = 0; i < this.adjunto.files.length; i++) 
+        catch (error) { console.error(error) }
+        finally
         {
-            const file = this.adjunto.files[i];
-            // console.log("Archivo adjunto:",file);
-            data.append(file.name,file);
+            if (this.footer_chat) this.footer_chat.disabled = false;
+            this.sending = false;
+        }
+    },
+    SendFile(attachment=null, message="")
+    {
+        if (!attachment && this.attachments.length == 0) return;
+        if (!attachment && this.attachments.length < 1) {
+            alert("No hay archivos adjuntos por enviar.");
+            return
         }
 
-        log.allowScroll=true;
-        log.printMoreChat=false;
+        if (this.sending) return;
+        try {
+            if (this.footer_chat) this.footer_chat.disabled = true;
+            this.sending = true;
 
-        this.endpoint=this.url_root_current;
-        this.InvokeService("POST",data,
-            (data) => {
-                this.adjunto.value="";
-                log.GetMessages();
-            },
-            (failed) => {
-                this.adjunto.value="";
-                alert(failed.message??JSON.stringify(failed));
-            },
-        true);
+            let send_all = (!attachment && this.attachments.length > 0);
+            let data = new FormData();
+
+            if (attachment) { data.append(attachment.name, attachment); }
+            if (send_all) {
+                for (let i = 0; i < this.attachments.length; i++) {
+                    const file = this.attachments[i];
+                    data.append(file.name,file);
+                }
+            }
+            data.append("text",message); //(this.txt_message.value)
+
+            log.allowScroll=true;
+            log.printMoreChat=false;
+
+            this.endpoint=this.url_root_current;
+            this.InvokeService("POST",data,
+                (data) => {
+                    if (send_all) {
+                        const gallery = document.getElementById("preview-gallery");
+                        this.attachments = [];
+                        gallery.innerHTML = "";
+                    }
+                    log.GetMessages();
+                },
+                (failed) => {
+                    alert(failed.message??JSON.stringify(failed));
+                },
+            true);
+        }
+        catch (error) { console.error(error) }
+        finally
+        {
+            if (this.footer_chat) this.footer_chat.disabled = false;
+            this.sending = false;
+        }
     },
     GetMessages(endpoint="",callbak_succes=null)
     {

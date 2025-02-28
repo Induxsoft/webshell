@@ -54,7 +54,7 @@ module ""
                 {
                     div(class="card h-100 rounded-0" id="card-interchat")
                     {
-                        div(class="card-body p-0" id="card-body-interchat")
+                        div(class="card-body p-0 h-100" id="card-body-interchat")
                         {
                             nav
                             {
@@ -64,9 +64,9 @@ module ""
                                     button(class="nav-link py-1 w-50" type="button" role="tab" id="nav-archivadas-tab" "data-bs-toggle"="tab" "data-bs-target"="#nav-archivadas" "aria-controls"="nav-archivadas" "aria-selected"="true" onclick="interchat.ChatArchivadas()"){"Archivadas"}
                                 }
                             }
-                            div(id="module-interchat" style="max-height: 100%;overflow: auto;")
+                            div(id="module-interchat" style="height:100%; overflow-x:hidden; overflow-y:auto;")
                             {$""
-                            } 
+                            }
                         }
                     }
                 }
@@ -186,9 +186,12 @@ module ""
             {
                 border: 2px solid blue;
             } */
-            .interchat-selected
-            {
+            .interchat-item {
+                color: #585A5C;
+            }
+            .interchat-selected {
                 background: #F0F2F5;
+                color: #000000;
             }
             
             .notif-chat

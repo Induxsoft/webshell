@@ -250,7 +250,7 @@ body {
     transform: translateY(-50%);
 }
 
-/* Log */
+/* ======================= LOG */
 .module_emisor,.module_receptor
 {
     margin-bottom: 5px;
@@ -278,16 +278,30 @@ body {
 }
 .username {
     font-weight: bold;
-    font-size: 14px;
+    font-size: 16px;
 }
 .chat
 {
     width: 100%;
     padding: 8px 4px;
+    font-size: 15px;
     border-radius: 8px;
     display: inline-block;
     word-wrap: break-word;
 }
+.chat .mention {
+    padding: .35em .65em;
+    font-size: .75em;
+    font-weight: 700;
+    background-color: rgba(88, 101, 242, .7);
+    color: white;
+    border-radius: .25rem;
+}
+.chat pre {
+    background-color: #F5F5F5;
+    padding: .5rem;
+}
+.chat a:hover { text-decoration: none; }
 .body-chat-emisor .div-img {
     background-color: #d1f4cc;
 }
@@ -333,10 +347,62 @@ body {
     height: 36px;
     width: 36px;
 }
-.fecha-hour
-{
-    font-size: 12px;
+
+#preview-gallery {
+    width: 100%;
+    overflow-x: auto; /* Habilita el scroll horizontal */
+    white-space: nowrap; /* Evita el salto de línea dentro del contenedor */
+    display: flex;
 }
+#preview-gallery:has(div) { margin-bottom: .5rem; }
+#preview-gallery div { margin-left: 10px; }
+#preview-gallery div:last-child { margin-right: 10px; }
+#preview-gallery figure {
+    display: inline-block; /* Permite que los elementos se alineen horizontalmente */
+    width: 150px;
+    height: 150px;
+    padding: 6px;
+    margin: 0;
+    background-color: #E1E6ED;
+    position: relative;
+    text-align: center;
+}
+#preview-gallery .item-action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: end;
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 10;
+    background-color: #585A5C;
+}
+#preview-gallery button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #D6D9DC;
+    outline: none;
+    box-shadow: none;
+}
+#preview-gallery button:hover{ color: #FFF; }
+#preview-gallery img {
+    max-height: 110px;
+    width: auto;
+}
+#preview-gallery figcaption {
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+    left: 0;
+    text-align: left;
+    padding: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fecha-hour { font-size: 12px; }
 /* modulo deadjuntos */
 .btn-adjunto
 {
