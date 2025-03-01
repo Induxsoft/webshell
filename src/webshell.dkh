@@ -200,9 +200,12 @@ module ":webshell"
             wf.sys_pk,
             wf.sys_guid,
             wf.id,
-            wf.nombre
+            wf.nombre,
+            wl.usuario,
+            wl.guid
         FROM
             ws_det_log_file wf
+            INNER JOIN ws_det_log wl ON wf.id = wl.idarchivo
         WHERE
             wf.id=@id"
         
@@ -259,7 +262,9 @@ module ":webshell"
             wf.sys_pk,
             wf.sys_guid,
             wf.id,
-            wf.nombre
+            wf.nombre,
+            wl.usuario,
+            wl.guid
         FROM
             ws_det_log_file wf
             INNER JOIN ws_det_log wl ON wf.id = wl.idarchivo
