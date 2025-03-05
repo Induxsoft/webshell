@@ -397,23 +397,17 @@ var log=
                 return
             }
             // Busca URLs válidas y las transforma en etiquetas <a>
-            const urlPattern = /(https?:\/\/[^\s]+)/g;
-            message = message.replaceAll(urlPattern, function(url) {
-                return `<a href="${url}" target="_blank">${url}</a>`;
-            });
+            if (message.includes("http")) {
+                const urlPattern = /(https?:\/\/[^\s]+)/g;
+                message = message.replaceAll(urlPattern, url => `<a href="${url}" target="_blank">${url}</a>`);
+            }
             // Busca menciones `@` y las transforma en etiquetas <span>
             if (message.includes("@")) {
-                let palabras = message.split(" ");
-                message = palabras.map(palabra => {
-                    if (!palabra.startsWith("@")) return palabra;
-                    
-                    let mention = palabra.replace("@","");
-                    let found = this.users.find(u => u.userid.toLowerCase() == mention.toLowerCase());
-                    if (found || ["cua","devs","everyone","todos"].includes(mention.toLowerCase()))
-                        return `<span class="mention">@${(found?.userid ?? mention)}</span>`;
-                    
-                    return palabra;
-                }).join(" ");
+                let usersId = [...this.users.map(usr => usr.userid), "cua","devs","everyone","todos"];
+                usersId.forEach(mention => {
+                    const search = new RegExp(`@${mention}`,'gi');
+                    message = message.replace(search, match => `<span class="mention">@${mention}</span>`);
+                });
             }
 
             log.allowScroll=true;
