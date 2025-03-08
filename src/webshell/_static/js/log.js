@@ -140,7 +140,10 @@ var log=
                             <hr class="more-chat-divider">
                         </div>`;
 
-        if (this.btn_send) this.btn_send.addEventListener("click", () => { log.SendMessage(); });
+        if (this.btn_send) this.btn_send.addEventListener("click", () => {
+            log.SendMessage();
+            this.txt_message.focus();
+        });
         if (this.adjunto) this.adjunto.addEventListener("change", () => {
             const gallery = document.getElementById("preview-gallery");
 
@@ -153,33 +156,42 @@ var log=
             this.adjunto.value = "";
             // log.SendFile();
         });
-        if (this.txt_message) this.txt_message.addEventListener("keydown", (e) => {
-            if (e.shiftKey && e.key === 'Enter') {}
-            else if (e.key === 'Enter') {
-                e.preventDefault();
-                log.SendMessage();
-            }
-        });
-        if (this.txt_message) this.txt_message.addEventListener("input", function(event) {
-            this.style.height = 'auto';
-            this.style.height = this.scrollHeight + 'px';
-        });
-        if (this.txt_message) this.txt_message.addEventListener("paste", (event) => {
-            const gallery = document.getElementById("preview-gallery");
-            const items = event.clipboardData.items;
+        if (this.txt_message)
+        {
+            this.txt_message.focus();
+            this.txt_message.addEventListener("blur", (e) => this.txt_message.focus());
 
-            for (const item of items) {
-                if (item.kind === "file") {
-                    const file = item.getAsFile();
-                    if (file) {
-                        // console.log("Archivo pegado:", file);
-                        this.attachments.push(file);
-                        gallery.appendChild(this.getGalleryItem(file));
-                        // log.SendFile(file);
+            this.txt_message.addEventListener("keydown", (e) => {
+                if (e.shiftKey && e.key === 'Enter') {}
+                else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    log.SendMessage();
+                    this.txt_message.focus();
+                }
+            });
+
+            this.txt_message.addEventListener("input", function(event) {
+                this.style.height = 'auto';
+                this.style.height = this.scrollHeight + 'px';
+            });
+
+            this.txt_message.addEventListener("paste", (event) => {
+                const gallery = document.getElementById("preview-gallery");
+                const items = event.clipboardData.items;
+    
+                for (const item of items) {
+                    if (item.kind === "file") {
+                        const file = item.getAsFile();
+                        if (file) {
+                            // console.log("Archivo pegado:", file);
+                            this.attachments.push(file);
+                            gallery.appendChild(this.getGalleryItem(file));
+                            // log.SendFile(file);
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
 
         if(this.data && this.data.length>0)
         {
