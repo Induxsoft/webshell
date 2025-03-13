@@ -159,7 +159,7 @@ var log=
         if (this.txt_message)
         {
             this.txt_message.focus();
-            this.txt_message.addEventListener("blur", (e) => this.txt_message.focus());
+            // this.txt_message.addEventListener("blur", (e) => this.txt_message.focus());
 
             this.txt_message.addEventListener("keydown", (e) => {
                 if (e.shiftKey && e.key === 'Enter') {}
