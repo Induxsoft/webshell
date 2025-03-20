@@ -16,7 +16,8 @@ module ""
         i.title,
         IFNULL(i.closed,0) closed,
         @last_massage := IFNULL((SELECT MAX(sys_pk) FROM ws_det_log lg WHERE lg.guid=i.sys_guid),0) last_massage,
-        (@last_massage > ifnull(ir.last,0)) show_notif
+        (@last_massage > ifnull(ir.last,0)) show_notif,
+        i.sys_dtcreated
     FROM interchat_topic i
         INNER JOIN interchat_topic_topic_member tu ON i.sys_pk=tu.topic
         LEFT JOIN interchat_readed ir on i.sys_pk=ir.topic and tu.user=ir.tuser
