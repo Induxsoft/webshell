@@ -26,6 +26,7 @@ var notiman =
         // const targets_combo = document.getElementById("_to");
         // const img = document.getElementById("img");
         // const localimg = document.getElementById("local-img");
+        const btn_copy_link = document.getElementById("btn_copy_link");
         const btn_show_media = document.getElementById("btn_show_media");
         
         this.dialog.addEventListener("shown.bs.modal", () => {
@@ -39,7 +40,7 @@ var notiman =
             let def = this.defdata();
             
             this.ff["title"].value ||= def.title;
-            this.ff["href"].value ||= def.href;
+            this.ff["href"].value ||= def.go;
         });
         this.dialog.addEventListener("hidden.bs.modal", () => { this.form.reset() });
         // targets_container.addEventListener("click", () => {
@@ -60,6 +61,12 @@ var notiman =
         //     img.value = file?.name;
         // });
         this.media.onClicking = (data) => { this.ff["img"].value = data.src; }
+        btn_copy_link.addEventListener("click", () => {
+            const url = this.ff["href"].value;
+            navigator.clipboard.writeText(url)
+            .then(() => { console.log("Se copio el enlace al portapapeles.") })
+            .catch(() => { alert("Error al copiar el enlace al portapapeles.") });
+        });
         btn_show_media.addEventListener("click", () => { this.media.hidden = !this.media.hidden });
         submit?.addEventListener("click", () => { this.send() });
 
@@ -168,10 +175,12 @@ var notiman =
 
         const v12navbar_title = _view.getElementById("v12FormBar_title");
         let title = (v12navbar_title?.textContent ?? "").trim() || _view.title.trim();
+        let href = _view.location.href;
         
         return {
             title: title,
-            href: _view.location.href
+            href: href,
+            go: href.split("!")[0] +"?go="+ tools.url_encode(href)
         }
     },
 

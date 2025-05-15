@@ -173,7 +173,17 @@ module "Administración de notificaciones:notiman"
             hostname = @@(@http_context,"$request/headers/HTTP_HOST")
             if hostname == "" { hostname = @@(@http_context,"$request/headers/SERVER_NAME") }
 
-            if contains(url,hostname) || contains(url,"/!/") { url = "/?go="+url_encode(url) }
+            is_url_encode = @true
+            do url_dcode(url)
+            exception
+            {
+                do pop_exception()
+                is_url_encode = @false
+            }
+            
+            if is_url_encode && not(contains(url,"/?go=")) { url = "/?go="+url }
+            else if not(is_url_encode) && contains(url,"/?go=") {/*No hacer nada*/}
+            else if contains(url,hostname) || contains(url,"/!/") { url = "/?go="+url_encode(url) }
 
             notif<"href"> : url
         }
