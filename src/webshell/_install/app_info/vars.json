@@ -151,6 +151,54 @@
                         "keyfield":"val"
                     }
                 }
+            },
+            {
+                "varname": "webshell_chat_news_conv",
+                "vardefault": "5",
+                "varvalue": "5",
+                "varcaption": "Nuevas conversaciones",
+                "varhelp":"Tiempo de sondeo de nuevas conversaciones(segundos)",
+                "vartype": "number",
+                "varinput": 
+                {
+                    "control": "number"
+                }
+            },
+            {
+                "varname": "webshell_chat_news_mess",
+                "vardefault": "2",
+                "varvalue": "2",
+                "varcaption": "Nuevos mensajes",
+                "varhelp":"Tiempo de sondeo de mensajes(segundos)",
+                "vartype": "number",
+                "varinput": 
+                {
+                    "control": "number"
+                }
+            },
+            {
+                "varname": "webshell_bit_news_mess",
+                "vardefault": "30",
+                "varvalue": "30",
+                "varcaption": "Nuevos mensajes",
+                "varhelp":"Tiempo de sondeo de mensajes(segundos)",
+                "vartype": "number",
+                "varinput": 
+                {
+                    "control": "number"
+                }
+            },
+            {
+                "varname": "sys_notif_freq_refresh",
+                "vardefault": "30",
+                "varvalue": "30",
+                "varcaption": "Nuevas notificaciones",
+                "varhelp":"Tiempo de sondeo de notificaciones(segundos)",
+                "vartype": "number",
+                "varinput": 
+                {
+                    "control": "number"
+                }
             }
         ]
     }

@@ -46,4 +46,8 @@ program ""
     @TIME_LOAD_INTERCHAT_NOTIF= 3000
     
     @DET_INTERCHAT="DET08G"
+
+    @var_global_new_conv="webshell_chat_news_conv" //obtener interchat nuevas
+    @var_global_new_mess="webshell_chat_news_mess" // obetener nuevo mensajes en el chat
+    @var_global_new_bit="webshell_bit_news_mess" //obtener nuevos mensajes de la bitacora(ventas,compras,cxp,etc..l)
 }

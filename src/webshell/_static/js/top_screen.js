@@ -57,10 +57,11 @@ var top_screen =
     {
         let time = 60;
 
-        if (Number(this.notif_frq) != NaN && Number(this.notif_frq) >= 10){
+        if (Number(this.notif_frq) != NaN && Number(this.notif_frq) >= 1)
+        {
             time = Number(this.notif_frq);
         }
-
+            
         setInterval(() => {
             if (!this.requesting) {
                 this.get_notif();

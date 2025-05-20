@@ -7,6 +7,8 @@ module ""
     #include "webshell/config.dk"
     #include "webshell/_lib/lib.dk"
     #include "webshell/_lib/icons.dk"
+    #include "dbr.vars.dkl"
+    #include "dbr.dkh"
 
     do @context.begin(@crud_context)
     ref @http_context=@("&http")
@@ -31,6 +33,11 @@ module ""
 
     guid=@("$parameters/_view")
     bool_action=parse.bool(@@(@http_context,"request/get/noaction"))
+    
+    if tolower(@("$parameters/_entity_id"))==tolower(@DET_INTERCHAT){var_new_mess=dbr.vars.get(@("&database"),@var_global_new_mess)}
+    else {var_new_mess=dbr.vars.get(@("&database"),@var_global_new_bit)}
+    
+    if parse.num(var_new_mess)>0{@TIME_LOAD_BITACORA=parse.num(var_new_mess) * 1000}
     
     #$
     div(class="v12-form-view" id="view" style="min-width: 290px;")

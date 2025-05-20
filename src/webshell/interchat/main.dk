@@ -5,13 +5,21 @@ module ""
     #include "functions.dkh"
     #include "serialize.dkh"
     #include "../config.dk"
+    #include "dbr.vars.dkl"
+    #include "dbr.dkh"
     #include "webshell/_lib/icons.dk"
 
     do @context.begin(@crud_context)
-
+    
     ref data = ifnull(@("&."),list.create())
 
     current_user = @("$http/session/user/uid")
+    news_conv=parse.num(dbr.vars.get(@("&database"),@var_global_new_conv))
+    if news_conv > 0
+    {
+        @TIME_LOAD_INTERCHAT= news_conv * 1000
+        @TIME_LOAD_INTERCHAT_NOTIF=@TIME_LOAD_INTERCHAT
+    }
 
     #$
     div(class="v12-list-view" id="view")
