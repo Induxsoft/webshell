@@ -84,7 +84,9 @@ var inlink =
     {},
 
     delete(id)
-    {},
+    {
+        InduxsoftCrudlModel.Delete(id,"/!/webshell/inlink/{id}/");
+    },
 }
 
 document.addEventListener("DOMContentLoaded", () => { inlink.init() });
