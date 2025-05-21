@@ -1,0 +1,127 @@
+#include "dkli.dkh"
+#!
+module "Enlaces Internos:inlink"
+{
+    @table_name = "inlink"
+    @keyfield = "sys_pk"
+
+    @update_exclude_fields = "sys_pk,sys_guid,sys_dtcreated,sys_user"
+
+    function select(&db,&params)
+    {
+        sql = dbr.str(db,"SELECT select_query FROM inlink_type_action WHERE id = @ita",params)
+        if sql == "" || @@(params,"$search") == "" { return list.create() }
+        
+        return dbr.list(db,sql,params)
+    }
+
+    function list(&db,&params)
+    {
+        // do dbr.apps.action.grant("XX00")
+
+        sql_type = "SELECT * FROM inlink_type WHERE id = @inlink_type"
+        sql_actions = "SELECT * FROM inlink_type_action WHERE inlink_type = @inlink_type"
+        sql_links = "
+        SELECT
+            l.*,
+            t1.title AS det1_title,
+            t2.title AS det2_title,
+            (l.det1=@det) det1_matched,
+            (l.det2=@det) det2_matched
+        FROM inlink l
+            INNER JOIN sys_app_item_type t1 ON l.det1 = t1.id
+            INNER JOIN sys_app_item_type t2 ON l.det2 = t2.id
+        WHERE (l.det1 = @det OR l.det2 = @det)
+        ORDER BY l.sys_dtcreated ASC"
+
+        new data
+        {
+            @"type*": dbr.rec(db,sql_type,params)
+            @"actions*": dbr.list(db,sql_actions,params)
+            @"links*": dbr.list(db,sql_links,params)
+        }
+
+        return data
+
+        exception{ do catch(db,params,@null) }
+    }
+
+    function create(&db,&params,&data)
+    {
+        // @use_transaction = @false
+
+        // do dbr.apps.action.pre("XX00")
+        // do dbr.begin(db)
+
+        ref entity = entity.create(db,params,data)
+
+        // do dbr.apps.action.pos(entity)
+        // do dbr.commit(db)
+        // do dbr.apps.action.ext(entity)
+
+        return entity
+
+        exception{ do catch(db,params,data) }
+    }
+
+    function update(&db,&params,&data)
+    {
+        // @use_transaction = @false
+
+        // do dbr.apps.action.pre("XX00")
+        // do dbr.begin(db)
+
+        ref entity = entity.update(db,params,data)
+
+        // do dbr.apps.action.pos(entity)
+        // do dbr.commit(db)
+        // do dbr.apps.action.ext(entity)
+
+        return entity
+
+        exception{ do catch(db,params,data) }
+    }
+
+    function delete(&db,&params)
+    {
+        // @use_transaction = @false
+
+        // do dbr.apps.action.pre("XX00")
+        // do dbr.begin(db)
+
+        do entity.delete(db,params)
+
+        // do dbr.apps.action.pos(@null)
+        // do dbr.commit(db)
+        // do dbr.apps.action.ext(@null)
+
+        return @null
+
+        exception{ do catch(db,params,@null) }
+    }
+
+    function catch(&db,&params,&data)
+    {
+        do errordet(@false)
+        code = last_error_code()
+        error = last_error()
+
+        if dbr.in_transaction(db) { do dbr.rollback(db) }
+        if isset("@@_action_context") { do dbr.apps.action.log() }
+
+        if isanyword(@@(params,"$_operation"),"create,update")
+        {
+            if isnull(data) { ref data:record.create() }
+            if contains(error,"Duplicate entry") { error = "Entrada duplicada, ya existe un registro con los mismos valores." }
+
+            ref FormData = record.copy(data,"*")
+            do record.clear(data)
+            data<"form*"> : FormData
+            
+            // do prepareView(db,params,data)
+        }
+        
+        do clear_exceptions()
+        do rise_error(code,error)
+    }
+}

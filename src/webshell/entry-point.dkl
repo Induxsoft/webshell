@@ -50,6 +50,7 @@ module "Controller configs"
 	do crudl.routes.pattern("/_program/")
 	do crudl.routes.entity("/cfgfpage/","cfgfpage")
 	do crudl.routes.entity("/notiman/","notiman")
+	do crudl.routes.entity("/inlink/","inlink")
 	do crudl.routes.entity("/action/","action")
 	do crudl.routes.entity("/notif/","notif")
 	do crudl.routes.entity("/temp/","temp")

@@ -1,0 +1,20 @@
+#include "dkli.dkh"
+#!
+module "InLinkController"
+{
+    @list_view = "main.dk"
+    @form_view = "main.dk"
+
+    point @list to inlink.list
+    point @read to inlink.list
+    point @blank to inlink.list
+    point @create to inlink.create
+    point @update to inlink.update
+    point @delete to inlink.delete
+
+    if @@(@http_context,"$request/get/ita") != "" {
+        point @list to inlink.select
+        point @read to inlink.select
+        point @blank to inlink.select
+    }
+}

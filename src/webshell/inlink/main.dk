@@ -1,0 +1,177 @@
+#include "dkli.dkh"
+#!
+module "Enlaces Internos"
+{
+    #include "functions.dkh"
+    #include "serialize.dkh"
+    #include "uielements.v12.dkl"
+    
+    do @context.begin(@crud_context)
+
+    ref @http_context = @("&http")
+    using @http_context
+    {
+        member "session" { member "resource" { member "properties" { member "web_meta_tags" {@"title":"Enlaces internos" } } } }
+    }
+
+    function print_actions()
+    {
+        ref actions = @("&./actions")
+        length = list.count(actions)
+        btncls = "btn btn-sm btn-main-action border-secondary induxsoft-corners"
+        
+        if length > 0
+        {
+            #$
+            div(class="d-flex align-items-center gap-2")
+            {
+                div(class="dropdown")
+                {
+                    a(class="btn dropdown-toggle no-shadow" href="#" role="button" id="create-inlink" "data-bs-toggle"="dropdown" "aria-expanded"="false"){"Crear"}
+                    ul(class="dropdown-menu" "aria-labelledby"="create-inlink")
+                    {
+                        #!
+                        for i = 0; i < length
+                        {
+                            ref item = list.obj(actions,i)
+                            id = @@(item,"$id")
+                            caption = @@(item,"$caption")
+                            
+                            #$
+                            li{ button(class="dropdown-item" type="button" onclick="inlink.actionCreate('#<id>');"){"#<caption>"} }
+                        }
+                        #$
+                    }
+                }
+
+                div(class="dropdown")
+                {
+                    a(class="btn dropdown-toggle no-shadow" href="#" role="button" id="select-inlink" "data-bs-toggle"="dropdown" "aria-expanded"="false"){"Seleccionar"}
+                    ul(class="dropdown-menu" "aria-labelledby"="select-inlink")
+                    {
+                        #!
+                        for i = 0; i < length
+                        {
+                            ref item = list.obj(actions,i)
+                            id = @@(item,"$id")
+                            caption = @@(item,"$caption")
+                            
+                            #$
+                            li{ button(class="dropdown-item" type="button" onclick="inlink.actionSelect('#<id>');"){"#<caption>"} }
+                        }
+                        #$
+                    }
+                }
+            }
+            #!
+        }
+    }
+
+    function print_cards()
+    {
+        ref links = @("&./links")
+        length = list.count(links)
+
+        if length > 0
+        {
+            #$
+            div(class="card-container")
+            {
+                #!
+                for i = 0; i < length
+                {
+                    ref item = list.obj(links,i)
+                    det = ifstr(@@(item,"#det1_matched"), @@(item,"$det2_title"), @@(item,"$det1_title"))
+                    trace = ifstr(@@(item,"#det1_matched"), @@(item,"$trace2"), @@(item,"$trace1"))
+                    endpoint = ifstr(@@(item,"#det1_matched"), @@(item,"$endpoint2"), @@(item,"$endpoint1"))
+                    text = @@(item,"$text")
+
+                    #$
+                    div(class="card inlink-item")
+                    {
+                        div(class="card-body text-center")
+                        {
+                            h5(class="card-title"){"#<det>"}
+                            a(href="/?go=#<url_encode(endpoint)>" target="_top" class="card-link"){h3{"#<trace>"}}
+                            p(class="card-text"){"#<text>"}
+                        }
+                    }
+                }
+                #$
+            }
+            #!
+        }
+        else
+        {
+            #$
+            h5(class="text-center text-muted"){"No se encontraron vínculos para el tipo de elemento proporcionado."}
+            #!
+        }
+    }
+    
+    // point @buttons to print_actions
+    // new nav_config
+    // {
+    //     @"title": "Enlaces internos"
+    //     @"urlexit": "/"
+    //     @"buttons*": @buttons
+
+    //     member @"hidden"
+    //     {
+    //         @"send": @true
+    //         @"copy": @true
+    //         @"csv": @true
+    //         @"print": @true
+    //     }
+    // }
+
+    #$
+    div(class="container-md" id="view")
+    {
+        link(href="/$/webshell/css/inlink.css" rel="stylesheet")
+
+        section(id="top_area")
+        {
+            // #!
+            // do uie.printV12FormBar(nav_config)
+            // #$
+            div(class="d-flex align-items-center my-2 p-2 border-bottom")
+            {
+                #!
+                do print_actions()
+                #$
+                span(class="flex-grow-1"){""}
+                button(class="btn btn-sm btn-main-action rounded-0 border-secondary" type="button" onclick="window.location.reload();"){$"#<@ICON_ARROW_CLOCKWISE>"}
+            }
+        }
+
+        section(id="work_area")
+        {
+            #!
+            do print_cards()
+            #$
+
+            div
+            {
+                "input-key"(id="ik-select" "data-key"="" "data-search"="" "data-text"="" "data-source"="" columns="" colcaptions="" "box-title-text"="Seleccione un elemento de la lista" "hidden-input"="false" "control-styles"="#container{display:none !important;}"){""}
+            }
+        }
+
+        section(id="bottom_area")
+        {
+            div(id="_custom_area")
+            {
+                script(src="/$/webshell/js/inlink.js"){""}
+                script(type="text/javascript")
+                {$'
+                    inlink.params = #<to.json(@("&parameters"))>;
+                    inlink.actions = #<to.json(@("&./actions"))>;
+                    inlink.type = #<to.json(@("&./type"))>;
+                '}
+            }
+        }
+    }
+    #!
+
+    do @context.end()
+}

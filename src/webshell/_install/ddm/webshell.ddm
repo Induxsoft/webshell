@@ -1,5 +1,5 @@
 #include "ddm.dkh"
-model ""
+model "webshell"
 {
     #include "induxsoft.abstracts.ddm"
 
@@ -50,7 +50,6 @@ model ""
         @"wpriv"  ref: "sitem" required // Permiso para escribir
         @"var_files" string(45) // Nombre de la variable de configuración que contiene la ruta física de guardado de los archivos, si es null, se usará la variable ws_file_store data/attatchments/@det/@guid/
     }
-
     entity "ws_det_log" : "TableModel"
     {
         @"origen" ref: "ws_det_log_enable" required
@@ -60,12 +59,12 @@ model ""
         @"idarchivo" string(32) //Idenficador del archivo
         @"usuario" string(45)
     }
-
     entity "ws_det_log_file" : "TableModel"
     {
         @"id" string(32) unique required
         @"nombre" string(128) required //Incluye la extensión
     }
+
     // Configuración de la página de inicio
     entity "webshell_fpage" : "TableModel"
     {
@@ -82,13 +81,51 @@ model ""
             field "id"
         }
     }
+
+    // [Enlaces Internos]
+    entity "inlink_type" 
+    {
+        @"id" string(32) key unique required
+        @"det" string(10) required //det de origen
+        @"link" string(512) //"/!/vendesk/ut_crm_caso/@key"
+    }
+    entity "inlink_type_action"
+    {
+        @"id" string(32) key unique required
+        @"inlink_type" ref:"inlink_type" required
+        @"priv_create" string(15) //Id de privilegio requerido para esta acción
+        @"priv_select" string(15) //Id de privilegio requerido para esta acción
+        @"priv_delete" string(15) //Id de privilegio requerido para esta acción
+        @"caption" string(50) required //"Remisión de venta",
+        @"det" string(10) required //"det de destino"
+        @"create" string(512) //"/!/ventas/venta/_new?lfrom=@inlink"
+        @"select_query" memo //"select sys_pk, fecha, referencia, concat(referencia, nombrecliente) doc total from venta where cdocumento=3 and referencia like @text"
+        @"select_keyfield" string(50) //"sys_pk"
+        @"select_searchfield" string(50) //"referencia"
+        @"select_textfield" string(50) //"doc"
+        @"select_link" string(512) //"/!/ventas/venta/@key"
+        @"select_trace" string(50) //"@referencia"
+    }
+    entity "inlink" : "TableModel"
+    {
+        @"inlink_type" ref:"inlink_type" 
+        @"det1" string(15) required
+        @"det2" string(15) required
+        @"key1" int required
+        @"key2" int required
+        @"endpoint1" string(512) required
+        @"endpoint2" string(512) required
+        @"trace1" string(50) required
+        @"trace2" string(50) required
+        @"text" string(150)
+    }
+
     //Interchat topic
     entity "interchat_topic" : "TableModel"
     {
         @"title" string(50) required
         @"closed" bool 
     }
-
     entity "interchat_topic_topic_member" : "TableModel"
     {
         @"topic" ref: "interchat_topic" required
@@ -113,6 +150,7 @@ model ""
             field "topic"
         }
     }
+
     // Categorías jerárquicas de variables
     entity "varcategory"
     {
