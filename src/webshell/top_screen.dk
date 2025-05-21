@@ -144,7 +144,7 @@ module "webShell"
         }
         section(id="webshell-main-content")
         {
-            button(class="btn btn-success webshell-tab" id="webshell-open-left-panel" hidden=""){div(id="webshell-left-tab-content" class="vertical-text"){"Abrir panel"}}
+            button(class="btn btn-success webshell-tab-left" id="webshell-open-left-panel" hidden=""){div(id="webshell-left-tab-content" class="vertical-text-left"){"Abrir panel"}}
             section(id="webshell-left-panel" direction="left")
             {
                 div(id="webshell-left-panel-area")

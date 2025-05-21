@@ -213,6 +213,14 @@ body {
     font-size: 18px;
     text-align: center;
 }
+.vertical-text-left
+{
+    writing-mode: vertical-rl;
+    transform: rotate(360deg);
+    color: white;
+    font-size: 18px;
+    text-align: center;
+}
 /* panel right ===========================================*/ 
 #webshell-right-panel 
 {
@@ -221,7 +229,7 @@ body {
     min-width: 320px;
     width: auto;
 }
-#adjust-right-panel 
+#adjust-right-panel ,#adjust-left-panel 
 {
     height: 100%;
     width: 5px;
@@ -229,17 +237,17 @@ body {
     left: auto; */
 }
 
-#webshell-right-panel-area
+#webshell-right-panel-area,#webshell-left-panel-area
 {
     display:flex;
     flex-direction: column;
     width: 100%;
 }
-#webshell-right-panel-header
+#webshell-right-panel-header,#webshell-left-panel-header
 {
     background-color: var(--light-gray-color);
 }
-#right-frame
+#right-frame, #left-frame
 {
     flex: 1;   
 }
@@ -251,49 +259,33 @@ body {
     border-radius: 5px 0 0 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
-.webshell-tab:hover 
+.webshell-tab:hover,.webshell-tab-left:hover 
 {
     background-color: #4CAF50;
 }
 
-#webshell-open-right-panel 
+#webshell-open-right-panel
 {
     right: 0;
     top: 50%;
     transform: translateY(-50%);
 }
 /* ======================================== */
-
-/* Panel LEFT */
-#webshell-open-left-panel 
+/* panel left */
+#webshell-open-left-panel  
 {
     left: 0;
     top: 50%;
     transform: translateY(-50%);
 }
-#left-frame
+.webshell-tab-left 
 {
-    flex: 1;   
+    position: fixed;
+    padding: 8px;
+    border-radius: 0 5px 5px 0;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
-#adjust-left-panel 
-{
-    height: 100%;
-    width: 5px;
-    /* top: 0;
-    left: auto; */
-}
-
-#webshell-left-panel-area
-{
-    display:flex;
-    flex-direction: column;
-    width: 100%;
-}
-#webshell-left-panel-header
-{
-    background-color: var(--light-gray-color);
-}
-
+/* ====== ========================= */
 /* ======================= LOG */
 .module_emisor,.module_receptor
 {
