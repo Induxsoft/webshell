@@ -172,12 +172,7 @@ body {
     min-width: 320px;
     width: auto;
 }
-#webshell-right-panel {
-    display: none;
-    background-color: #F8F8F8;
-    min-width: 320px;
-    width: auto;
-}
+
 #webshell-bottom-panel {
     display: none;
     background-color: #F8F8F8;
@@ -194,60 +189,109 @@ body {
     flex: 1;
 }
 
-.adjust-panel-h, .adjust-panel-v {
+.adjust-panel-h, .adjust-panel-v 
+{
     background-color: #EDEDED;
     /* position: absolute; */
     z-index: 100;
 }
-.adjust-panel-h:hover {
+.adjust-panel-h:hover 
+{
     background-color: #DDD;
     cursor: col-resize;
 }
-.adjust-panel-v:hover {
+.adjust-panel-v:hover 
+{
     background-color: #DDD;
     cursor: row-resize;
 }
-.vertical-text {
+.vertical-text 
+{
     writing-mode: vertical-rl;
     transform: rotate(180deg);
     color: white;
     font-size: 18px;
     text-align: center;
 }
-
-#adjust-right-panel {
+/* panel right ===========================================*/ 
+#webshell-right-panel 
+{
+    display: none;
+    background-color: #F8F8F8;
+    min-width: 320px;
+    width: auto;
+}
+#adjust-right-panel 
+{
     height: 100%;
     width: 5px;
     /* top: 0;
     left: auto; */
 }
 
-#webshell-right-panel-area{
+#webshell-right-panel-area
+{
     display:flex;
     flex-direction: column;
     width: 100%;
 }
-#webshell-right-panel-header{
+#webshell-right-panel-header
+{
     background-color: var(--light-gray-color);
 }
-#right-frame{
+#right-frame
+{
     flex: 1;   
 }
 
-.webshell-tab {
+.webshell-tab 
+{
     position: fixed;
     padding: 8px;
     border-radius: 5px 0 0 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
-.webshell-tab:hover {
+.webshell-tab:hover 
+{
     background-color: #4CAF50;
 }
 
-#webshell-open-right-panel {
+#webshell-open-right-panel 
+{
     right: 0;
     top: 50%;
     transform: translateY(-50%);
+}
+/* ======================================== */
+
+/* Panel LEFT */
+#webshell-open-left-panel 
+{
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+#left-frame
+{
+    flex: 1;   
+}
+#adjust-left-panel 
+{
+    height: 100%;
+    width: 5px;
+    /* top: 0;
+    left: auto; */
+}
+
+#webshell-left-panel-area
+{
+    display:flex;
+    flex-direction: column;
+    width: 100%;
+}
+#webshell-left-panel-header
+{
+    background-color: var(--light-gray-color);
 }
 
 /* ======================= LOG */

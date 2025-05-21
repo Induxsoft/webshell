@@ -58,13 +58,14 @@ var WebShell =
                     const CloseTab = document.getElementById(`webshell-close-${direction}-panel`);
                     const TabTitle = document.getElementById(`webshell-${direction}-tab-content`);
                     const HeaderTitle = document.getElementById(`webshell-${direction}-panel-header-title`);
-                    
+                   
                     frame.src = u;
                     
-                    frame.onload = () => {
+                    frame.onload = () => 
+                    {
                         if (!frame.src || frame.src == "about:blank") return;
-                        let title = frame.contentDocument.title;
-                        
+                        let title = frame.contentDocument?.title??"";
+
                         TabTitle.textContent = title;
                         HeaderTitle.textContent = title;
 
@@ -83,7 +84,7 @@ var WebShell =
                 else
                 {
                     this.Open.push(selector);
-                    OpenTab.hidden = true;
+                    if(OpenTab)OpenTab.hidden = true;
                     panel.style.display = "flex";
                 }
             });
@@ -115,7 +116,8 @@ var WebShell =
         }
     },
 
-    setAdjustPanelEvent(lineId, direction) {
+    setAdjustPanelEvent(lineId, direction) 
+    {
         if (!lineId || !direction) return;
         const line = document.getElementById(lineId);
         if (!line) return;

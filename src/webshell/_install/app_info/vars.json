@@ -168,7 +168,7 @@
                 "varname": "webshell_chat_news_mess",
                 "vardefault": "2",
                 "varvalue": "2",
-                "varcaption": "Nuevos mensajes",
+                "varcaption": "Nuevos mensajes en las conversaciones",
                 "varhelp":"Tiempo de sondeo de mensajes(segundos)",
                 "vartype": "number",
                 "varinput": 
@@ -180,7 +180,7 @@
                 "varname": "webshell_bit_news_mess",
                 "vardefault": "30",
                 "varvalue": "30",
-                "varcaption": "Nuevos mensajes",
+                "varcaption": "Nuevos mensajes en la bitacora",
                 "varhelp":"Tiempo de sondeo de mensajes(segundos)",
                 "vartype": "number",
                 "varinput": 
