@@ -16,7 +16,7 @@ module "Administración de notificaciones"
 
     table_id = "tbl_"+@_entities_type
     show_tab = @("$parameters/_show")
-    show_fdr = isanyword(show_tab,"leidas,enviadas")
+    show_fdr = isanyword(show_tab,"leidas,enviadas,programadas")
 
     curr_ndt = ndatetime.now()
     curr_year = ndatetime.year(curr_ndt)

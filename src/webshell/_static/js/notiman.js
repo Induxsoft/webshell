@@ -31,7 +31,7 @@ var notiman =
         this.controls_buttons=document.getElementById("controls_buttons");
         this._intervalo=document.getElementById("intervalo");
         this.cant_veces=document.getElementById("cant_veces");
-
+        this.btn_add_para=document.getElementById("btn_add_para");
 
         if(this.controls_check)this.elems_controls_check=this.controls_check.querySelectorAll("input[type='checkbox']");
         if(this.controls_buttons)this.elems_controls_buttons=this.controls_buttons.querySelectorAll("button");
@@ -60,7 +60,10 @@ var notiman =
         });
         this.dialog.addEventListener("hidden.bs.modal", () => 
         { 
-            this.form.reset() 
+            this.form.reset();
+            if(this.usr_group)this.usr_group.setValue({});
+            this.DelPara(false);
+            this.DisabledElements(this.form.querySelectorAll("button"),false);
             tools.trigger(this.check_repetir,"change");
             this.PintButton();
         });
@@ -78,11 +81,21 @@ var notiman =
         this.getMinis();
         this.initiate = true;
 
-        if(this.usr_group)this.usr_group.onBeforeSearch=(surl)=>
+        if(this.usr_group)
         {
-            if(!this.select_urg_grp)return;
+            this.usr_group.onBeforeSearch=(surl)=>
+            {
+                if(!this.select_urg_grp)return;
 
-            return surl.replace("@_get",this.select_urg_grp.value??"");
+                return surl.replace("@_get",this.select_urg_grp.value??"");
+            }
+            this.usr_group.addEventListener("change",(data)=>
+            {
+                let dt=this.usr_group.getValue();
+                if(!dt || Object.keys(dt).length<1)return;
+                if(!this.btn_add_para)return;
+                this.btn_add_para.focus();
+            });
         }
 
         if(this.select_urg_grp)this.select_urg_grp.addEventListener("change",()=>

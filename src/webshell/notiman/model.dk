@@ -30,17 +30,17 @@ module "Administración de notificaciones:notiman"
             s.sys_pk,s.sys_guid,
             s.vigencia,s.programacion,
             s.veces,
-            @c_proximo := trim(concat(s.c_proximo,' ',DATE_FORMAT(n_ult.`start`,'%H:%i:%s')))c_proximo,
+            @c_proximo := trim(concat(s.c_proximo,' ',DATE_FORMAT(n.`start`,'%H:%i:%s')))c_proximo,
             s.c_veces,
             s.ultimo ,
             -- campos de la ultima notificacion
-            n_ult.sys_pk pkult,n_ult.sndrid,n_ult.title,n_ult.href,n_ult.target,
-            DATE_FORMAT(n_ult.`start`,'%Y-%m-%d %H:%i:%s')start, 
-            DATE_FORMAT(n_ult.`end`,'%Y-%m-%d %H:%i:%s')end,n_ult.body ,
-            @diff := TIMESTAMPDIFF(DAY,n_ult.`start`,n_ult.`end`) diff,
+            n.sys_pk pkult,n.sndrid,n.title,n.href,n.target,
+            DATE_FORMAT(n.`start`,'%Y-%m-%d %H:%i:%s')start, 
+            DATE_FORMAT(n.`end`,'%Y-%m-%d %H:%i:%s')end,n.body ,
+            @diff := TIMESTAMPDIFF(DAY,n.`start`,n.`end`) diff,
             DATE_ADD(@c_proximo,INTERVAL @diff day)unafecha
             FROM sys_notif_template s 
-            INNER JOIN sys_notif n_ult ON s.ultimo=n_ult.sys_pk
+            INNER JOIN sys_notif n ON s.ultimo=n.sys_pk
             WHERE date(s.c_proximo) >= DATE(NOW())
             AND if(IFNULL(s.veces,0)=0,true,s.veces>IFNULL(s.c_veces,0))
             #<conditions> ;"
@@ -62,7 +62,7 @@ module "Administración de notificaciones:notiman"
 
         // Establecer filtros predeterminados y preparar consulta
         if limit < 1 && limit != -1 { limit = 10 }
-        if isanyword(_show,"leidas,enviadas")
+        if isanyword(_show,"leidas,enviadas,programadas")
         {
             curr_ndt = ndatetime.now()
             curr_year = ndatetime.year(curr_ndt)
@@ -91,10 +91,16 @@ module "Administración de notificaciones:notiman"
             }
             fdr_field = field.dstr(notif_date_fields, @@(params,"#fdr_field"), "n.start")
 
-            if _show == "enviadas" {
+            if _show == "enviadas" 
+            {
                 fields = ",GROUP_CONCAT(CONCAT(u.userid,':',nu.readed) SEPARATOR ' ') usuarios"
                 conditions = conditions + "n.sndrid = CONCAT('@',@uid)"
                 groupby = "n.sys_pk"
+            }
+            else if _show=="programadas"
+            {
+                @list_query=@list_query_programadas
+                orderby="c_proximo ASC"
             }
             else
             {
@@ -119,12 +125,6 @@ module "Administración de notificaciones:notiman"
                 END
             )
             "
-        }
-        else if _show=="programadas"
-        {
-            limit = 250
-            @list_query=@list_query_programadas
-            orderby="c_proximo ASC"
         }
         else
         {
@@ -167,6 +167,62 @@ module "Administración de notificaciones:notiman"
         return data
     }
 
+    @sql_day="SELECT trim(DATE_ADD(DATE(@start), INTERVAL ((@target_day + 7 - DAYOFWEEK(DATE(@start))) % 7) DAY));"
+    @sql_month="SELECT trim(DATE_ADD(DATE(@start), INTERVAL @target_month month));"
+    @sql_year="SELECT trim(DATE_ADD(DATE(@start), INTERVAL @target_year year));"
+
+    GetFechaProximo::&db,rep,finicio
+    {
+        new p{@"start":finicio}
+        c_proximo=""
+
+        if rep< 10 //dias de L - D
+        {
+            _rep=rep
+            switch rep
+            {
+                //lunes
+                case 0{_rep= 2}//2 Lunes
+                //martes
+                case 1{_rep= 3}//3 martes
+                //miercoles
+                case 2{_rep= 4}//4 miercoles
+                //jueves
+                case 3{_rep= 5}//5 jueves
+                //viernes
+                case 4{_rep= 6}//6 viernes
+                //sabado
+                case 5{_rep= 7}//7 sabado
+                //domingo
+                case 6{_rep= 1}//1 domingo
+            }
+            
+            p<"target_day">:_rep //más 1 porque los dias definicios es de 0 - 6 y 0 es Lunes pero en DAYOFWEEK(fecha) devuelve 1 = D, 7 =sabado
+            c_proximo=dbr.str(db,@sql_day,p)
+        }
+        else if rep > 9 && rep< 20 //se trata de meses
+        {
+            _rep=rep
+            switch rep
+            {
+                case 10{_rep= 1}// 1 mes
+                case 11{_rep= 2}//...
+                case 12{_rep= 3}
+                case 13{_rep= 4}
+                case 14{_rep= 5}
+                case 15{_rep= 6}
+            }
+            p<"target_month">:_rep
+            c_proximo=dbr.str(db,@sql_month,p)
+        }
+        else if rep>= 20
+        {
+            p<"target_year">: 1
+            c_proximo=dbr.str(db,@sql_year,p)
+        }
+
+        return c_proximo
+    }
     function create(&db,&params,&data)
     {
         _to = field.dstr(data,"to","[]")
@@ -240,9 +296,6 @@ module "Administración de notificaciones:notiman"
                 // 7 sabado
                 
                 ultimo_notif=dbr.num(db,"select sys_pk from sys_notif where sys_guid=@notifid",resp)
-                sql_day="SELECT trim(DATE_ADD(DATE(@start), INTERVAL ((@target_day + 7 - DAYOFWEEK(DATE(@start))) % 7) DAY));"
-                sql_month="SELECT trim(DATE_ADD(DATE(@start), INTERVAL @target_month month));"
-                sql_year="SELECT trim(DATE_ADD(DATE(@start), INTERVAL @target_year year));"
                 c_proximo=date_str(now(),"yyyy-MM-dd")
 
                 cant_veces=@@(data,"#cant_veces")
@@ -258,52 +311,16 @@ module "Administración de notificaciones:notiman"
                 {
                     rep=parse.num(list.str(repetir,i))
                     
-                    if rep< 10 //dias de L - D
-                    {
-                        _rep=rep
-                        switch rep
-                        {
-                            //lunes
-                            case 0{_rep= 2}//2 Lunes
-                            //martes
-                            case 1{_rep= 3}//3 martes
-                            //miercoles
-                            case 2{_rep= 4}//4 miercoles
-                            //jueves
-                            case 3{_rep= 5}//5 jueves
-                            //viernes
-                            case 4{_rep= 6}//6 viernes
-                            //sabado
-                            case 5{_rep= 7}//7 sabado
-                            //domingo
-                            case 6{_rep= 1}//1 domingo
-                        }
-                        
-                        p<"target_day">:_rep //más 1 porque los dias definicios es de 0 - 6 y 0 es Lunes pero en DAYOFWEEK(fecha) devuelve 1 = D, 7 =sabado
-                        c_proximo=dbr.str(db,sql_day,p)
-                    }
-                    else if rep > 9 && rep< 20 //se trata de meses
-                    {
-                        _rep=rep
-                        switch rep
-                        {
-                            case 10{_rep= 1}// 1 mes
-                            case 11{_rep= 2}//...
-                            case 12{_rep= 3}
-                            case 13{_rep= 4}
-                            case 14{_rep= 5}
-                            case 15{_rep= 6}
-                        }
-                        p<"target_month">:_rep
-                        c_proximo=dbr.str(db,sql_month,p)
-                    }
-                    else if rep>= 20
-                    {
-                        p<"target_year">: 1
-                        c_proximo=dbr.str(db,sql_year,p)
-                    }
+                    c_proximo=GetFechaProximo(db,rep,@@(p,"$start"))
+                    
                     p<"c_proximo">:c_proximo
-                    c_veces= if(dbr.num(db,"SELECT DATE(@start)=DATE(@c_proximo)",p),1,0)
+                    c_veces= 0
+                    if dbr.num(db,"SELECT DATE(@start)=DATE(@c_proximo)",p)
+                    {
+                        c_veces= 1
+                        start=dbr.str(db,"select trim(date_add(@start,interval 1 day))",p)
+                        c_proximo=GetFechaProximo(db,rep,start)
+                    }
                   
                     new sys_notif_template
                     {
