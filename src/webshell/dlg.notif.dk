@@ -19,39 +19,77 @@ div(class="modal fade" id="new_notif_modal" tabindex="-1" "data-bs-backdrop"="fa
                     div(class="d-flex align-items-center border-bottom")
                     {
                         label(class="text-muted fw-bolder" "for"="sndrid"){$"De:"}
-                        input(class="form-control rounded-0 border-0 no-shadow bg-white" type="text" name="sndrid" value="#<@@(@_USER,'$name')>" id="sndrid" readonly="")
+                        input(class="form-control form-control-sm rounded-0 border-0 no-shadow bg-white" type="text" name="sndrid" value="#<@@(@_USER,'$name')>" id="sndrid" readonly="")
                     }
-                    div(class="d-flex align-items-center border-bottom")
+                    div(class="")
                     {
-                        label(class="text-muted fw-bolder" "for"="to"){$"para:"}
-                        input(class="form-control rounded-0 border-0 no-shadow" type="hidden" name="to" value="" id="to")
-                        /* div(class="form-select rounded-0 border-0 no-shadow ps-1" id="targets-container") {
-                            span(class="d-inline-flex align-items-center gap-1 badge bg-light text-dark rounded-0 ms-1") {
-                                $"Hola" button(class="btn-close rounded-0 p-0 no-shadow" type="button" "aria-label"="Remove"){$""}
-                            }
-                            span(class="d-inline-flex align-items-center gap-1 badge bg-light text-dark rounded-0 ms-1") {
-                                $"Mundo" button(class="btn-close rounded-0 p-0 no-shadow" type="button" "aria-label"="Remove"){$""}
-                            }
-                        } */
-                        select(class="form-select rounded-0 border-0 no-shadow" id="_to")
+                        label(class="text-muted fw-bolder" "for"="to"){$"Para:"}
+                        input(class="form-control form-control-sm rounded-0 border-0 no-shadow" type="hidden" name="to" value="" id="to")
+                        
+                        div(class="row gx-1 mt-2 mb-2")
                         {
-                            option(selected="" disabled="" hidden="" value=""){""}
-                            optgroup(id="opt-gp-groups" label="Grupos"){$""}
-                            optgroup(id="opt-gp-users" label="Usuarios"){$""}
+                            div(class="col-md-3")
+                            {
+                                select(class="induxsoft-form-select induxsoft-form-select-sm " id="select_urg_grp")
+                                {
+                                    option(value="user"){"Usuario"}
+                                    option(value="group"){"Grupo"}
+                                }
+                            }
+                            div(class="col-md-9")
+                            {
+                                div(class="d-flex")
+                                {
+                                    "input-key"(name="usr_group" 
+                                    id="usr_group" 
+                                    "data-key"="sys_pk" 
+                                    "data-search"="id" 
+                                    "data-text"="name" 
+                                    "data-source"="#<@URL_SOURCE_NOTIMAN_USR_GRP>" 
+                                    "data-value"="{}" 
+                                    columns="id,name" 
+                                    colcaptions="ID,Nombre"
+                                    "control-styles"="
+                                    #input_search_container, #input_description_container,
+                                    #button_search_container, #button_clear_container {
+                                        height: calc(1.5em + .5rem + 2px) !important;
+                                        padding: .25rem .5rem !important;
+                                        font-size: .875rem !important;
+                                    }"){$""}
+
+                                    button(type="button" class="btn btn-sm border-secondary induxsoft-corners btn-main-action no-print d-flex" style="align-items: center;" onclick="notiman.AddPara()")
+                                    {
+                                        $'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
+                                        </svg>'
+                                    }
+
+                                    button(type="button" class="btn btn-sm border-secondary induxsoft-corners btn-main-action no-print ms-2 d-flex" style="align-items: center;" onclick="notiman.DelPara()")
+                                    {
+                                        $'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                        <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                                        </svg>'
+                                    }
+                                }
+                            }
                         }
+                        
+                        select(class="form-select form-select-sm rounded-0" id="_to" size="3" multiple="true"){""}
                     }
-                    div(class="d-flex align-items-center border-bottom")
+                    div(class="d-flex align-items-center border-bottom mt-1")
                     {
                         label(class="text-muted fw-bolder" "for"="title"){$"Título:"}
-                        input(class="form-control rounded-0 border-0 no-shadow" type="text" name="title" value="" id="title" required="" maxlength="50")
+                        input(class="form-control form-control-sm rounded-0 border-0 no-shadow" type="text" name="title" value="" id="title" required="" maxlength="50")
                     }
-                    textarea(class="form-control rounded-0 no-shadow mt-2" name="body" id="body" rows="4" placeholder="Cuerpo del mensaje" maxlength="1024"){$""}
+                    textarea(class="form-control form-control-sm rounded-0 no-shadow mt-2" name="body" id="body" rows="3" placeholder="Cuerpo del mensaje" maxlength="1024"){$""}
 
                     div(class="row gx-2")
                     {
-                        div(class="col-12") {
+                        div(class="col-12") 
+                        {
                             label(class="text-muted" "for"="href"){$"Hipervínculo:"}
-                            div(class="input-group")
+                            div(class="input-group input-group-sm")
                             {
                                 input(class="form-control rounded-0 no-shadow" type="text" name="href" value="" id="href" placeholder="https://..." maxlength="1024")
                                 button(class="btn btn-light border rounded-0 no-shadow" type="button" id="btn_copy_link")
@@ -64,33 +102,24 @@ div(class="modal fade" id="new_notif_modal" tabindex="-1" "data-bs-backdrop"="fa
                         div(class="col-lg-4")
                         {
                             label(class="text-muted" "for"="target"){$"Abrir hipervínculo en:"}
-                            select(class="form-select rounded-0 no-shadow" name="target" id="target")
+                            select(class="form-select form-select-sm rounded-0 no-shadow" name="target" id="target")
                             {
                                 option(value="_self"){$"Misma pestaña"}
                                 option(value="_blank"){$"Nueva pestaña"}
                             }
                         }
-                        div(class="col-lg-4 col-sm-6") {
-                            label(class="text-muted" "for"="start"){$"Inicio:"}
-                            input(class="form-control rounded-0 no-shadow" type="datetime-local" name="start" value="" id="start")
-                        }
-                        div(class="col-lg-4 col-sm-6") {
-                            label(class="text-muted" "for"="end"){$"Vigencia:"}
-                            input(class="form-control rounded-0 no-shadow" type="datetime-local" name="end" value="" id="end")
-                        }
-                        div(class="col-12")
+                        div(class="col-lg-8 col-md-12")
                         {
                             label(class="text-muted" "for"="img"){$"Icono:"}
-                            div(class="input-group")
+                            div(class="input-group input-group-sm")
                             {
                                 input(class="form-control rounded-0 no-shadow" type="text" name="img" value="" id="img" placeholder="https://..." maxlength="1024")
                                 button(class="btn btn-light border rounded-0 no-shadow" type="button" id="btn_show_media")
                                 {$'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>'}
-                                
-                                // label(class="btn btn-light border rounded-0" "for"="local-img" title="Subir imagen local")
-                                // {$'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-folder" viewBox="0 0 16 16"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a2 2 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4zm4.69-1.707A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981l.006.139q.323-.119.684-.12h5.396z"/></svg>'}
-                                // input(class="d-none" type="file" name="local-img" id="local-img" accept="image/png, image/jpg, image/jpeg")
                             }
+                        }
+                        div(class="col-12 mt-1")
+                        {
                             "media-list"(id="notif_media_list" hidden=""
                                 "outline-selected"="true"
                                 "highlight-first"="false"
@@ -105,26 +134,124 @@ div(class="modal fade" id="new_notif_modal" tabindex="-1" "data-bs-backdrop"="fa
                                 "miniature-prop"="src"
                             ){""}
                         }
-                    }
+                        div(class="col-lg-4") 
+                        {
+                            label(class="text-muted" "for"="start"){$"Inicio:"}
+                            input(class="form-control form-control-sm rounded-0 no-shadow" type="datetime-local" name="start" value="" id="start")
+                        }
+                        div(class="col-md-8") 
+                        {
+                            label(class="text-muted" "for"="end"){$"Vigencia:"}
 
-                    // nav(class="")
-                    // {
-                    //     div(class="nav nav-tabs bg-light" id="nav-tab" role="tablist")
-                    //     {
-                    //         button(class="nav-link active" type="button" role="tab" id="nav-principal-tab" "data-bs-toggle"="tab" "data-bs-target"="#nav-principal" "aria-controls"="nav-principal" "aria-selected"="true"){$"Principal"}
-                    //         button(class="nav-link" type="button" role="tab" id="nav-opciones-tab" "data-bs-toggle"="tab" "data-bs-target"="#nav-opciones" "aria-controls"="nav-opciones" "aria-selected"="false"){$"Opciones"}
-                    //     }
-                    // }
-                    // div(class="tab-content bg-white p-2")
-                    // {
-                    //     div(class="tab-pane fade show active" id="nav-principal" role="tabpanel" "aria-labelledby"="nav-principal-tab"){$""}
-                    //     div(class="tab-pane fade" id="nav-opciones" role="tabpanel" "aria-labelledby"="nav-opciones-tab"){$""}
-                    // }
+                            div(class="d-flex gap-2")
+                            {
+                                select(class="induxsoft-form-select induxsoft-form-select-sm" id="select_vigencia" name="vigencia")
+                                {$""
+                                    #!
+                                    ref key_vigencia=list.create_from_fields(@vigencias)
+                                    for i = 0; i < @count(key_vigencia)
+                                    {
+                                        kv=list.str(key_vigencia,i)
+                                        #$
+                                        option(value="#<kv>"){"#<@@(@vigencias,kv)>"}
+                                    }
+                                }
+                                input(class="form-control form-control-sm rounded-0 no-shadow" readonly="" type="datetime-local" name="end" value="" id="end")
+                            }
+                        }
+                        div(class="col-12 mt-2") 
+                        {
+                            label
+                            {
+                                input(type="checkbox" id="check_repetir" name="repetir" class="form-check-input me-2" style="transform: scale(1.5);")
+                                $"Repetir cada:"
+                            }
+                            div(class="row gx-2" style="" id="container-repeat")
+                            {
+                                #!
+                                ref buttons=@@(@notiman_repeat,"&buttons")
+                                do field.remove(@notiman_repeat,"buttons")
+                                ref controls=list.create_from_fields(@notiman_repeat)
+                                ref ctrs_bts=list.create_from_fields(buttons)
+                                
+                                #$
+                                div(class="col-lg-3 d-flex" style="justify-content: space-between;" id="controls_check")
+                                {$""
+                                    #!
+                                    for i = 0; i < @count(controls)
+                                    {
+                                        key=list.str(controls,i)
+                                        #$
+                                        div(style="width: min-content;height: 2.8rem;")
+                                        {
+                                            #$
+                                            small(class="form-check-label d-flex w-100 justify-content-center" style="font-size: 12px;display: inline-flex !important;"){"#<cut(@@(@notiman_repeat,key),1)>"}
+                                            input(type="checkbox" class="form-check-input p-0 m-0" value="#<key>" id="control_#<key>" disabled="true" onchange="notiman.RepeatButton(this,true)" style="transform: scale(1.5);")
+                                        }
+                                    }
+                                }
+                                div(class="col-lg-9 d-flex gap-2" style="align-items: end;" id="controls_buttons")
+                                {$""
+                                    #!
+                                    for i = 0; i < @count(ctrs_bts)
+                                    {
+                                        key=list.str(ctrs_bts,i)
+                                        #$
+                                        button(type="button" class="btn btn-sm border-secondary induxsoft-corners btn-main-action no-print" style="font-size: 12px;;" id="control_#<key>" name="control_#<key>" disabled="true" onclick="notiman.RepeatButton(this)" value="#<key>"){"#<@@(buttons,key)>"}
+                                    }
+                                }
+                            }
+                            #$
+                            div(class="d-flex gap-2 mt-2")
+                            {
+                                div(class="row gx-1")
+                                {
+                                    div(class="col-md-6")
+                                    {
+                                        select(class="form-select form-select-sm rounded-0" id="intervalo" name="intervalo")
+                                        {$""
+                                            #!
+                                            ref key_interval=list.create_from_fields(@intervalo)
+                                            for i = 0; i < @count(key_interval)
+                                            {
+                                                kv=list.str(key_interval,i)
+                                                #$ option(value="#<kv>"){"#<@@(@intervalo,kv)>"}
+                                            }
+                                        }
+                                    }
+                                    div(class="col-md-5")
+                                    {
+                                        div(class="d-flex")
+                                        {
+                                            input(type="number" class="form-control form-control-sm rounded-0 no-shadow" readonly="true" id="cant_veces" name="cant_veces" placeholder="Veces..")
+                                            label(class="fw-bold ms-2 rounded-0" value="0"){"Veces"}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                    }
                 }
             }
             div(class="modal-footer border-0")
             {
                 button(type="button" class="btn btn-sm btn-primary rounded-0" id="btn_send_notif"){$"Enviar"}
+            }
+
+            style
+            {
+                $'
+                @media screen and (max-width: 1000px)
+                {
+                    #controls_buttons button
+                    {
+                        margin-top:4px;
+                        height: 4rem !important;
+                    }
+                }
+                
+                '
             }
         }
     }

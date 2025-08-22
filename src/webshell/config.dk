@@ -28,6 +28,7 @@ program ""
     @URL_NOTIF_GO = "/!/webshell/notif/go/"
     @URL_BITACORA="/!/webshell/log/@det/@guid/?noaction=true"
     @URL_INTERCHAT="/!/webshell/interchat/"
+    @URL_SOURCE_NOTIMAN_USR_GRP="/!/webshell/notiman/@_get/get-usr/?s=@search"
 
     @HREF_HELP = "https://docs.induxsoft.net/es/productos/v12/"
     @FOOTER_LEGEND = "V12 Copyright(c) Induxsoft 2024 | Powered by Devkron"
@@ -50,4 +51,41 @@ program ""
     @var_global_new_conv="webshell_chat_news_conv" //obtener interchat nuevas
     @var_global_new_mess="webshell_chat_news_mess" // obetener nuevo mensajes en el chat
     @var_global_new_bit="webshell_bit_news_mess" //obtener nuevos mensajes de la bitacora(ventas,compras,cxp,etc..l)
+
+    
+    new @notiman_repeat
+    {
+        @"0":"Lunes"
+        @"1":"Martes"
+        @"2":"Miercoles"
+        @"3":"Jueves"
+        @"4":"Viernes"
+        @"5":"Sabado"
+        @"6":"Domingo"
+        member @"buttons"
+        {
+            @"10":"1 Mes"
+            @"11":"2 Meses"
+            @"12":"3 Meses"
+            @"13":"4 Meses"
+            @"14":"5 Meses"
+            @"15":"6 Meses"
+            @"20":"1 Año"
+        }
+    }
+    new @vigencias
+    {
+        @"0":"Ilimitada"
+        @"99":"A una fecha"
+        @"1":"1 Día"
+        @"2":"2 Días"
+        @"3":"3 Días"
+        @"4":"4 Días"
+        @"5":"5 Días"
+    }
+    new @intervalo
+    {
+        @"0":"Indefinidamente"
+        @"1":"Solo"
+    }
 }

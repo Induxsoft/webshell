@@ -26,6 +26,25 @@ module "Administración de notificaciones:notiman"
         #<conditions>
     "
 
+    @list_query_programadas="SELECT 
+            s.sys_pk,s.sys_guid,
+            s.vigencia,s.programacion,
+            s.veces,
+            @c_proximo := trim(concat(s.c_proximo,' ',DATE_FORMAT(n_ult.`start`,'%H:%i:%s')))c_proximo,
+            s.c_veces,
+            s.ultimo ,
+            -- campos de la ultima notificacion
+            n_ult.sys_pk pkult,n_ult.sndrid,n_ult.title,n_ult.href,n_ult.target,
+            DATE_FORMAT(n_ult.`start`,'%Y-%m-%d %H:%i:%s')start, 
+            DATE_FORMAT(n_ult.`end`,'%Y-%m-%d %H:%i:%s')end,n_ult.body ,
+            @diff := TIMESTAMPDIFF(DAY,n_ult.`start`,n_ult.`end`) diff,
+            DATE_ADD(@c_proximo,INTERVAL @diff day)unafecha
+            FROM sys_notif_template s 
+            INNER JOIN sys_notif n_ult ON s.ultimo=n_ult.sys_pk
+            WHERE date(s.c_proximo) >= DATE(NOW())
+            AND if(IFNULL(s.veces,0)=0,true,s.veces>IFNULL(s.c_veces,0))
+            #<conditions> ;"
+
     function evaluateFilters(&params)
     {
         @__dbr.notif.no.readed = 10
@@ -101,6 +120,12 @@ module "Administración de notificaciones:notiman"
             )
             "
         }
+        else if _show=="programadas"
+        {
+            limit = 250
+            @list_query=@list_query_programadas
+            orderby="c_proximo ASC"
+        }
         else
         {
             _show = "pendientes"
@@ -126,7 +151,7 @@ module "Administración de notificaciones:notiman"
         if groupby != "" { conditions = conditions + " GROUP BY "+groupby }
         if orderby != "" { conditions = conditions + " ORDER BY "+orderby }
         if limit != -1 { conditions = conditions + " LIMIT @limit" }
-
+        
         conditions = ftext(conditions)
         @list_query = ftext(@list_query)
     }
@@ -157,6 +182,16 @@ module "Administración de notificaciones:notiman"
         if length(url) > 1024 { do rise_error(513,"La longitud de la URL asociado supera la cantidad de caracteres permitida (1024).") }
         if length(img) > 1024 { do rise_error(514,"La longitud de la URL del icono supera la cantidad de caracteres permitida (1024).") }
         
+        if trim(@@(data,"$start"))==""
+        {
+            data<"start">:dbr.str(db,"SELECT TRIM(NOW())",@null)
+        }
+        
+        if @@(data,"#vigencia")!=99 && @@(data,"#vigencia")!=0
+        {
+            data<"end">:dbr.str(db,"SELECT trim(DATE_ADD(@start,INTERVAL @vigencia DAY))",data)
+        }
+
         new notif
         {
             @"sender": cut("@"+@@(@http_context,"$session/user/uid"),50)
@@ -189,7 +224,108 @@ module "Administración de notificaciones:notiman"
         }
         if img != "" { notif<"img"> : img }
 
-        ref resp = dbr.notif.send(db,notif)
+        do dbr.begin(db)
+            ref resp = dbr.notif.send(db,notif)
+
+            if parse.bool(@@(data,"$repetir")) && trim(@@(data,"$arrayrep"))!=""
+            {
+                ref repetir=from.json(trim(@@(data,"$arrayrep")))
+
+                // 1 Domingo
+                // 2 Lunes
+                // 3 martes
+                // 4 miercoles
+                // 5 jueves
+                // 6 viernes
+                // 7 sabado
+                
+                ultimo_notif=dbr.num(db,"select sys_pk from sys_notif where sys_guid=@notifid",resp)
+                sql_day="SELECT trim(DATE_ADD(DATE(@start), INTERVAL ((@target_day + 7 - DAYOFWEEK(DATE(@start))) % 7) DAY));"
+                sql_month="SELECT trim(DATE_ADD(DATE(@start), INTERVAL @target_month month));"
+                sql_year="SELECT trim(DATE_ADD(DATE(@start), INTERVAL @target_year year));"
+                c_proximo=date_str(now(),"yyyy-MM-dd")
+
+                cant_veces=@@(data,"#cant_veces")
+                if @@(data,"#intervalo")==0{cant_veces=0}
+                else if @@(data,"#intervalo") > 0 && cant_veces < 1{cant_veces=1}
+                
+                new p
+                {
+                    @"start":@@(data,"$start")
+                }
+
+                for i = 0; i < @count(repetir)
+                {
+                    rep=parse.num(list.str(repetir,i))
+                    
+                    if rep< 10 //dias de L - D
+                    {
+                        _rep=rep
+                        switch rep
+                        {
+                            //lunes
+                            case 0{_rep= 2}//2 Lunes
+                            //martes
+                            case 1{_rep= 3}//3 martes
+                            //miercoles
+                            case 2{_rep= 4}//4 miercoles
+                            //jueves
+                            case 3{_rep= 5}//5 jueves
+                            //viernes
+                            case 4{_rep= 6}//6 viernes
+                            //sabado
+                            case 5{_rep= 7}//7 sabado
+                            //domingo
+                            case 6{_rep= 1}//1 domingo
+                        }
+                        
+                        p<"target_day">:_rep //más 1 porque los dias definicios es de 0 - 6 y 0 es Lunes pero en DAYOFWEEK(fecha) devuelve 1 = D, 7 =sabado
+                        c_proximo=dbr.str(db,sql_day,p)
+                    }
+                    else if rep > 9 && rep< 20 //se trata de meses
+                    {
+                        _rep=rep
+                        switch rep
+                        {
+                            case 10{_rep= 1}// 1 mes
+                            case 11{_rep= 2}//...
+                            case 12{_rep= 3}
+                            case 13{_rep= 4}
+                            case 14{_rep= 5}
+                            case 15{_rep= 6}
+                        }
+                        p<"target_month">:_rep
+                        c_proximo=dbr.str(db,sql_month,p)
+                    }
+                    else if rep>= 20
+                    {
+                        p<"target_year">: 1
+                        c_proximo=dbr.str(db,sql_year,p)
+                    }
+                    p<"c_proximo">:c_proximo
+                    c_veces= if(dbr.num(db,"SELECT DATE(@start)=DATE(@c_proximo)",p),1,0)
+                  
+                    new sys_notif_template
+                    {
+                        @"sys_guid": uuid()
+                        @"sys_recver":0
+                        @"sys_dtcreated*":dbr.sql("now()")
+                        @"sys_timestamp*":dbr.sql("now()")
+                        @"vigencia":@@(data,"#vigencia") //0-Sin vigencia, 99 = a una fecha, >1 Cantidad de días de vigencia
+                        @"programacion":rep
+                        // 0=Lunes,...6=Domingo, 
+                        // 10=Cada mes, 11=Cada 2 meses, 12=Cada 3 meses, 14=cada 6 meses, 15=cada 6 meses, 20=Cada año
+                        @"veces":cant_veces // Si es 0, significa indefinido, >0 cantidad de ciclos de repetición /// Control
+                        @"c_proximo":c_proximo //Fecha de la próxima notificación
+                        @"c_veces":c_veces // Cantidad de ciclos de repetición acumulados
+                        @"ultimo":ultimo_notif //última notificación generada
+                    }
+
+                    do dbr.insert(db,"sys_notif_template",sys_notif_template)
+                }
+            }
+            
+        do dbr.commit(db)
 
         resp<"url_redir"> : "/!/webshell/notiman/?_show=enviadas"
         
@@ -198,6 +334,7 @@ module "Administración de notificaciones:notiman"
         exception
         {
             do errordet(@false)
+            if dbr.in_transaction(db){do dbr.rollback(db)}
             code = last_error_code()
             error = last_error()
 
@@ -278,5 +415,42 @@ module "Administración de notificaciones:notiman"
     NotImplemented2::&db,&params,&data
     {
         do rise_error(500,"Acción no implementada")
+    }
+
+    GetUsrGrp::&db,&params
+    {
+        sql = "
+        SELECT
+            u.sys_pk,
+            u.userid id,
+            u.username name,
+            GROUP_CONCAT(DISTINCT g.groupid SEPARATOR ';') _grupos,
+            GROUP_CONCAT(DISTINCT g.description SEPARATOR '; ') grupos
+        FROM tuser u
+            LEFT JOIN user_usergroup_ ug ON ug.users = u.sys_pk
+            LEFT JOIN usergroup g ON ug.groups=g.sys_pk
+        WHERE NOT IFNULL(u.sys_deleted,0)
+            AND NOT IFNULL(u.external,0)
+            AND IF(IFNULL(@fil_gpo,'-1')='-1', TRUE, ug.groups = @fil_gpo)
+            AND IF(IFNULL(@s,'')='', TRUE, (u.userid = @s OR u.username LIKE CONCAT('%',@s,'%')))
+        GROUP BY u.userid
+        ORDER BY u.username ASC
+        LIMIT #<@default_max_rows>;
+        "
+        sql_group="SELECT sys_pk, groupid id, description name 
+        FROM usergroup WHERE NOT IFNULL(sys_deleted,0) 
+        AND IF(IFNULL(@s,'')='', TRUE, (groupid = @s OR description LIKE CONCAT('%',@s,'%')))
+        ORDER BY description ASC;"
+
+        if @@(params,"$_entity_id")=="user"{return dbr.list(db,ftext(sql),params)}
+        else if @@(params,"$_entity_id")=="group"{return dbr.list(db,sql_group,@null)}
+
+        return list.create()
+    }
+    delete::&db,&params
+    {
+        do dbr.execute(db,"delete from sys_notif_template where sys_pk=@_entity_id",params)
+
+        return @null
     }
 }

@@ -22,5 +22,15 @@ module "NotimanController"
             point @read to notiman.GetInfo
             break
         }
+        case "get-usr"
+        {
+            point @read to notiman.GetUsrGrp
+            break
+        }
+        case "delete-notif"
+        {
+            point @delete to notiman.delete
+            break
+        }
     }
 }

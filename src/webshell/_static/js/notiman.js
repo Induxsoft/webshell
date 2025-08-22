@@ -11,7 +11,8 @@ var notiman =
     _config:{},
     _params:{},
     _initialData:{},
-
+    elems_controls_check:null,
+    elems_controls_buttons:null,
     init()
     {
         if (this.initiate) return;
@@ -19,6 +20,21 @@ var notiman =
         this.dialog = document.getElementById(this.dialogId);
         this.media = document.getElementById(this.mediaId);
         this.form = document.getElementById(this.formId);
+        this.usr_group=document.getElementById("usr_group");
+        this.select_urg_grp=document.getElementById("select_urg_grp");
+        this._to=document.getElementById("_to");
+        this._end=document.getElementById("end");
+        this._start=document.getElementById("start");
+        this.select_vigencia=document.getElementById("select_vigencia");
+        this.check_repetir=document.getElementById("check_repetir");
+        this.controls_check=document.getElementById("controls_check");
+        this.controls_buttons=document.getElementById("controls_buttons");
+        this._intervalo=document.getElementById("intervalo");
+        this.cant_veces=document.getElementById("cant_veces");
+
+
+        if(this.controls_check)this.elems_controls_check=this.controls_check.querySelectorAll("input[type='checkbox']");
+        if(this.controls_buttons)this.elems_controls_buttons=this.controls_buttons.querySelectorAll("button");
         this.ff = this.form.elements;
 
         const submit = document.getElementById("btn_send_notif");
@@ -42,24 +58,13 @@ var notiman =
             this.ff["title"].value ||= def.title;
             this.ff["href"].value ||= def.go;
         });
-        this.dialog.addEventListener("hidden.bs.modal", () => { this.form.reset() });
-        // targets_container.addEventListener("click", () => {
-        //     targets_combo.hidden = !targets_combo.hidden;
-        //     if (!targets_combo.hidden) targets_combo.showPicker();
-        // });
-        // targets_container.addEventListener("blur", () => { targets_combo.hidden = true; });
-        // img.addEventListener("change", (e) => { localimg.value = "" });
-        // localimg.addEventListener("change", (e) => {
-        //     const input = e.target;
-        //     const file = input.files[0];
-            
-        //     if (input.files.length != 1 || (file?.size ?? 0) < 1) {
-        //         input.value = "";
-        //         return
-        //     }
-
-        //     img.value = file?.name;
-        // });
+        this.dialog.addEventListener("hidden.bs.modal", () => 
+        { 
+            this.form.reset() 
+            tools.trigger(this.check_repetir,"change");
+            this.PintButton();
+        });
+      
         this.media.onClicking = (data) => { this.ff["img"].value = data.src; }
         btn_copy_link.addEventListener("click", () => {
             const url = this.ff["href"].value;
@@ -70,50 +75,170 @@ var notiman =
         btn_show_media.addEventListener("click", () => { this.media.hidden = !this.media.hidden });
         submit?.addEventListener("click", () => { this.send() });
 
-        this.getUsersAndGroups();
         this.getMinis();
         this.initiate = true;
-    },
 
-    getUsersAndGroups()
-    {
-        const opt_gp_groups = document.getElementById("opt-gp-groups");
-        const opt_gp_users = document.getElementById("opt-gp-users");
-        let url = "/!/dbext/tuser/"
-        
-        fetch(url).then(response => response.json())
-        .then(data => {
-            if (data?.message) {
-                alert(data.message);
-                return
+        if(this.usr_group)this.usr_group.onBeforeSearch=(surl)=>
+        {
+            if(!this.select_urg_grp)return;
+
+            return surl.replace("@_get",this.select_urg_grp.value??"");
+        }
+
+        if(this.select_urg_grp)this.select_urg_grp.addEventListener("change",()=>
+        {
+            if(this.usr_group)this.usr_group.setValue({});
+            if(this._to)
+            {
+                this.DelPara(false);
+                this._to.value="";
+            }
+        });
+        if(this.check_repetir)this.check_repetir.addEventListener("change",()=>
+        {
+            if(this.controls_check)
+            {
+                this.DisabledElements(this.elems_controls_check,!this.check_repetir.checked);
             }
 
-            let groups = data?.grupos ?? [];
-            let users = data?.usuarios ?? [];
+            if(this.controls_buttons)
+            {
+                this.DisabledElements(this.elems_controls_buttons,!this.check_repetir.checked);
+            }
+        });
 
-            opt_gp_groups.innerHTML = "";
-            groups.forEach(gpo => {
-                const option = document.createElement("option");
-                option.value = gpo.groupid;
-                option.text = gpo.description;
-                option.setAttribute("type","group");
+        if(this.select_vigencia)this.select_vigencia.addEventListener("change",()=>
+        {
+            if(!this._end)return;
 
-                opt_gp_groups.appendChild(option);
-            });
+            this._end.setAttribute("readonly",true);
+            this._end.removeAttribute("required");
+            this._end.value="";
+            if(Number(this.select_vigencia.value)==99 )
+            {
+                this._end.removeAttribute("readonly");
+                this._end.setAttribute("required",true);
+            }
+        });
 
-            opt_gp_users.innerHTML = "";
-            users.forEach(usr => {
-                const option = document.createElement("option");
-                option.value = usr.userid;
-                option.text = usr.username;
-                option.setAttribute("type","user");
+        if(this._intervalo)this._intervalo.addEventListener("change",()=>
+        {
+            if(!this.cant_veces)return;
 
-                opt_gp_users.appendChild(option);
-            });
-        })
-        .catch(error => alert(error.message ?? JSON.stringify(error)))
+            this.cant_veces.setAttribute("readonly",true);
+            this.cant_veces.value=0;
+
+            if(Number(this._intervalo.value)==1)
+            {
+                this.cant_veces.value=1;
+                this.cant_veces.removeAttribute("readonly");
+            }
+        });
     },
+    GetElements(elm="check")
+    {
+        var repetir=[]
+        if(elm!="check")
+        {
+            if(this.buttonClicked)repetir.push(this.buttonClicked.value);
+        }
+        else
+        {
+            for (let i = 0; i < this.elems_controls_check.length; i++) 
+            {
+                const element = this.elems_controls_check[i];
+                if(element && element.checked)repetir.push(element.value);   
+            }
+        }
+        return repetir;
+    },
+    DisabledElements(elements,disabled)
+    {
+        if(!elements)return;
+        
+        this.buttonClicked=null;
+        for (let i = 0; i < elements.length; i++) 
+        {
+            const element = elements[i];
+            if(element)
+            {
+                if(element.type=="checkbox")element.checked=false;
+                element.disabled=disabled;
+            }
+        }
+    },
+    PintButton()
+    {
+        if(!this.elems_controls_buttons)return;
 
+        for (let i = 0; i < this.elems_controls_buttons.length; i++) 
+        {
+            const element = this.elems_controls_buttons[i];
+            if(element)element.classList.remove("paint-button");
+        }
+        
+        if(this.buttonClicked)this.buttonClicked.classList.add("paint-button");
+    },
+    buttonClicked:null,
+    RepeatButton(btn,check=false)
+    {   
+        if(check)
+        {
+            this.DisabledElements(this.elems_controls_buttons,false);
+        }
+        else
+        {
+            this.DisabledElements(this.elems_controls_check,false);
+            this.buttonClicked=btn;
+        }
+        this.PintButton();
+    },
+    addOption(element,row,value="sys_pk",text="name")
+    {
+        const option = document.createElement("option");
+        option.value = row[value];
+        option.text = row[text] + (row?.isadmin? " - [Admin]":"");
+        option.setAttribute("_id","item_"+(row[value]??""));
+        option.setAttribute("isgroup",(row?.isgroup));
+
+        element.appendChild(option);
+    },
+    DelPara(showalert=true)
+    {
+        let usr=0;
+        Array.from(this._to).forEach(opt => 
+        {
+            if(showalert && opt.selected)
+            {
+                opt.remove();
+                usr=1;
+                return;
+            }
+            else{opt.remove();}
+        });
+
+        if(showalert && usr<1)
+        {
+            alert("Debe seleccionar un usuario o grupo");
+        }
+    },
+    AddPara()
+    {
+        if(!this._to)return;
+        if(!this.usr_group)return;
+
+        let row=this.usr_group.getValue();
+        if(!row || Object.keys(row).length<1)
+        {
+            alert("Debe seleccionar un usuario o grupo");
+            return;
+        }
+
+        row["isgroup"]=this.select_urg_grp?.value=="group";
+
+        this.addOption(this._to,row);
+        this.usr_group.setValue({});
+    },
     getMinis()
     {
         fetch("/!/webshell/notiman/?_view=get-minis").then(resp => resp.json())
@@ -246,28 +371,52 @@ var notiman =
 
         const select = this.ff["_to"];
         let to = []
-        for (let i = 0; i < select.options.length; i++) {
-            const option = select.options[i];
-            if (!option.selected || !option.value) continue;
 
-            let type = option.getAttribute("type");
-            let value = option.value;
+        Array.from(select).forEach(opt => 
+        {
+            let value = opt.value;
+            let isgroup=tools.ParseBool(opt.getAttribute("isgroup"));
+            let target = 
+            {
+                isgroup:isgroup
+            };
 
-            let target = {}
-            target[type] = value
+            if(isgroup)target["group"]=value;
+            else target["user"]=value;
 
             to.push(target);
-        }
+        });
         
-        if (to.length < 1) {
+        if (to.length < 1) 
+        {
             alert("Es necesario seleccionar al menos un destinatario (`Para`).");
             return
+        }
+        if(this._end.value.trim()!="")
+        {
+            let end=new Date(this._end.value);
+            let start=new Date(this._start.value);
+
+            if(end < start)
+            {
+                alert("La fecha de la vigencia no puede ser menor a la fecha de inicio");
+                return;
+            }
+        }
+        var repetir=this.GetElements();
+        if(repetir.length<1)repetir=this.GetElements("button");
+        var details=
+        {
+            // _repetir:this.check_repetir.checked,
+            // _vigencia:this.select_vigencia.value,
+            // _unafecha:this._end.value??"",
+            arrayrep:repetir
         }
 
         let isNotiman = (this._params["_program"] === "notiman");
         this.ff["to"].value = JSON.stringify(to);
 
-        InduxsoftCrudlModel.Submit(this.form, {},
+        InduxsoftCrudlModel.Submit(this.form, details,
             (data) => {
                 if (data?.message) {
                     alert(data.message)
@@ -276,6 +425,23 @@ var notiman =
                 this.closeDialog();
                 if (isNotiman) top.top_screen.load(data.url_redir);
             }
+        );
+    },
+    Delete(sys_pk)
+    {
+        if(!confirm("¿Esta seguro de eliminar la notificación programada?"))return;
+
+        let endpoint = "/!/webshell/notiman/"+sys_pk+"/delete-notif/"
+        InduxsoftCrudlModel.InvokeService(endpoint, null,
+            (r) => 
+            {
+                window.location.reload();
+            },
+            (e) => 
+            {
+                alert(e.message);
+            },
+            "DELETE", false
         );
     }
 }

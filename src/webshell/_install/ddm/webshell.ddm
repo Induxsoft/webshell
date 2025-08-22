@@ -3,6 +3,20 @@ model "webshell"
 {
     #include "induxsoft.abstracts.ddm"
 
+    entity "sys_notif_template" : "TableModel"
+    {
+        @"vigencia" int required //0-Sin vigencia, 99 = a una fecha, >1 Cantidad de días de vigencia
+        @"programacion" int required
+            // 0=Lunes,...6=Domingo, 
+            // 10=Cada mes, 11=Cada 2 meses, 12=Cada 3 meses, 14=cada 6 meses, 15=cada 6 meses, 20=Cada año
+            
+        @"veces" int required // Si es 0, significa indefinido, >0 cantidad de ciclos de repetición
+        /// Control
+        @"c_proximo" date //Fecha de la próxima notificación
+        @"c_veces" int // Cantidad de ciclos de repetición acumulados
+        @"ultimo" ref: "sys_notif" //última notificación generada
+    }
+
     // Registro de notificaciones
     entity "sys_notif" : "TableModel"
     {
