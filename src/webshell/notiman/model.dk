@@ -62,7 +62,7 @@ module "Administración de notificaciones:notiman"
 
         // Establecer filtros predeterminados y preparar consulta
         if limit < 1 && limit != -1 { limit = 10 }
-        if isanyword(_show,"leidas,enviadas,programadas")
+        if isanyword(_show,"leidas,enviadas")
         {
             curr_ndt = ndatetime.now()
             curr_year = ndatetime.year(curr_ndt)
@@ -90,18 +90,14 @@ module "Administración de notificaciones:notiman"
                 @"2": "n.end"
             }
             fdr_field = field.dstr(notif_date_fields, @@(params,"#fdr_field"), "n.start")
-
+            
             if _show == "enviadas" 
             {
                 fields = ",GROUP_CONCAT(CONCAT(u.userid,':',nu.readed) SEPARATOR ' ') usuarios"
                 conditions = conditions + "n.sndrid = CONCAT('@',@uid)"
                 groupby = "n.sys_pk"
             }
-            else if _show=="programadas"
-            {
-                @list_query=@list_query_programadas
-                orderby="c_proximo ASC"
-            }
+            
             else
             {
                 joins = "INNER JOIN sys_session ss ON ss.iuser = u.sys_pk"
@@ -115,9 +111,9 @@ module "Administración de notificaciones:notiman"
                     WHEN 'lastdays' THEN (DATE(#<fdr_field>) BETWEEN ADDDATE(DATE(NOW()), INTERVAL -@fdr_range DAY) AND DATE(NOW()))
                     WHEN 'range' THEN (
                         CASE
-                            WHEN @fdr_from != '' && @fdr_to != '' THEN (DATE(#<fdr_field>) BETWEEN @fdr_from AND @fdr_to)
-                            WHEN @fdr_from != '' && @fdr_to = '' THEN (DATE(#<fdr_field>) >= @fdr_from)
-                            WHEN @fdr_from = '' && @fdr_to != '' THEN (DATE(#<fdr_field>) <= @fdr_to)
+                            WHEN @fdr_from != '' && @fdr_to != '' THEN (DATE(#<fdr_field>) BETWEEN DATE(@fdr_from) AND DATE(@fdr_to))
+                            WHEN @fdr_from != '' && @fdr_to = '' THEN (DATE(#<fdr_field>) >= DATE(@fdr_from))
+                            WHEN @fdr_from = '' && @fdr_to != '' THEN (DATE(#<fdr_field>) <= DATE(@fdr_to))
                             ELSE TRUE
                         END
                     )
@@ -125,6 +121,11 @@ module "Administración de notificaciones:notiman"
                 END
             )
             "
+        }
+        else if _show=="programadas"
+        {
+            @list_query=@list_query_programadas
+            orderby="c_proximo ASC"
         }
         else
         {

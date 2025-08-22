@@ -17,6 +17,7 @@ module "Administración de notificaciones"
     table_id = "tbl_"+@_entities_type
     show_tab = @("$parameters/_show")
     show_fdr = isanyword(show_tab,"leidas,enviadas,programadas")
+    show_only_limit=(show_tab=="programadas")
 
     curr_ndt = ndatetime.now()
     curr_year = ndatetime.year(curr_ndt)
@@ -133,34 +134,44 @@ module "Administración de notificaciones"
                     div(class="d-flex align-items-center")
                     {
                         div{ #! do uie.dbSelect(fil_limit) } #$
-                        div{ #! do uie.dbSelect(fil_fdr_field) } #$
+                        #! if not(show_only_limit)
+                        {
+                            #$
+                            div{ #! do uie.dbSelect(fil_fdr_field) } #$
+                        }
+                        
                     }
-                    div(class="flex-grow-1")
+                    #! if not(show_only_limit)
                     {
-                        "filter-date-range"(
-                            "form"="#form_filter"
-                            "auto-submit"="true"
-                            "custom-range"="true"
-                            "selection"='#<to.json(fdr_init)>'
+                        #$
+                        div(class="flex-grow-1")
+                        {
+                            "filter-date-range"(
+                                "form"="#form_filter"
+                                "auto-submit"="true"
+                                "custom-range"="true"
+                                "selection"='#<to.json(fdr_init)>'
 
-                            "mode-field"="fdr_mode"
-                            "year-field"="fdr_year"
-                            "month-field"="fdr_month"
-                            "range-field"="fdr_range"
-                            "from-field"="fdr_from"
-                            "to-field"="fdr_to"
-                            
-                            "lastdays-options"="15,30,45,60,90"
-                            "years-options"="#<fdr_year_opt>"
-                            "month-names"="Enero,Febrero,Marzo,Abril,Mayo,Junio,Julio,Agosto,Septiembre,Octubre,Noviembre,Diciembre"
-                            
-                            "label-months"="Ver por cada mes"
-                            "label-days"="Últ. @lastdays días"
-                            "label-custom"="Personalizado"
-                            "label-from"="Desde:"
-                            "label-to"="Hasta:"
-                        ){$""}
+                                "mode-field"="fdr_mode"
+                                "year-field"="fdr_year"
+                                "month-field"="fdr_month"
+                                "range-field"="fdr_range"
+                                "from-field"="fdr_from"
+                                "to-field"="fdr_to"
+                                
+                                "lastdays-options"="15,30,45,60,90"
+                                "years-options"="#<fdr_year_opt>"
+                                "month-names"="Enero,Febrero,Marzo,Abril,Mayo,Junio,Julio,Agosto,Septiembre,Octubre,Noviembre,Diciembre"
+                                
+                                "label-months"="Ver por cada mes"
+                                "label-days"="Últ. @lastdays días"
+                                "label-custom"="Personalizado"
+                                "label-from"="Desde:"
+                                "label-to"="Hasta:"
+                            ){$""}
+                        }
                     }
+                    
                 }
             }
         }
