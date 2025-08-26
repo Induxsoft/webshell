@@ -26,24 +26,28 @@ module "Administración de notificaciones:notiman"
         #<conditions>
     "
 
-    @list_query_programadas="SELECT 
-            s.sys_pk,s.sys_guid,
-            s.vigencia,s.programacion,
-            s.veces,
-            @c_proximo := trim(concat(s.c_proximo,' ',DATE_FORMAT(n.`start`,'%H:%i:%s')))c_proximo,
-            s.c_veces,
-            s.ultimo ,
-            -- campos de la ultima notificacion
-            n.sys_pk pkult,n.sndrid,n.title,n.href,n.target,
-            DATE_FORMAT(n.`start`,'%Y-%m-%d %H:%i:%s')start, 
-            DATE_FORMAT(n.`end`,'%Y-%m-%d %H:%i:%s')end,n.body ,
-            @diff := TIMESTAMPDIFF(DAY,n.`start`,n.`end`) diff,
-            DATE_ADD(@c_proximo,INTERVAL @diff day)unafecha
+    @list_query_programadas="SELECT DISTINCT
+                s.sys_pk,s.sys_guid,
+                s.vigencia,s.programacion,
+                s.veces,
+                @c_proximo := trim(concat(s.c_proximo,' ',DATE_FORMAT(n.`start`,'%H:%i:%s')))c_proximo,
+                s.c_veces,
+                s.ultimo ,
+                -- campos de la ultima notificacion
+                n.sys_pk pkult,n.sndrid,n.title,n.href,n.target,
+                DATE_FORMAT(n.`start`,'%Y-%m-%d %H:%i:%s')start, 
+                DATE_FORMAT(n.`end`,'%Y-%m-%d %H:%i:%s')end,n.body ,
+                @diff := TIMESTAMPDIFF(DAY,n.`start`,n.`end`) diff,
+                DATE_ADD(@c_proximo,INTERVAL @diff day)unafecha,
+                (n.sndrid = CONCAT('@',@uid))candel
             FROM sys_notif_template s 
-            INNER JOIN sys_notif n ON s.ultimo=n.sys_pk
+                INNER JOIN sys_notif n ON s.ultimo=n.sys_pk
+                INNER JOIN sys_notif_usr nu ON nu.notif = n.sys_pk
+                INNER JOIN tuser u ON nu.user = u.sys_pk
+                #<joins>
             WHERE date(s.c_proximo) >= DATE(NOW())
-            AND if(IFNULL(s.veces,0)=0,true,s.veces>IFNULL(s.c_veces,0))
-            #<conditions> ;"
+                AND if(IFNULL(s.veces,0)=0,true,s.veces>IFNULL(s.c_veces,0))
+                #<conditions> ;"
 
     function evaluateFilters(&params)
     {
@@ -58,7 +62,7 @@ module "Administración de notificaciones:notiman"
         joins = ""
         conditions = ""
         groupby = ""
-        orderby = ""
+        orderby = "n.start DESC"
 
         // Establecer filtros predeterminados y preparar consulta
         if limit < 1 && limit != -1 { limit = 10 }
@@ -124,6 +128,17 @@ module "Administración de notificaciones:notiman"
         }
         else if _show=="programadas"
         {
+            if @@(params,"#topara")==@_topara_destinatario
+            {
+                joins="INNER JOIN 
+					 (
+					 	SELECT distinct _nu.sys_pk,_nu.notif,_nu.`user` FROM sys_notif_usr _nu
+					 	INNER JOIN tuser _u ON _nu.user = _u.sys_pk
+						WHERE _u.userid=@uid
+					 )r ON nu.user=r.user"
+            }
+            else{conditions = conditions + "AND n.sndrid = CONCAT('@',@uid)"}
+            
             @list_query=@list_query_programadas
             orderby="c_proximo ASC"
         }
@@ -140,7 +155,7 @@ module "Administración de notificaciones:notiman"
             AND IFNULL(nu.readed, 0) = 0
             "
         }
-
+        
         using params
         {
             @"_show": _show

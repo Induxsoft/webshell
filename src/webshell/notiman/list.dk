@@ -59,6 +59,24 @@ module "Administración de notificaciones"
         @"selected": @("#parameters/fdr_field")
     }
 
+    new fil_remitente
+    {
+        @"datatable*":from.json('[
+        {"v":"1","t":"Soy el remitente"},
+        {"v":"2","t":"Soy destinatario"}
+        ]')
+        @"id": "topara"
+        member "attributes"
+        {
+            @"name": "topara"
+            @"class": "form-select rounded-0 no-shadow"
+            @"title": "Limitar resultados a..."
+            @"onchange": "filter(this);"
+        }
+        @"value_field": "v"
+        @"text_field": "t"
+        @"selected": @("#parameters/topara")
+    }
     new fil_limit
     {
         @"datatable*": from.json('[
@@ -134,10 +152,15 @@ module "Administración de notificaciones"
                     div(class="d-flex align-items-center")
                     {
                         div{ #! do uie.dbSelect(fil_limit) } #$
-                        #! if not(show_only_limit)
+                        // #! if not(show_only_limit)
+                        // {
+                        //     #$
+                        //     div{ #! do uie.dbSelect(fil_fdr_field) } #$
+                        // }
+                        #! if show_only_limit
                         {
                             #$
-                            div{ #! do uie.dbSelect(fil_fdr_field) } #$
+                            div{#! do uie.dbSelect(fil_remitente) } #$
                         }
                         
                     }
@@ -251,6 +274,12 @@ module "Administración de notificaciones"
                             {
                                 div(class="d-flex #<ifstr(show_tab!='programadas','justify-content-between','')> gap-2 container-#<show_tab>" )
                                 {
+                                    #!
+                                    if show_btn_delete && @("#parameters/topara")==@_topara_destinatario
+                                    {
+                                        #$
+                                        div(class="" style="white-space:nowrap;"){ small(class="text-muted"){"#<@@(obj,'$sndrid')>"} }    
+                                    }
                                     div(class="" style="white-space:nowrap;"){ small(class="text-muted"){"#<@@(obj,'$start')>"} }
                                     div(class="" style="max-height:1.5rem; overflow:auto;") //white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
                                     {
@@ -327,7 +356,7 @@ module "Administración de notificaciones"
                                         if show_btn_done {
                                             #$ li{ a(class="dropdown-item" href="#" onclick="notiman.readed('#<notif_id>',event)"){$"Marcar como leído"} }
                                         }
-                                        #! if show_btn_delete
+                                        #! if show_btn_delete && parse.bool(@@(obj,"$candel"))
                                         {
                                             #$ li{a(class="dropdown-item" href="#" onclick="notiman.Delete(#<@@(obj,'#sys_pk')>)"){"Eliminar"}}
                                         }
@@ -344,7 +373,7 @@ module "Administración de notificaciones"
                                     if show_btn_done {
                                         #$ button(class="btn btn-light btn-sm" type="button" onclick="notiman.readed('#<notif_id>',event)"){$"Marcar como leído"}
                                     }
-                                    #! if show_btn_delete
+                                    #! if show_btn_delete && parse.bool(@@(obj,"$candel"))
                                     {
                                         #$ button(class="btn btn-sm border-secondary induxsoft-corners btn-main-action no-print" onclick="notiman.Delete(#<@@(obj,'#sys_pk')>)")
                                         {

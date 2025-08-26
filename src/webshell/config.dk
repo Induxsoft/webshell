@@ -52,6 +52,8 @@ program ""
     @var_global_new_mess="webshell_chat_news_mess" // obetener nuevo mensajes en el chat
     @var_global_new_bit="webshell_bit_news_mess" //obtener nuevos mensajes de la bitacora(ventas,compras,cxp,etc..l)
 
+    @_topara_remitente= 1
+    @_topara_destinatario= 2
     
     new @notiman_repeat
     {
