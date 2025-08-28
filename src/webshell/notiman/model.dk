@@ -41,9 +41,12 @@ module "Administración de notificaciones:notiman"
                 DATE_ADD(@c_proximo,INTERVAL @diff day)unafecha,
                 (n.sndrid = CONCAT('@',@uid))candel
             FROM sys_notif_template s 
+                INNER JOIN sys_notif_template_receipts ntr on s.sys_pk=ntr.ref_template
                 INNER JOIN sys_notif n ON s.ultimo=n.sys_pk
-                INNER JOIN sys_notif_usr nu ON nu.notif = n.sys_pk
-                INNER JOIN tuser u ON nu.user = u.sys_pk
+                LEFT JOIN tuser tu ON ntr.`type`='user' AND ntr.id=tu.userid
+                LEFT JOIN usergroup ug ON ntr.`type`='group' AND ntr.id=ug.groupid
+                LEFT JOIN user_usergroup_ ug_ ON ug.sys_pk=ug_.`groups`
+                LEFT JOIN tuser tu_ ON ug_.users=tu_.sys_pk
                 #<joins>
             WHERE date(s.c_proximo) >= DATE(NOW())
                 AND if(IFNULL(s.veces,0)=0,true,s.veces>IFNULL(s.c_veces,0))
@@ -56,7 +59,7 @@ module "Administración de notificaciones:notiman"
         @__dbr.notif.sent = 10
 
         _show = tolower(trim(@@(params,"$_show")))
-        limit = field.dnum(params,"limit",10)
+        limit = field.dnum(params,"limit",100)
         fdr_field = ""
         fields = ""
         joins = ""
@@ -65,7 +68,7 @@ module "Administración de notificaciones:notiman"
         orderby = "n.start DESC"
 
         // Establecer filtros predeterminados y preparar consulta
-        if limit < 1 && limit != -1 { limit = 10 }
+        if limit < 1 && limit != -1 { limit = 100 }
         if isanyword(_show,"leidas,enviadas")
         {
             curr_ndt = ndatetime.now()
@@ -130,12 +133,8 @@ module "Administración de notificaciones:notiman"
         {
             if @@(params,"#topara")==@_topara_destinatario
             {
-                joins="INNER JOIN 
-					 (
-					 	SELECT distinct _nu.sys_pk,_nu.notif,_nu.`user` FROM sys_notif_usr _nu
-					 	INNER JOIN tuser _u ON _nu.user = _u.sys_pk
-						WHERE _u.userid=@uid
-					 )r ON nu.user=r.user"
+                conditions=conditions + "AND ( (ntr.`type`='user' AND tu.userid=@uid) OR (ntr.`type`='group' AND tu_.userid=@uid)) 
+                                        AND n.sndrid <> CONCAT('@',@uid)"
             }
             else{conditions = conditions + "AND n.sndrid = CONCAT('@',@uid)"}
             
@@ -298,64 +297,10 @@ module "Administración de notificaciones:notiman"
 
         do dbr.begin(db)
             ref resp = dbr.notif.send(db,notif)
-
+            //si esta marcada repetir y existe el arreglo de datos para programar la notificación
             if parse.bool(@@(data,"$repetir")) && trim(@@(data,"$arrayrep"))!=""
             {
-                ref repetir=from.json(trim(@@(data,"$arrayrep")))
-
-                // 1 Domingo
-                // 2 Lunes
-                // 3 martes
-                // 4 miercoles
-                // 5 jueves
-                // 6 viernes
-                // 7 sabado
-                
-                ultimo_notif=dbr.num(db,"select sys_pk from sys_notif where sys_guid=@notifid",resp)
-                c_proximo=date_str(now(),"yyyy-MM-dd")
-
-                cant_veces=@@(data,"#cant_veces")
-                if @@(data,"#intervalo")==0{cant_veces=0}
-                else if @@(data,"#intervalo") > 0 && cant_veces < 1{cant_veces=1}
-                
-                new p
-                {
-                    @"start":@@(data,"$start")
-                }
-
-                for i = 0; i < @count(repetir)
-                {
-                    rep=parse.num(list.str(repetir,i))
-                    
-                    c_proximo=GetFechaProximo(db,rep,@@(p,"$start"))
-                    
-                    p<"c_proximo">:c_proximo
-                    c_veces= 0
-                    if dbr.num(db,"SELECT DATE(@start)=DATE(@c_proximo)",p)
-                    {
-                        c_veces= 1
-                        start=dbr.str(db,"select trim(date_add(@start,interval 1 day))",p)
-                        c_proximo=GetFechaProximo(db,rep,start)
-                    }
-                  
-                    new sys_notif_template
-                    {
-                        @"sys_guid": uuid()
-                        @"sys_recver":0
-                        @"sys_dtcreated*":dbr.sql("now()")
-                        @"sys_timestamp*":dbr.sql("now()")
-                        @"vigencia":@@(data,"#vigencia") //0-Sin vigencia, 99 = a una fecha, >1 Cantidad de días de vigencia
-                        @"programacion":rep
-                        // 0=Lunes,...6=Domingo, 
-                        // 10=Cada mes, 11=Cada 2 meses, 12=Cada 3 meses, 14=cada 6 meses, 15=cada 6 meses, 20=Cada año
-                        @"veces":cant_veces // Si es 0, significa indefinido, >0 cantidad de ciclos de repetición /// Control
-                        @"c_proximo":c_proximo //Fecha de la próxima notificación
-                        @"c_veces":c_veces // Cantidad de ciclos de repetición acumulados
-                        @"ultimo":ultimo_notif //última notificación generada
-                    }
-
-                    do dbr.insert(db,"sys_notif_template",sys_notif_template)
-                }
+                do CreateNotifTemplate(db,data,to,resp)
             }
             
         do dbr.commit(db)
@@ -375,7 +320,95 @@ module "Administración de notificaciones:notiman"
             do rise_error(code,error)
         }
     }
+    function CreateNotifTemplate(&db,&data,&to,&resp)
+    {
+        ref repetir=from.json(trim(@@(data,"$arrayrep")))
 
+        // 1 Domingo
+        // 2 Lunes
+        // 3 martes
+        // 4 miercoles
+        // 5 jueves
+        // 6 viernes
+        // 7 sabado
+        
+        ultimo_notif=dbr.num(db,"select sys_pk from sys_notif where sys_guid=@notifid",resp)
+        c_proximo=date_str(now(),"yyyy-MM-dd")
+
+        cant_veces=@@(data,"#cant_veces")
+        if @@(data,"#intervalo")==0{cant_veces=0}
+        else if @@(data,"#intervalo") > 0 && cant_veces < 1{cant_veces=1}
+        
+        new p{@"start":@@(data,"$start")}
+
+        for i = 0; i < @count(repetir)
+        {
+            rep=parse.num(list.str(repetir,i))
+            
+            c_proximo=GetFechaProximo(db,rep,@@(p,"$start"))
+            
+            p<"c_proximo">:c_proximo
+            c_veces= 0
+            if dbr.num(db,"SELECT DATE(@start)=DATE(@c_proximo)",p)
+            {
+                c_veces= 1
+                start=dbr.str(db,"select trim(date_add(@start,interval 1 day))",p)
+                c_proximo=GetFechaProximo(db,rep,start)
+            }
+            
+            new sys_notif_template
+            {
+                @"sys_guid": uuid()
+                @"sys_recver":0
+                @"sys_info":ultimo_notif
+                @"sys_dtcreated*":dbr.sql("now()")
+                @"sys_timestamp*":dbr.sql("now()")
+                @"vigencia":@@(data,"#vigencia") //0-Sin vigencia, 99 = a una fecha, >1 Cantidad de días de vigencia
+                @"programacion":rep
+                // 0=Lunes,...6=Domingo, 
+                // 10=Cada mes, 11=Cada 2 meses, 12=Cada 3 meses, 14=cada 6 meses, 15=cada 6 meses, 20=Cada año
+                @"veces":cant_veces // Si es 0, significa indefinido, >0 cantidad de ciclos de repetición /// Control
+                @"c_proximo":c_proximo //Fecha de la próxima notificación
+                @"c_veces":c_veces // Cantidad de ciclos de repetición acumulados
+                @"ultimo":ultimo_notif //última notificación generada
+            }
+
+            do dbr.insert(db,"sys_notif_template",sys_notif_template)
+            id_notif_template=dbr.num(db,"select sys_pk from sys_notif_template where sys_guid=@sys_guid",sys_notif_template)
+            //insetar los grupos o usuarios para las notificaciones programadas
+            for a = 0; a < @count(to)
+            {
+                ref receipts=@item(to,a)
+
+                type=""
+                id=""
+                //identificar si el destinatario es un grupo o un usuario
+                if @@(receipts,"#user") > 0
+                {
+                    id=dbr.str(db,"select userid from tuser where sys_pk=@user",receipts)
+                    type="user"
+                }
+                else if @@(receipts,"#group") > 0
+                {
+                    id=dbr.str(db,"select groupid from usergroup where sys_pk=@group",receipts)
+                    type="group"
+                }
+                //si se econtró un id de un grupo o usuario se insertará
+                if trim(id)!=""
+                {
+                    new sys_notif_template_receipts
+                    {
+                        @"ref_template":id_notif_template
+                        @"id":id
+                        @"type":type
+                    }
+                    //insertar en la tabla final
+                    do dbr.insert(db,"sys_notif_template_receipts",sys_notif_template_receipts)
+                }
+                
+            }
+        }
+    }
     function GetInfo(&db,&params)
     {
         ref notif = dbr.rec(db,"SELECT title, body FROM sys_notif WHERE sys_guid = @_entity_id",params)
@@ -482,6 +515,7 @@ module "Administración de notificaciones:notiman"
     }
     delete::&db,&params
     {
+        do dbr.execute(db,"delete from sys_notif_template_receipts where ref_template=@_entity_id",params)
         do dbr.execute(db,"delete from sys_notif_template where sys_pk=@_entity_id",params)
 
         return @null

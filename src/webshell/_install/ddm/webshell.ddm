@@ -3,6 +3,13 @@ model "webshell"
 {
     #include "induxsoft.abstracts.ddm"
 
+    entity "sys_notif_template_receipts"
+    {
+        @"ref_template" ref: "sys_notif_template" required
+        @"id" string(45) required //id del usuario o del grupo
+        @"type" string(15) required//'user' o 'group'
+    }
+    
     entity "sys_notif_template" : "TableModel"
     {
         @"vigencia" int required //0-Sin vigencia, 99 = a una fecha, >1 Cantidad de días de vigencia

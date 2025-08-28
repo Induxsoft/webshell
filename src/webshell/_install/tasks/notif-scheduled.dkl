@@ -9,6 +9,32 @@ program ""
     #include "dbr.notif.dkl"
     
     token=""
+    @verificar_recepts_noexists=@true
+
+    VerificarReceptsTemplate::&db,token
+    {
+        sql="SELECT s.sys_pk ref_template,u.userid id,'user' `type`
+        FROM sys_notif_template s
+        INNER JOIN sys_notif n ON s.ultimo=n.sys_pk
+        INNER JOIN sys_notif_usr nu ON n.sys_pk=nu.notif
+        INNER JOIN tuser u ON nu.`user`=u.sys_pk
+        LEFT JOIN sys_notif_template_receipts sr ON s.sys_pk=sr.ref_template
+        WHERE sr.ref_template IS NULL;"
+
+        ref receipts=dbr.list(db,sql,@null)
+        
+        do SaveLogBatch(token,"destinatario econtrados: "+str(@count(receipts)))
+
+        for i = 0; i < @count(receipts)
+        {
+            ref sntr=@item(receipts,i)
+            do dbr.insert(db,"sys_notif_template_receipts",sntr)
+
+            do SaveLogBatch(token,ftext("- #<@@(sntr,'$type')> => #<@@(sntr,'$id')> Agregado a sys_notif_template_receipts"))
+
+            exception{do SaveLogBatch(token,last_error())}
+        }
+    }
     GetTo::&users
     {
         ref l=list.create()
@@ -16,8 +42,15 @@ program ""
         for i = 0; i < @count(users)
         {
             ref user=@item(users,i)
-            new usr{@"user":@@(user,"#user")}
-            do list.add(l,usr)
+            id=trim(@@(user,"$id"))
+            type=trim(@@(user,"$type"))
+
+            if id!="" && type!=""
+            {
+                new usr{}
+                usr<type>:id
+                do list.add(l,usr)
+            }
         }
         return l
     }
@@ -106,6 +139,9 @@ program ""
     token=@@(@batch_context,"$job/id")
     ref params=@@(@batch_context,"&params")
 
+    //verificar receptores no existentes en la tabla sys_notif_template_receipts con base a la sys_pk de sys_notif_template
+    if @verificar_recepts_noexists{do VerificarReceptsTemplate(db,token)}
+
     //inicio de lógica
     sql="SELECT 
     s.sys_pk,s.sys_guid,
@@ -141,8 +177,9 @@ program ""
     {
         ref notif=@item(notif_pending,i)
         
-        ref users=dbr.list(db,"SELECT s.sys_pk,s.sys_guid,s.`user`,s.readed FROM sys_notif_usr s WHERE s.notif=@ultimo",notif)
+        ref users=dbr.list(db,"SELECT id,`type` FROM sys_notif_template_receipts WHERE ref_template=@sys_pk;",notif)
         ref to=GetTo(users)
+        if @count(to) < 1{do rise_error(500,"No se encontrarón destinatario")}
 
         fecha_inicio=ifstr(trim(@@(notif,"$c_proximo"))=="",date_str(now(),"yyyy-MM-dd HH:mm:ss"),@@(notif,"$c_proximo"))
 
