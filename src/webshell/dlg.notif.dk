@@ -16,6 +16,8 @@ div(class="modal fade" id="new_notif_modal" tabindex="-1" "data-bs-backdrop"="fa
             {
                 form(class="border p-2" action="/!/webshell/notiman/_new/" method="POST" id="new_notif_form")
                 {
+                    input(type="hidden" id="sys_pk" name="sys_pk" value="0")
+
                     div(class="d-flex align-items-center border-bottom")
                     {
                         label(class="text-muted fw-bolder" "for"="sndrid"){$"De:"}
@@ -139,7 +141,7 @@ div(class="modal fade" id="new_notif_modal" tabindex="-1" "data-bs-backdrop"="fa
                             label(class="text-muted" "for"="start"){$"Inicio:"}
                             input(class="form-control form-control-sm rounded-0 no-shadow" type="datetime-local" name="start" value="" id="start")
                         }
-                        div(class="col-md-8") 
+                        div(class="col-md-8" id="module_vigencia") 
                         {
                             label(class="text-muted" "for"="end"){$"Vigencia:"}
 
@@ -159,9 +161,9 @@ div(class="modal fade" id="new_notif_modal" tabindex="-1" "data-bs-backdrop"="fa
                                 input(class="form-control form-control-sm rounded-0 no-shadow" readonly="" type="datetime-local" name="end" value="" id="end")
                             }
                         }
-                        div(class="col-12 mt-2") 
+                        div(class="col-12 mt-2" id="module_programing") 
                         {
-                            label
+                            label(id="lbl_repetir")
                             {
                                 input(type="checkbox" id="check_repetir" name="repetir" class="form-check-input me-2" style="transform: scale(1.5);")
                                 $"Repetir cada:"
@@ -204,9 +206,9 @@ div(class="modal fade" id="new_notif_modal" tabindex="-1" "data-bs-backdrop"="fa
                             #$
                             div(class="d-flex gap-2 mt-2")
                             {
-                                div(class="row gx-1")
+                                div(class="row gx-1 w-100")
                                 {
-                                    div(class="col-md-6")
+                                    div(class="col-md-3")
                                     {
                                         select(class="form-select form-select-sm rounded-0" id="intervalo" name="intervalo")
                                         {$""
@@ -219,7 +221,7 @@ div(class="modal fade" id="new_notif_modal" tabindex="-1" "data-bs-backdrop"="fa
                                             }
                                         }
                                     }
-                                    div(class="col-md-5")
+                                    div(class="col-md-3")
                                     {
                                         div(class="d-flex align-items-end")
                                         {
@@ -227,6 +229,17 @@ div(class="modal fade" id="new_notif_modal" tabindex="-1" "data-bs-backdrop"="fa
                                             label(class="fw-bold ms-2 rounded-0" value="0"){"Veces"}
                                         }
                                     }
+                                    // div(class="col-md-4")
+                                    // {
+                                    //     div(id="module_reprogramar" class="-d-none align-items-end")
+                                    //     {
+                                    //         label
+                                    //         {
+                                    //             input(type="checkbox" class="form-check-input" id="all_prg" name="all_prg")
+                                    //             " Reprogramar"
+                                    //         }
+                                    //     }
+                                    // }
                                 }
                             }
                         }

@@ -25,6 +25,22 @@ module "Administración de notificaciones:notiman"
     WHERE
         #<conditions>
     "
+    @read_query="SELECT 
+        n.sys_pk idnotif,n.sys_guid,n.sndrid,n.title, n.img,n.body,n.href,
+        date_format(n.`start`,'%Y-%m-%d %H:%i') AS 'start',
+        date_format(n.`end`,'%Y-%m-%d %H:%i') AS 'end',
+        t.sys_pk,t.vigencia,t.programacion,t.veces,trim(t.c_proximo)proximo,t.c_veces,t.vigencia as select_vigencia,
+        case
+            when n.target=2 then '_self'
+            when n.target=1 then '_blank'
+            ELSE ''
+        END target,
+        if(ifnull(t.veces,0)>0,1,0) as intervalo,
+        t.veces as cant_veces,
+        t.sys_info notinf_first
+        FROM sys_notif_template t
+        INNER JOIN sys_notif n ON t.ultimo=n.sys_pk
+    WHERE t.sys_pk=@_entity_id"
 
     @list_query_programadas="SELECT DISTINCT
                 s.sys_pk,s.sys_guid,
@@ -34,7 +50,12 @@ module "Administración de notificaciones:notiman"
                 s.c_veces,
                 s.ultimo ,
                 -- campos de la ultima notificacion
-                n.sys_pk pkult,n.sndrid,n.title,n.href,n.target,
+                n.sys_pk pkult,n.sndrid,n.title,n.href,
+                case
+                    when n.target=2 then '_self'
+                    when n.target=1 then '_blank'
+                    ELSE ''
+                END target,
                 DATE_FORMAT(n.`start`,'%Y-%m-%d %H:%i:%s')start, 
                 DATE_FORMAT(n.`end`,'%Y-%m-%d %H:%i:%s')end,n.body ,
                 @diff := TIMESTAMPDIFF(DAY,n.`start`,n.`end`) diff,
@@ -49,9 +70,10 @@ module "Administración de notificaciones:notiman"
                 LEFT JOIN tuser tu_ ON ug_.users=tu_.sys_pk
                 #<joins>
             WHERE date(s.c_proximo) >= DATE(NOW())
-                AND if(IFNULL(s.veces,0)=0,true,s.veces>IFNULL(s.c_veces,0))
                 #<conditions> ;"
 
+    
+    
     function evaluateFilters(&params)
     {
         @__dbr.notif.no.readed = 10
@@ -134,7 +156,8 @@ module "Administración de notificaciones:notiman"
             if @@(params,"#topara")==@_topara_destinatario
             {
                 conditions=conditions + "AND ( (ntr.`type`='user' AND tu.userid=@uid) OR (ntr.`type`='group' AND tu_.userid=@uid)) 
-                                        AND n.sndrid <> CONCAT('@',@uid)"
+                                        AND n.sndrid <> CONCAT('@',@uid)
+                                        AND if(IFNULL(s.veces,0)=0,true,s.veces>IFNULL(s.c_veces,0))"
             }
             else{conditions = conditions + "AND n.sndrid = CONCAT('@',@uid)"}
             
@@ -238,9 +261,9 @@ module "Administración de notificaciones:notiman"
 
         return c_proximo
     }
-    function create(&db,&params,&data)
+    FieldsNotif::&db,&data
     {
-        _to = field.dstr(data,"to","[]")
+         _to = field.dstr(data,"to","[]")
         if trim(_to) == "" { _to = "[]" }
         
         ref to = from.json(_to)
@@ -295,8 +318,64 @@ module "Administración de notificaciones:notiman"
         }
         if img != "" { notif<"img"> : img }
 
+        return notif
+    }
+    function create(&db,&params,&data)
+    {
+        ref notif=FieldsNotif(db,data)
+        ref to=@@(notif,"&to")
+        if @count(to)<1{do rise_error(500,"Es necesario indicar al menos un destinatario (`Para`).")}
+
+        url_redir="/!/webshell/notiman/?_show=enviadas"
         do dbr.begin(db)
-            ref resp = dbr.notif.send(db,notif)
+            if parse.bool(@@(data,"$delete")) && @@(data,"#sys_pk") > 0
+            {   
+                //eliminar los intervalos , reprogramarlos y actualizar la ultima notificación
+                new resp
+                {
+                    @"notifid":dbr.str(db,"SELECT n.sys_guid from sys_notif_template t
+                                INNER JOIN sys_notif n ON t.ultimo=n.sys_pk
+                                WHERE t.sys_pk=@_entity_id",params)
+                }
+                new sys_notif
+                {
+                    @"sys_timestamp*": dbr.sql("NOW()")
+                    @"sndrid": field.dstr(notif, "sender", "unknow")
+                    @"title": @@(notif, "$title")
+                    @"img": @@(notif, "$img")
+                    @"body": @@(notif, "$body")
+                    @"href": @@(notif, "$href")
+                    @"target": __dbr.notif.get.target(@@(notif, "$target"))
+                    @"start": @@(notif, "$start")
+                    @"end": @@(notif, "$end")
+                }
+
+                if @@(sys_notif, "start") == "" { sys_notif<"start*">: dbr.sql("NOW()") }
+                if @@(sys_notif, "end") == "" { sys_notif<"end*">: dbr.sql("DATE_ADD(NOW(), INTERVAL 10 YEAR)") }
+                
+                do dbr.update(db, "sys_notif", sys_notif,"sys_guid=@notifid",resp)
+
+                do notiman.delete(db,params)
+                //eliminar todas las notificaciones descendente de la ultima notificación
+                // ref all_reprm=@@(data,"&all_reprm")
+                // if @count(all_reprm) > 0
+                // {
+                //     for i = 0; i < @count(all_reprm)
+                //     {
+                //         ref rmg=@item(all_reprm,i)
+                //         params<"_entity_id">:@@(rmg,"#sys_pk")
+                //         do notiman.delete(db,params)
+                //     }
+                // }
+
+                url_redir="/!/webshell/notiman/?_show=programadas"
+            }
+            else
+            {
+                ref resp = dbr.notif.send(db,notif)
+            }
+        
+            
             //si esta marcada repetir y existe el arreglo de datos para programar la notificación
             if parse.bool(@@(data,"$repetir")) && trim(@@(data,"$arrayrep"))!=""
             {
@@ -305,7 +384,7 @@ module "Administración de notificaciones:notiman"
             
         do dbr.commit(db)
 
-        resp<"url_redir"> : "/!/webshell/notiman/?_show=enviadas"
+        resp<"url_redir"> : url_redir
         
         return resp
 
@@ -360,7 +439,6 @@ module "Administración de notificaciones:notiman"
             {
                 @"sys_guid": uuid()
                 @"sys_recver":0
-                @"sys_info":ultimo_notif
                 @"sys_dtcreated*":dbr.sql("now()")
                 @"sys_timestamp*":dbr.sql("now()")
                 @"vigencia":@@(data,"#vigencia") //0-Sin vigencia, 99 = a una fecha, >1 Cantidad de días de vigencia
@@ -371,7 +449,16 @@ module "Administración de notificaciones:notiman"
                 @"c_proximo":c_proximo //Fecha de la próxima notificación
                 @"c_veces":c_veces // Cantidad de ciclos de repetición acumulados
                 @"ultimo":ultimo_notif //última notificación generada
+                @"sys_info":ultimo_notif
             }
+            
+
+            // if parse.bool(@@(data,"$update"))
+            // {
+            //     do field.remove(sys_notif_template,"sys_guid")
+            //     do field.remove(sys_notif_template,"sys_dtcreated")
+            //     do field.remove(sys_notif_template,"sys_timestamp")
+            // }
 
             do dbr.insert(db,"sys_notif_template",sys_notif_template)
             id_notif_template=dbr.num(db,"select sys_pk from sys_notif_template where sys_guid=@sys_guid",sys_notif_template)
@@ -383,14 +470,14 @@ module "Administración de notificaciones:notiman"
                 type=""
                 id=""
                 //identificar si el destinatario es un grupo o un usuario
-                if @@(receipts,"#user") > 0
+                if @@(receipts,"#user") > 0 || field.exist(receipts,"user")
                 {
-                    id=dbr.str(db,"select userid from tuser where sys_pk=@user",receipts)
+                    id=dbr.str(db,"select userid from tuser where (trim(sys_pk)=@user or userid=@user) limit 1",receipts)
                     type="user"
                 }
-                else if @@(receipts,"#group") > 0
+                else if @@(receipts,"#group") > 0 || field.exist(receipts,"group")
                 {
-                    id=dbr.str(db,"select groupid from usergroup where sys_pk=@group",receipts)
+                    id=dbr.str(db,"select groupid from usergroup where (trim(sys_pk)=@group or groupid=@group)",receipts)
                     type="group"
                 }
                 //si se econtró un id de un grupo o usuario se insertará
@@ -520,4 +607,68 @@ module "Administración de notificaciones:notiman"
 
         return @null
     }
+    read::&db,&params
+    {
+        @table_name="sys_notif_template"
+        ref entity= entity.read(db,params)
+        entity<"control_"+@@(entity,"$programacion")>:@true
+        entity<"sndrid">:@@(@http_context,"$session/user/name")
+        using entity
+        {
+            @"recepts*":dbr.list(db,"select id,`type`,(`type`='group')isgroup from sys_notif_template_receipts where ref_template=@_entity_id",params)
+        }
+       return entity
+    }
+    update::&db,&params,&data
+    {
+        if trim(@@(data,"$arrayrep"))==""{do rise_error(500,"No ha elegido una programación")}
+
+        params<"_entity_id">:@@(data,"#sys_pk")
+
+        if parse.bool(@@(data,"$all_prg"))
+        {
+            //obtener el ultimo notificacion guardado en sys_info
+            params<"ultimo">:dbr.num(db,"select sys_info from sys_notif_template where sys_pk=@_entity_id",params)
+            //obtener sys_pk y programacion de las notificaciones creadas por dia si lo hubiese
+            ref all_prg=dbr.list(db,"SELECT t.sys_pk,t.programacion FROM sys_notif_template t 
+            WHERE t.sys_info=@ultimo AND t.sys_pk<>@_entity_id;",params)
+
+            if @count(all_prg) > 0
+            {
+                //si existe agregar al arrya de datos para reprogramarlos
+                ref repetir=from.json(trim(@@(data,"$arrayrep")))
+                for i = 0; i < @count(all_prg)
+                {
+                    ref row= @item(all_prg,i)
+                    if not(ExistKeyInList(repetir,@@(row,"$programacion")))
+                    {
+                        do list.add(repetir,@@(row,"$programacion"))
+                    }
+                }
+
+                data<"all_reprm*">:all_prg
+            }
+        }
+        data<"repetir">:@true
+        data<"delete">:@true
+        ref entity= notiman.create(db,params,data)
+
+        return entity
+
+        exception
+        {
+            if dbr.in_transaction(db){do dbr.rollback(db)}
+            do rise_error(last_error_code(),last_error())
+        }
+        
+    }
+    ExistKeyInList::&l,key
+    {
+        for i = 0; i < @count(l)
+        {
+            if trim(list.str(l,i))==trim(key){return @true}
+        }
+        return @false
+    }
+    
 }

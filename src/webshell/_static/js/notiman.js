@@ -32,11 +32,16 @@ var notiman =
         this._intervalo=document.getElementById("intervalo");
         this.cant_veces=document.getElementById("cant_veces");
         this.btn_add_para=document.getElementById("btn_add_para");
+        this.module_vigencia=document.getElementById("module_vigencia");
 
         if(this.controls_check)this.elems_controls_check=this.controls_check.querySelectorAll("input[type='checkbox']");
         if(this.controls_buttons)this.elems_controls_buttons=this.controls_buttons.querySelectorAll("button");
-        this.ff = this.form.elements;
+        this.ff = this.form?.elements;
 
+        this.SetEvents();
+    },
+    SetEvents()
+    {
         const submit = document.getElementById("btn_send_notif");
         // const targets_container = document.getElementById("targets-container");
         // const targets_combo = document.getElementById("_to");
@@ -45,7 +50,10 @@ var notiman =
         const btn_copy_link = document.getElementById("btn_copy_link");
         const btn_show_media = document.getElementById("btn_show_media");
         
-        this.dialog.addEventListener("shown.bs.modal", () => {
+        if(this.dialog)this.dialog.addEventListener("shown.bs.modal", () => 
+        {
+            if(this._intervalo)tools.trigger(this._intervalo,"change");
+
             if (this._params["_program"] === "notiman") return;
 
             Object.entries(this._initialData).forEach(entry => {
@@ -57,26 +65,33 @@ var notiman =
             
             this.ff["title"].value ||= def.title;
             this.ff["href"].value ||= def.go;
+            
         });
-        this.dialog.addEventListener("hidden.bs.modal", () => 
+        if(this.dialog)this.dialog.addEventListener("hidden.bs.modal", () => 
         { 
             this.form.reset();
+            let sys_pk=document.getElementById("sys_pk");
+            if(sys_pk)sys_pk.value=0;
+            this.IsModify=false;
             if(this.usr_group)this.usr_group.setValue({});
             this.DelPara(false);
             this.DisabledElements(this.form.querySelectorAll("button"),false);
             tools.trigger(this.check_repetir,"change");
+            if(this.check_repetir)this.check_repetir.classList.remove("d-none");
+            if(this.module_vigencia)this.module_vigencia.classList.remove("d-none");
             this.PintButton();
+            if(this.intervalo)tools.trigger(this.intervalo,"change");
         });
       
-        this.media.onClicking = (data) => { this.ff["img"].value = data.src; }
-        btn_copy_link.addEventListener("click", () => {
+        if(this.media)this.media.onClicking = (data) => { this.ff["img"].value = data.src; }
+        if(btn_copy_link)btn_copy_link.addEventListener("click", () => {
             const url = this.ff["href"].value;
             navigator.clipboard.writeText(url)
             .then(() => { console.log("Se copio el enlace al portapapeles.") })
             .catch(() => { alert("Error al copiar el enlace al portapapeles.") });
         });
-        btn_show_media.addEventListener("click", () => { this.media.hidden = !this.media.hidden });
-        submit?.addEventListener("click", () => { this.send() });
+        if(btn_show_media)btn_show_media.addEventListener("click", () => { this.media.hidden = !this.media.hidden });
+        if(submit)submit?.addEventListener("click", () => { this.send() });
 
         this.getMinis();
         this.initiate = true;
@@ -113,7 +128,6 @@ var notiman =
             {
                 this.DisabledElements(this.elems_controls_check,!this.check_repetir.checked);
             }
-
             if(this.controls_buttons)
             {
                 this.DisabledElements(this.elems_controls_buttons,!this.check_repetir.checked);
@@ -139,18 +153,18 @@ var notiman =
             if(!this.cant_veces)return;
 
             this.cant_veces.setAttribute("readonly",true);
-            this.cant_veces.value=0;
+            if(!this.IsModify)this.cant_veces.value=0;
 
             if(Number(this._intervalo.value)==1)
             {
-                this.cant_veces.value=1;
+                if(!this.IsModify)this.cant_veces.value=1;
                 this.cant_veces.removeAttribute("readonly");
             }
         });
     },
     GetElements(elm="check")
     {
-        var repetir=[]
+        var repetir=[];
         if(elm!="check")
         {
             if(this.buttonClicked)repetir.push(this.buttonClicked.value);
@@ -219,6 +233,7 @@ var notiman =
     DelPara(showalert=true)
     {
         let usr=0;
+        
         Array.from(this._to).forEach(opt => 
         {
             if(showalert && opt.selected)
@@ -227,7 +242,7 @@ var notiman =
                 usr=1;
                 return;
             }
-            else{opt.remove();}
+            else if(!showalert){opt.remove();}
         });
 
         if(showalert && usr<1)
@@ -254,9 +269,11 @@ var notiman =
     },
     getMinis()
     {
+        if(!this.media)return;
         fetch("/!/webshell/notiman/?_view=get-minis").then(resp => resp.json())
         .then(data => {
-            if (data?.message) {
+            if (data?.message) 
+            {
                 alert(data.message);
                 return;
             }
@@ -354,7 +371,89 @@ var notiman =
         event.stopPropagation();
         window.open(href,target);
     },
+    Editar(sys_pk)
+    {
+        let endpoint = "./"+sys_pk+"/"
+        InduxsoftCrudlModel.InvokeService(endpoint, null,
+            (r) => 
+            {
+                this.LoadDataForm(r);
+            },
+            (e) => 
+            {
+                alert(e.message);
+            },
+            "GET", false
+        );
+    },
+    IsModify:false,
+    LoadElementsTop()
+    {
+        if(!this._to)this._to=top.document.querySelector("#_to");
+        if(!this.check_repetir)this.check_repetir=top.document.querySelector("#check_repetir");
+        if(!this.module_vigencia)this.module_vigencia=top.document.querySelector("#module_vigencia");
+        if(!this.controls_check)this.controls_check=top.document.querySelector("#controls_check");
+        if(!this.controls_buttons)this.controls_buttons=top.document.querySelector("#controls_buttons");
+        if(!this._intervalo)this._intervalo=top.document.querySelector("#intervalo");
+        if(this.controls_check)this.elems_controls_check=this.controls_check.querySelectorAll("input[type='checkbox']");
+        if(this.controls_buttons)this.elems_controls_buttons=this.controls_buttons.querySelectorAll("button");
 
+        this.SetEvents();
+        //ocultar elementos
+        if(this.module_vigencia)this.module_vigencia.classList.add("d-none");
+        if(this.check_repetir)
+        {
+            this.check_repetir.checked=true;
+            tools.trigger(this.check_repetir,"change");
+            this.check_repetir.classList.add("d-none");
+        }
+        
+    },  
+    LoadDataForm(data)
+    {
+        if(!data)return;
+        
+        this.LoadElementsTop();
+        top.notiman.IsModify=true;
+        for(var dt in data)
+        {
+            var element=top.document.querySelector(`input[name='${dt}']`);
+            if(!element)element=top.document.querySelector(`#${dt}`);
+            if(element)
+            {
+                element.value=data[dt];
+                if(element.type=="checkbox")
+                {
+                    element.checked=data[dt];
+                    element.value=data.programacion??0;
+                }
+                else if(element.type=="button")
+                {
+                    element.value=data.programacion??0;
+                    top.notiman.buttonClicked=element;
+                    this.RepeatButton(element);
+                }
+            }
+            if(dt=="recepts")
+            {
+                var recepts=data[dt];
+                if(recepts)
+                {
+                    for (let i = 0; i < recepts.length; i++) 
+                    {
+                        const row = recepts[i];
+                        this.addOption(this._to,row,"id","id");
+                    }
+                }
+                
+            }
+            // console.log(dt,element)
+        }
+
+        top.WebShell.Notif.Send();
+        //disparar eventos
+        if(this._intervalo)tools.trigger(this._intervalo,"change");
+    },
     readed(notifId,event)
     {
         event.stopPropagation();
@@ -420,9 +519,6 @@ var notiman =
         if(repetir.length<1)repetir=this.GetElements("button");
         var details=
         {
-            // _repetir:this.check_repetir.checked,
-            // _vigencia:this.select_vigencia.value,
-            // _unafecha:this._end.value??"",
             arrayrep:repetir
         }
 
@@ -431,7 +527,8 @@ var notiman =
 
         InduxsoftCrudlModel.Submit(this.form, details,
             (data) => {
-                if (data?.message) {
+                if (data?.message) 
+                {
                     alert(data.message)
                     return;
                 }
