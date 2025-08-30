@@ -298,10 +298,24 @@ module "Administración de notificaciones"
 
                                         if @@(obj,"#vigencia")==99 && trim(@@(obj,"$unafecha"))!=""{vigencia=vigencia + " ["+@@(obj,"$unafecha")+"]"}
 
-                                        programacion=@@(obj,"#programacion")
-
-                                        if programacion > 9{cada=@@(@notiman_repeat,"$buttons/"+str(programacion))}
-                                        else{cada=@@(@notiman_repeat,"$"+str(programacion))}
+                                        programacion=@@(obj,"$programacion")
+                                        cada=""
+                                        if contains(programacion,",")
+                                        {
+                                            ref prgs=split(programacion,",")
+                                            __count=@count(prgs)
+                                            for i = 0; i < __count
+                                            {
+                                                prg=list.str(prgs,i)
+                                                is_equal=__count==(i+1)
+                                                cada=cada + @@(@notiman_repeat,"$"+prg) + ifstr(is_equal,""," , ")
+                                            }
+                                        }
+                                        else 
+                                        {
+                                            if parse.num(programacion) > 9{cada=@@(@notiman_repeat,"$buttons/"+str(programacion))}
+                                            else{cada=@@(@notiman_repeat,"$"+programacion)}
+                                        }
                                         
                                         intervalo=ifstr(@@(obj,"#veces")>0,@@(obj,"$veces")+" Veces",@@(@intervalo,"$0"))
                                         #$

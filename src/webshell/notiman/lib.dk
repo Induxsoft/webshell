@@ -1,0 +1,102 @@
+#include "dkli.dkh"
+#!
+module ""
+{
+    @sql_day="SELECT trim(DATE_ADD(DATE(@start), INTERVAL ((@target_day + 7 - DAYOFWEEK(DATE(@start))) % 7) DAY));"
+    @sql_month="SELECT trim(DATE_ADD(DATE(@start), INTERVAL @target_month month));"
+    @sql_year="SELECT trim(DATE_ADD(DATE(@start), INTERVAL @target_year year));"
+    
+    GetFechaProximo::&db,rep,finicio
+    {
+        new p{@"start":finicio}
+        c_proximo=""
+
+        if rep< 10 //dias de L - D
+        {
+            _rep=rep
+            switch rep
+            {
+                //lunes
+                case 0{_rep= 2}//2 Lunes
+                //martes
+                case 1{_rep= 3}//3 martes
+                //miercoles
+                case 2{_rep= 4}//4 miercoles
+                //jueves
+                case 3{_rep= 5}//5 jueves
+                //viernes
+                case 4{_rep= 6}//6 viernes
+                //sabado
+                case 5{_rep= 7}//7 sabado
+                //domingo
+                case 6{_rep= 1}//1 domingo
+            }
+            
+            p<"target_day">:_rep //más 1 porque los dias definicios es de 0 - 6 y 0 es Lunes pero en DAYOFWEEK(fecha) devuelve 1 = D, 7 =sabado
+            c_proximo=dbr.str(db,@sql_day,p)
+        }
+        else if rep > 9 && rep< 20 //se trata de meses
+        {
+            _rep=rep
+            switch rep
+            {
+                case 10{_rep= 1}// 1 mes
+                case 11{_rep= 2}//...
+                case 12{_rep= 3}
+                case 13{_rep= 4}
+                case 14{_rep= 5}
+                case 15{_rep= 6}
+            }
+            p<"target_month">:_rep
+            c_proximo=dbr.str(db,@sql_month,p)
+        }
+        else if rep>= 20
+        {
+            p<"target_year">: 1
+            c_proximo=dbr.str(db,@sql_year,p)
+        }
+
+        return c_proximo
+    }
+    function GetProgramacion(&repetir)
+    {
+        __count=@count(repetir)
+        
+        programacion=""
+
+        new _prgm{}
+        fisrt= 9999
+        next= 0
+        for i = 0; i < __count
+        {
+            prgm=list.str(repetir,i)
+            prgm_num=parse.num(prgm)
+            is_equal=__count==(i+1)
+            if i==0 && is_equal
+            {
+                using _prgm
+                {
+                    @"programacion":prgm
+                    @"first":prgm
+                    @"next":prgm
+                }
+                return _prgm
+            }
+            if prgm_num < fisrt
+            {
+                fisrt=prgm_num
+                if is_equal{next=first}
+                else{next=parse.num(list.str(repetir,i+1))}
+            }
+            programacion=programacion + prgm + ifstr(is_equal,"",",")
+
+        }
+        using _prgm
+        {
+            @"programacion":programacion
+            @"first":fisrt
+            @"next":next
+        }
+        return _prgm
+    }
+}

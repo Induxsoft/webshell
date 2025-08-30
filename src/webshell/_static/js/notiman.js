@@ -421,18 +421,18 @@ var notiman =
             if(!element)element=top.document.querySelector(`#${dt}`);
             if(element)
             {
-                element.value=data[dt];
+                
                 if(element.type=="checkbox")
                 {
                     element.checked=data[dt];
-                    element.value=data.programacion??0;
                 }
                 else if(element.type=="button")
                 {
-                    element.value=data.programacion??0;
+                    // element.value=data.programacion??0;
                     top.notiman.buttonClicked=element;
                     this.RepeatButton(element);
                 }
+                else element.value=data[dt];
             }
             if(dt=="recepts")
             {

@@ -13,7 +13,7 @@ model "webshell"
     entity "sys_notif_template" : "TableModel"
     {
         @"vigencia" int required //0-Sin vigencia, 99 = a una fecha, >1 Cantidad de días de vigencia
-        @"programacion" int required
+        @"programacion" string(20) required
             // 0=Lunes,...6=Domingo, 
             // 10=Cada mes, 11=Cada 2 meses, 12=Cada 3 meses, 14=cada 6 meses, 15=cada 6 meses, 20=Cada año
             

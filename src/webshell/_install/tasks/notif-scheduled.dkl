@@ -7,6 +7,7 @@ program ""
     #include "dbr.dkh"
     #include "batch.v12.dkl"
     #include "dbr.notif.dkl"
+    #include "webshell/notiman/lib.dk"
     
     token=""
     @verificar_recepts_noexists=@true
@@ -55,58 +56,7 @@ program ""
         return l
     }
     #!
-    GetFechaProximo::&db,rep,finicio
-    {
-        new p{@"start":finicio}
-        c_proximo=""
-
-        if rep< 10 //dias de L - D
-        {
-            _rep=rep
-            switch rep
-            {
-                //lunes
-                case 0{_rep= 2}//2 Lunes
-                //martes
-                case 1{_rep= 3}//3 martes
-                //miercoles
-                case 2{_rep= 4}//4 miercoles
-                //jueves
-                case 3{_rep= 5}//5 jueves
-                //viernes
-                case 4{_rep= 6}//6 viernes
-                //sabado
-                case 5{_rep= 7}//7 sabado
-                //domingo
-                case 6{_rep= 1}//1 domingo
-            }
-            
-            p<"target_day">:_rep //más 1 porque los dias definicios es de 0 - 6 y 0 es Lunes pero en DAYOFWEEK(fecha) devuelve 1 = D, 7 =sabado
-            c_proximo=dbr.str(db,@sql_day,p)
-        }
-        else if rep > 9 && rep< 20 //se trata de meses
-        {
-            _rep=rep
-            switch rep
-            {
-                case 10{_rep= 1}// 1 mes
-                case 11{_rep= 2}//...
-                case 12{_rep= 3}
-                case 13{_rep= 4}
-                case 14{_rep= 5}
-                case 15{_rep= 6}
-            }
-            p<"target_month">:_rep
-            c_proximo=dbr.str(db,@sql_month,p)
-        }
-        else if rep>= 20
-        {
-            p<"target_year">: 1
-            c_proximo=dbr.str(db,@sql_year,p)
-        }
-
-        return c_proximo
-    }
+    
     SaveLogBatch::token,msg
     {
         do print(msg)
@@ -147,6 +97,7 @@ program ""
     s.sys_pk,s.sys_guid,
     s.vigencia,s.programacion,
     s.veces,
+    trim(s.c_proximo) as _c_proximo,
     trim(concat(s.c_proximo,' ',DATE_FORMAT(n_ult.`start`,'%H:%i:%s')))c_proximo,
     s.c_veces,
     s.ultimo ,
@@ -165,10 +116,6 @@ program ""
 
     sql_ultimo="select sys_pk from sys_notif where sys_guid=@notifid"
     c_proximo=date_str(now(),"yyyy-MM-dd")
-
-    @sql_day="SELECT trim(DATE_ADD(DATE(@start), INTERVAL ((@target_day + 7 - DAYOFWEEK(DATE(@start))) % 7) DAY));"
-    @sql_month="SELECT trim(DATE_ADD(DATE(@start), INTERVAL @target_month month));"
-    @sql_year="SELECT trim(DATE_ADD(DATE(@start), INTERVAL @target_year year));"
 
     ref notif_pending=dbr.list(db,sql,@null)
     do SaveLogBatch(token,"Notificaciones pendientes encontradas: "+str(@count(notif_pending)))
@@ -206,8 +153,33 @@ program ""
         }
         //enviar notificación
         ref resp = dbr.notif.send(db,sys_notif)
+
+        ref programacion=split(@@(notif,"$programacion"),",")
+        if @count(programacion) < 1{do rise_error(99,"No hay una programación: programación "+@@(notif,"$sys_guid"))}
+
+        c_proximo=""
+        for a = 0; a < @count(programacion)
+        {
+            rep=parse.num(list.str(programacion,i))
+            c_proximo=GetFechaProximo(db,rep,fecha_inicio)
+
+            if trim(c_proximo)!="" && trim(@@(notif,"$_c_proximo"))!=""
+            {
+                new p
+                {
+                    @"_c_proximo":@@(notif,"$_c_proximo")
+                    @"c_proximo":c_proximo
+                }
+                
+                if dbr.num(db,"SELECT DATE(@c_proximo)>DATE(@_c_proximo)",p)
+                {
+                    break
+                }
+            }
+        }
+        
         //actualizamos sys_template
-        c_proximo=GetFechaProximo(db,@@(notif,"#programacion"),fecha_inicio)
+        
         new sys_template
         {
             @"sys_pk":@@(notif,"#sys_pk")
