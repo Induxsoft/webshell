@@ -560,8 +560,21 @@ module "Administración de notificaciones:notiman"
     update::&db,&params,&data
     {
         if trim(@@(data,"$arrayrep"))==""{do rise_error(500,"No ha elegido una programación")}
-
         params<"_entity_id">:@@(data,"#sys_pk")
+
+        //si la vigencia es 99 [a una fecha], calcular la fecha final de la siguiente notificacion
+        if @@(data,"#vigencia")==99
+        {
+            params<"ultimo">:dbr.num(db,"select ultimo from sys_notif_template where sys_pk=@_entity_id",params)
+            params<"start">:@@(data,"$start")
+            params<"intfin">:dbr.num(db,"SELECT TIMESTAMPDIFF(DAY,`start`,`end`) FROM sys_notif WHERE sys_pk=@ultimo;",params)
+
+            if trim(@@(data,"$start"))==""{data<"start">:date_str(now(),"yyyy-MM-dd")}
+            fecha_fin=dbr.str(db,"SELECT date_format(DATE_ADD(@start,INTERVAL @intfin DAY),'%Y-%m-%d %H:%i')",params)
+
+            if trim(fecha_fin)!=""{data<"end">:fecha_fin}
+            else{data<"end">:""}
+        }
 
         data<"repetir">:@true
         data<"delete">:@true

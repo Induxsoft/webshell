@@ -504,7 +504,7 @@ var notiman =
             alert("Es necesario seleccionar al menos un destinatario (`Para`).");
             return
         }
-        if(this._end.value.trim()!="")
+        if(this._end.value.trim()!="" && !this.module_vigencia.classList.contains("d-none"))
         {
             let end=new Date(this._end.value);
             let start=new Date(this._start.value);

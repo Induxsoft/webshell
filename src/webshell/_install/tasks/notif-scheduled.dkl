@@ -131,14 +131,8 @@ program ""
         fecha_inicio=ifstr(trim(@@(notif,"$c_proximo"))=="",date_str(now(),"yyyy-MM-dd HH:mm:ss"),@@(notif,"$c_proximo"))
 
         fecha_fin=""
-        if @@(notif,"#vigencia")!=99 && @@(notif,"#vigencia")!=0
-        {
-            fecha_fin=dbr.str(db,"SELECT trim(DATE_ADD(@c_proximo,INTERVAL @vigencia DAY))",notif)
-        }
-        else if @@(notif,"#vigencia")==99
-        {
-            fecha_fin=dbr.str(db,"SELECT trim(DATE_ADD(@c_proximo,INTERVAL @diff DAY))",notif)
-        }
+        if @@(notif,"#vigencia")!=99 && @@(notif,"#vigencia")!=0{fecha_fin=dbr.str(db,"SELECT trim(DATE_ADD(@c_proximo,INTERVAL @vigencia DAY))",notif)}
+        else if @@(notif,"#vigencia")==99{fecha_fin=dbr.str(db,"SELECT trim(DATE_ADD(@c_proximo,INTERVAL @diff DAY))",notif)}
 
         new sys_notif
         {
@@ -179,7 +173,6 @@ program ""
         }
         
         //actualizamos sys_template
-        
         new sys_template
         {
             @"sys_pk":@@(notif,"#sys_pk")
@@ -188,6 +181,7 @@ program ""
             @"c_proximo":c_proximo
             @"sys_timestamp":c_proximo
         }
+
         do dbr.update(db,"sys_notif_template",sys_template,"sys_pk=@sys_pk",sys_template)
 
         exception

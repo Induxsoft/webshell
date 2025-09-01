@@ -280,7 +280,11 @@ module "Administración de notificaciones"
                                         #$
                                         div(class="" style="white-space:nowrap;"){ small(class="text-muted"){"#<@@(obj,'$sndrid')>"} }    
                                     }
-                                    div(class="" style="white-space:nowrap;"){ small(class="text-muted"){"#<@@(obj,'$start')>"} }
+                                    div(class="" style="white-space:nowrap;")
+                                    {
+                                        small(class="fw-bold"){"Inicio: "} 
+                                        small(class="text-muted"){" #<@@(obj,'$start')>"} 
+                                    }
                                     div(class="" style="max-height:1.5rem; overflow:auto;") //white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
                                     {
                                         #!
