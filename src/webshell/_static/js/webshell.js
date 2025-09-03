@@ -39,7 +39,7 @@ var WebShell =
                 }
             });
         },
-        Show(p,u)
+        Show(p,u,t="")
         {
             const ElPanels = document.querySelectorAll("section"+p);
             if (ElPanels.length == 0) return;
@@ -65,6 +65,7 @@ var WebShell =
                     {
                         if (!frame.src || frame.src == "about:blank") return;
                         let title = frame.contentDocument?.title??"";
+                        if (t) title = t;
 
                         TabTitle.textContent = title;
                         HeaderTitle.textContent = title;
