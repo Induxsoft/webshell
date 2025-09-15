@@ -56,6 +56,19 @@ module "model"
             do list.ins(l,0,notif_chat)
         }
         
+        // Disparar evento de notificaciones
+        sender_id = "DET08E"
+        event_id = "webshell.notif"
+        new event_context
+        {
+            @"database*": db
+            @"parameters*": params
+            @"input*": @null
+            @"output*": l
+            @"error*": @null
+            @"http*": @http_context
+        }
+        do dbr.events.fire(db,sender_id,event_id,event_context)
 
         return l
     }
