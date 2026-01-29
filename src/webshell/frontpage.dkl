@@ -30,7 +30,7 @@ module "front"
             for j = 0; j < list.count(shortcuts)
             {
                 ref shortcut = list.obj(shortcuts, j)
-                if @@(shortcut, "$category") == @@(category, "$id")
+                if @@(shortcut, "$category") == @@(category, "$id") && not(@@(shortcut,"#hidden"))
                 {
                     do list.add(catshort, shortcut)
                 }
