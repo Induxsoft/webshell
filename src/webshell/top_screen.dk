@@ -26,8 +26,7 @@ module "webShell"
     }
 
     title_bar = dbr.vars.get(database,"FXCA099")
-    if trim(title_bar)==""{title_bar="Nombre Comercial de Prueba"}
-    title_bar="Induxsoft V12 / "+title_bar
+    if trim(title_bar)==""{title_bar="Induxsoft V12"}
     
     if @isPrintView { ref notis = list.create() }
     else { ref notis = dbr.notif.list(database) }
