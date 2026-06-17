@@ -31,7 +31,7 @@ module "Enlaces Internos:inlink"
         FROM inlink l
             INNER JOIN sys_app_item_type t1 ON l.det1 = t1.id
             INNER JOIN sys_app_item_type t2 ON l.det2 = t2.id
-        WHERE (l.det1 = @det OR l.det2 = @det)
+        WHERE (l.det1 = @det AND l.key1 = @key) OR (l.det2 = @det AND l.key2 = @key)
         ORDER BY l.sys_dtcreated ASC"
 
         new data
