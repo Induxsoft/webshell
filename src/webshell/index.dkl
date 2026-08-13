@@ -8,7 +8,7 @@ module "index"
     #include "dbr.dkh"
     #include "dbr.vars.dkl"
     #include "dbr.notif.dkl"
-    #include "config.dk"
+    #include "webshell/config.dk"
     #include "_lib/lib.dk"
     #include "_lib/icons.dk"
 
@@ -34,12 +34,12 @@ module "index"
     body
     {
         #!
-        if not(@hasSession) && not(@isPrintView) { include "login.dk" }
+        if not(@hasSession) && not(@isPrintView) { include "webshell/login.dk" }
         else 
         {
             if @@(@http_context,"$request/get/ids")!="" { @http_context<"response/headers/location"> : "./" }
-            if @@(@http_context,"$request/get/logout")!="" { include "logout.dk" }
-            else { include "top_screen.dk" }
+            if @@(@http_context,"$request/get/logout")!="" { include "webshell/logout.dk" }
+            else { include "webshell/top_screen.dk" }
         }
     }
 }
