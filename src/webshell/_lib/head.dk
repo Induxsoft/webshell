@@ -1,0 +1,161 @@
+#!
+module "Encabezado común de los sitios V12:webshell"
+{
+    /*
+        Encabezado común (<head>) de las páginas de un sitio V12. Lo incluye el render.dk de la
+        plantilla de sitio (Induxsoft/v12, _templates/sites/v12/_protected/render.dk):
+
+            #include "webshell/_lib/head.dk"      (se resuelve contra la raíz de Devkron)
+            @webshell_head = webshell.head()     (antes de cerrar la base de la sesión)
+            <html lang="es-MX"#<webshell.html_attrs()>> … <head> … #<@webshell_head> … </head>
+
+        Quien lo incluye debe incluir antes functions.dkh y dbr.dkh.
+
+        - Tema: variable webshell_theme (libro-mayor por omisión; ninguno = apariencia anterior).
+        - Colores del cliente (webshell_nav_background_color, webshell_nav_text_color,
+          webshell_secbg_color): se pasan a InduxsoftTheme.applyColors y ganan sobre el tema.
+        - Recursos: todos desde /$/webshell/… con ?v=<versión de webshell>. Las copias de
+          _static/js y _static/css las escribe herramientas/sync-webcomponents.sh (ORIGEN.tsv).
+    */
+    #include "dbr.vars.dkl"
+
+    // Debe coincidir con "version" de pack.manifest (lo revisa herramientas/sync-webcomponents.sh --check)
+    @WEBSHELL_VERSION = "1.0.131"
+    @WEBSHELL_THEMES = "|libro-mayor|claro|oscuro|jade|ninguno|"
+
+    ref @webshell_head_info = @null
+
+    head.res::ruta
+    {
+        return "/$/webshell/" + ruta + "?v=" + @WEBSHELL_VERSION
+    }
+
+    head.exists::ruta
+    {
+        return file.exists("webshell/_static/" + ruta)
+    }
+
+    head.css::ruta
+    {
+        return '<link href="' + head.res(ruta) + '" rel="stylesheet">' + "\r\n"
+    }
+
+    head.js::ruta
+    {
+        return '<script src="' + head.res(ruta) + '"></script>' + "\r\n"
+    }
+
+    // Lee una sola vez, por petición, el tema y los colores de la base de la sesión
+    head.info::
+    {
+        if not(isnull(@webshell_head_info)) { return @webshell_head_info }
+
+        new info
+        {
+            @"theme":"libro-mayor"
+            @"bar":""
+            @"barText":""
+            @"bg":""
+        }
+
+        ref db = @@(@http_context,"&session/idp/database")
+        abrio = @false
+        codeblock
+        {
+            // DKL evalúa los dos lados de || : dbr.is_open(@null) truena
+            cerrada = isnull(db)
+            if not(cerrada) { cerrada = not(dbr.is_open(db)) }
+            if cerrada
+            {
+                qname = trim(@@(@http_context,"$session/idp/qname"))
+                if qname != ""
+                {
+                    ref db = dbr.open(qname)
+                    abrio = @true
+                }
+            }
+            if not(isnull(db))
+            {
+                tema = tolower(trim(dbr.vars.getd(db,"webshell_theme","libro-mayor")))
+                if tema == "" { tema = "libro-mayor" }
+                if findstr(@WEBSHELL_THEMES,"|" + tema + "|") < 0 { tema = "libro-mayor" }
+                info<"theme">:tema
+                info<"bar">:trim(dbr.vars.get(db,"webshell_nav_background_color"))
+                info<"barText">:trim(dbr.vars.get(db,"webshell_nav_text_color"))
+                info<"bg">:trim(dbr.vars.get(db,"webshell_secbg_color"))
+            }
+            if abrio { do dbr.close(db) }
+            exception
+            {
+                do clear_exceptions()
+                if abrio { do dbr.close(db) }
+            }
+        }
+
+        ref @webshell_head_info = info
+        return info
+    }
+
+    // Tema efectivo de la página ("" con ninguno)
+    theme::
+    {
+        ref info = head.info()
+        tema = @@(info,"$theme")
+        if tema == "ninguno" { return "" }
+        return tema
+    }
+
+    // Atributos para <html>: data-et-theme, salvo con ninguno
+    html_attrs::
+    {
+        tema = theme()
+        if tema == "" { return "" }
+        return ' data-et-theme="' + tema + '"'
+    }
+
+    // Contenido común de <head>: CSS, JS y colores del cliente
+    head::
+    {
+        ref info = head.info()
+        tema = theme()
+        h = ""
+
+        // CSS: induxsoft.base.css reemplaza a Bootstrap cuando existe; con ninguno, Bootstrap como antes
+        if tema != "" && head.exists("css/induxsoft.base.css") { h = h + head.css("css/induxsoft.base.css") }
+        else { h = h + head.css("css/bootstrap.min.css") }
+        h = h + head.css("css/induxsoft.formstyles.css")
+        h = h + head.css("css/induxsoft.v12.styles.css")
+
+        // JS de diálogos: induxsoft.dialogs.js con compatibilidad de Bootstrap, o Bootstrap mientras no exista
+        dialogos = head.exists("js/induxsoft.dialogs.js")
+        if dialogos { h = h + head.js("js/induxsoft.dialogs.js") }
+        else { h = h + head.js("js/bootstrap.bundle.min.js") }
+
+        h = h + head.js("js/induxsoft.v12.ui.js")
+        h = h + head.js("js/induxsoft.controls.js")
+        h = h + head.js("js/induxsoft.controls.editable.js")
+        h = h + head.js("js/induxsoft.crudl.model.js")
+        h = h + head.js("js/induxsoft.math.js")
+        h = h + head.js("js/induxsoft.number.fields.js")
+        h = h + head.js("js/suggest_marks.js")
+        h = h + head.js("js/lib.js")
+
+        if dialogos
+        {
+            h = h + '<script>if (window.Induxsoft && Induxsoft.dialog && Induxsoft.dialog.bootstrapCompat) { Induxsoft.dialog.bootstrapCompat(); }</script>' + "\r\n"
+        }
+
+        // Colores del cliente: ganan sobre el tema (no se aplican con ninguno)
+        if tema != "" && (@@(info,"$bar") != "" || @@(info,"$barText") != "" || @@(info,"$bg") != "")
+        {
+            new colores{}
+            if @@(info,"$bar") != "" { colores<"bar">:@@(info,"$bar") }
+            if @@(info,"$barText") != "" { colores<"barText">:@@(info,"$barText") }
+            if @@(info,"$bg") != "" { colores<"bg">:@@(info,"$bg") }
+            json = replace(to.json(colores),"<","\\u003c")
+            h = h + '<script>if (window.InduxsoftTheme && InduxsoftTheme.applyColors) { InduxsoftTheme.applyColors(document.documentElement, ' + json + '); }</script>' + "\r\n"
+        }
+
+        return h
+    }
+}

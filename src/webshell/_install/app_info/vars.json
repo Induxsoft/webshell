@@ -15,6 +15,30 @@
                 "varinput": { "control": "text" }
             },
             {
+                "varname": "webshell_theme",
+                "vardefault": "libro-mayor",
+                "varvalue": "libro-mayor",
+                "varcaption": "Tema de apariencia",
+                "varhelp":"Tema de los controles y pantallas de V12. Los colores de la barra y del fondo, si están configurados, ganan sobre el tema. «Ninguno» deja la apariencia anterior",
+                "vartype": "string",
+                "varinput": {
+                    "control": "select",
+                    "source":{
+                        "type":"list",
+                        "values":
+                        [
+                            {"val":"libro-mayor", "text":"Libro mayor"},
+                            {"val":"claro", "text":"Claro"},
+                            {"val":"oscuro", "text":"Oscuro"},
+                            {"val":"jade", "text":"Jade"},
+                            {"val":"ninguno", "text":"Ninguno (apariencia anterior)"}
+                        ],
+                        "showfield":"text",
+                        "keyfield":"val"
+                    }
+                }
+            },
+            {
                 "varname": "webshell_nav_background_color",
                 "vardefault": "",
                 "varvalue": "#000000",

@@ -1,0 +1,38 @@
+.btn-main-action:hover {
+    background-color: #EDEDED !important;
+}
+.text-logo {
+    font-weight: 600;
+}
+
+.bg-light-gray { background-color: #DCDCDC !important; }
+.bg-yellow { background-color: #ffe484 !important; }
+.fw-500 { font-weight:500!important; }
+
+.show-on-print { display: none !important; }
+
+div[data-print-mode="1"] .show-on-print{display: unset !important; }
+div[data-print-mode="1"] .hide-on-print{display: none !important; }
+div[data-print-mode="1"] table td:not(:empty),
+div[data-print-mode="1"] table td div:not(:empty)
+{
+    height: 100% !important;
+}
+
+@media print
+{
+    .show-on-print { display: unset !important; }
+    .hide-on-print { display: none !important; }
+
+    body { visibility: hidden; }
+    #section-to-print, #work_area {
+        visibility: visible;
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+    }
+    
+    .no-print{ display: none !important; }
+    #list_table_container { overflow: visible !important; max-height: none !important; }
+}
