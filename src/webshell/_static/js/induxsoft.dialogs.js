@@ -895,7 +895,7 @@
             _induxsoftCompat: VERSION
         };
         w.bootstrap = BS;
-        d.addEventListener('click', alClic);
+        d.addEventListener('click', alClic, true);
         d.addEventListener('keydown', alTeclaDoc);
         d.addEventListener('focusin', alEnfocar);
         puenteJQuery();
