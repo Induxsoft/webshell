@@ -13,7 +13,8 @@ module "Encabezado común de los sitios V12:webshell"
 
         - Tema: variable webshell_theme (libro-mayor por omisión; ninguno = apariencia anterior).
         - Colores del cliente (webshell_nav_background_color, webshell_nav_text_color,
-          webshell_secbg_color): se pasan a InduxsoftTheme.applyColors y ganan sobre el tema.
+          webshell_secbg_color, salvo su #FAFAFA de fábrica): se pasan a InduxsoftTheme.applyColors y
+          ganan sobre el tema.
         - Recursos: todos desde /$/webshell/… con ?v=<versión de webshell>. Las copias de
           _static/js y _static/css las escribe herramientas/sync-webcomponents.sh (ORIGEN.tsv).
     */
@@ -82,7 +83,11 @@ module "Encabezado común de los sitios V12:webshell"
                 info<"theme">:tema
                 info<"bar">:trim(dbr.vars.get(db,"webshell_nav_background_color"))
                 info<"barText">:trim(dbr.vars.get(db,"webshell_nav_text_color"))
-                info<"bg">:trim(dbr.vars.get(db,"webshell_secbg_color"))
+                // #FAFAFA es el valor que deja la instalación (vars.json), no un color del cliente: si se
+                // pasara, applyColors haría clara la paleta también con oscuro (página clara, campos oscuros)
+                fondo = trim(dbr.vars.get(db,"webshell_secbg_color"))
+                if tolower(fondo) == "#fafafa" { fondo = "" }
+                info<"bg">:fondo
             }
             if abrio { do dbr.close(db) }
             exception
