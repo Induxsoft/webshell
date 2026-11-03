@@ -1,4 +1,4 @@
-/* <induxsoft-theme v=1.0.0> */
+/* <induxsoft-theme v=1.1.0> */
 /*!
  * induxsoft.theme.js: tema común de los web components de Induxsoft (EdiTable, InputKey y los que vengan).
  *
@@ -10,6 +10,10 @@
  * - Cambio: set(nombre, {on, remember}), setPalette(obj, {on, merge}), setDensity(d, {on}); on = <html> por omisión.
  * - Aviso: subscribe(elemento, callback) / unsubscribe(elemento, callback), un solo MutationObserver y un matchMedia;
  *   evento 'themechange' en document.
+ * - 1.1.0: fromColors({bar, barText, bg}, {base}) deriva una paleta (variables --et-* sin el prefijo) de los colores
+ *   que el cliente configuró, con contraste AA (4.5:1) en el texto; applyColors(elemento, colores, {base}) la fija
+ *   con data-et-palette. data-et-theme="ninguno" corta el tema: ese elemento y lo de arriba no aportan tema, paleta ni
+ *   densidad (resolve agrega none: true). Sin llamar a fromColors/applyColors ni usar «ninguno», nada cambia.
  *
  * Este archivo se copia tal cual dentro de induxsoft.controls.editable.js e induxsoft.controls.js, entre los
  * marcadores induxsoft-theme (tests/tools/embed-theme.mjs). Se edita solo aquí.
@@ -17,7 +21,7 @@
 (function ()
 {
     'use strict';
-    var VERSION = '1.0.0';
+    var VERSION = '1.1.0';
     if (typeof window === 'undefined') return;
     var w = window;
 
@@ -146,6 +150,13 @@
         if (!s || s === 'none' || s === 'ninguno' || s === 'false') return '';
         return ALIAS[s] || s;
     }
+    // «ninguno» explícito (también 'none'): corta el tema, la paleta y la densidad heredados (1.1.0).
+    var NINGUNO = 'ninguno';
+    function esNinguno(v)
+    {
+        var s = String(v == null ? '' : v).trim().toLowerCase();
+        return s === 'ninguno' || s === 'none';
+    }
     function normalizarDensidad(v)
     {
         var s = String(v == null ? '' : v).trim().toLowerCase();
@@ -240,19 +251,27 @@
      * theme: nombre normalizado ('auto' incluido) o ''. palette: objeto limpio o null. density: normalizada o ''.
      * effective: el tema con 'auto' resuelto (claro/oscuro). scheme: 'light' | 'dark' | ''.
      * source: de dónde salió el tema: 'element' | 'frame' | 'storage' | '' (ninguno).
+     * none: solo existe (true) si un data-et-theme="ninguno" (o lo recordado) cortó el tema; entonces theme es '' y palette y
+     * density solo salen de los elementos que están debajo del corte.
      */
     function resolve(el)
     {
         var enc = { theme: null, palette: null, density: null };
         var fuente = '';
         var d0 = null;
+        var corte = false;
         var n = el || (w.document && w.document.documentElement);
         var guard = 0;
         while (n && guard++ < 10000)
         {
             if (n.nodeType === 1 && n.hasAttribute)
             {
-                if (enc.theme === null && n.hasAttribute(ATTR.theme)) { enc.theme = n.getAttribute(ATTR.theme); fuente = (d0 && n.ownerDocument !== d0) ? 'frame' : 'element'; }
+                if (enc.theme === null && n.hasAttribute(ATTR.theme))
+                {
+                    enc.theme = n.getAttribute(ATTR.theme); fuente = (d0 && n.ownerDocument !== d0) ? 'frame' : 'element';
+                    // «ninguno»: la paleta y la densidad de este elemento y de los de arriba ya no cuentan.
+                    if (esNinguno(enc.theme)) { corte = true; break; }
+                }
                 if (enc.palette === null && n.hasAttribute(ATTR.palette)) enc.palette = n.getAttribute(ATTR.palette);
                 if (enc.density === null && n.hasAttribute(ATTR.density)) enc.density = n.getAttribute(ATTR.density);
                 if (!d0) d0 = n.ownerDocument;
@@ -264,13 +283,13 @@
         if (tema === null)
         {
             var r = leerRecordado();
-            if (r && r.theme) { tema = String(r.theme); fuente = 'storage'; }
+            if (r && r.theme) { tema = String(r.theme); fuente = 'storage'; corte = esNinguno(tema); }
         }
         var t = normalizar(tema);
         if (t === 'auto') escucharEsquema();
         var ef = t === 'auto' ? (oscuroDelSistema() ? 'oscuro' : 'claro') : t;
         var pal = interno(ef);
-        return {
+        var res = {
             theme: t,
             palette: paletaDe(enc.palette),
             density: normalizarDensidad(enc.density),
@@ -278,6 +297,8 @@
             scheme: pal ? (pal['color-scheme'] || '') : '',
             source: t ? fuente : ''
         };
+        if (corte) res.none = true;   // solo con «ninguno»: sin él, el resultado es el mismo de 1.0.0
+        return res;
     }
 
     // ---------------------------------------------------------------- aviso de cambios
@@ -397,7 +418,7 @@
         if (!o || o.remember === undefined) return;
         try
         {
-            if (o.remember && nombre) w.localStorage.setItem(CLAVE, JSON.stringify({ theme: nombre }));
+            if (o.remember && nombre) w.localStorage.setItem(CLAVE, JSON.stringify({ theme: esNinguno(nombre) ? NINGUNO : nombre }));
             else w.localStorage.removeItem(CLAVE);
         }
         catch (e) { }
@@ -409,7 +430,7 @@
         if (!el) return;
         if (nombre == null) el.removeAttribute(ATTR.theme);
         else el.setAttribute(ATTR.theme, String(nombre));
-        recordar(o, nombre == null ? '' : normalizar(nombre));
+        recordar(o, nombre == null ? '' : (esNinguno(nombre) ? NINGUNO : normalizar(nombre)));
     }
     function get(on) { return resolve(on || (w.document && w.document.documentElement)).theme; }
     /** setPalette(obj, {on, merge}): data-et-palette (JSON). merge combina con la que ya tiene el elemento; null la quita. */
@@ -448,6 +469,238 @@
         avisarTodos('define', true, null);
         disparar('define', { theme: n });
         return copia(RESUELTOS[n]);
+    }
+
+    // ---------------------------------------------------------------- colores del cliente (1.1.0)
+    // Cálculo en JS (sRGB <-> OKLab/OKLCH), para poder garantizar el contraste: color-mix() no lo permite.
+    function hex2(n) { var h = Math.round(Math.max(0, Math.min(255, n))).toString(16); return h.length < 2 ? '0' + h : h; }
+    function aHex(c) { return ('#' + hex2(c[0]) + hex2(c[1]) + hex2(c[2])).toUpperCase(); }
+    var lienzo = null;
+    /** Color CSS -> [r, g, b] (0-255) o null. Acepta #rgb, #rrggbb (con o sin #), rgb()/rgba() y, en el navegador, nombres. */
+    function leerColor(v)
+    {
+        if (v == null) return null;
+        var s = String(v).trim();
+        if (!s) return null;
+        var m = /^#?([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(s);
+        if (m)
+        {
+            var h = m[1];
+            if (h.length <= 4) h = h.replace(/./g, function (x) { return x + x; });
+            return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+        }
+        m = /^rgba?\(\s*([\d.]+)%?[\s,]+([\d.]+)%?[\s,]+([\d.]+)%?/i.exec(s);
+        if (m) return [+m[1], +m[2], +m[3]].map(function (x) { return Math.max(0, Math.min(255, x)); });
+        if (/^[a-z]+$/i.test(s) && w.document && w.document.createElement)
+        {
+            try
+            {
+                if (!lienzo) lienzo = w.document.createElement('canvas').getContext('2d');
+                lienzo.fillStyle = '#000001'; lienzo.fillStyle = s;
+                if (lienzo.fillStyle !== '#000001') return leerColor(lienzo.fillStyle);
+            }
+            catch (e) { }
+        }
+        return null;
+    }
+    function lin(c) { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+    function delin(c) { return 255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055); }
+    /** Luminancia relativa (WCAG 2). */
+    function luminancia(c) { return 0.2126 * lin(c[0]) + 0.7152 * lin(c[1]) + 0.0722 * lin(c[2]); }
+    /** Contraste WCAG entre dos colores (CSS o [r,g,b]); NaN si alguno no se entiende. */
+    function contraste(a, b)
+    {
+        var x = Array.isArray(a) ? a : leerColor(a), y = Array.isArray(b) ? b : leerColor(b);
+        if (!x || !y) return NaN;
+        var l1 = luminancia(x), l2 = luminancia(y);
+        return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+    }
+    function aOklab(c)
+    {
+        var r = lin(c[0]), g = lin(c[1]), b = lin(c[2]);
+        var l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+        var m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+        var s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+        return [0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s, 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s];
+    }
+    // OKLab -> sRGB lineal (sin recortar).
+    function deOklabLin(o)
+    {
+        var l = Math.pow(o[0] + 0.3963377774 * o[1] + 0.2158037573 * o[2], 3);
+        var m = Math.pow(o[0] - 0.1055613458 * o[1] - 0.0638541728 * o[2], 3);
+        var s = Math.pow(o[0] - 0.0894841775 * o[1] - 1.2914855480 * o[2], 3);
+        return [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s];
+    }
+    function enGama(x) { return x[0] >= -1e-4 && x[0] <= 1.0001 && x[1] >= -1e-4 && x[1] <= 1.0001 && x[2] >= -1e-4 && x[2] <= 1.0001; }
+    function aLch(c) { var o = aOklab(c); return [o[0], Math.sqrt(o[1] * o[1] + o[2] * o[2]), Math.atan2(o[2], o[1])]; }
+    // OKLCH -> sRGB; fuera de gama baja el croma hasta que quepa (conserva luminosidad y tono).
+    function deLch(L, C, H)
+    {
+        L = Math.max(0, Math.min(1, L));
+        var x = deOklabLin([L, C * Math.cos(H), C * Math.sin(H)]);
+        if (!enGama(x))
+        {
+            var lo = 0, hi = C;
+            for (var i = 0; i < 24; i++) { var mid = (lo + hi) / 2; if (enGama(deOklabLin([L, mid * Math.cos(H), mid * Math.sin(H)]))) lo = mid; else hi = mid; }
+            x = deOklabLin([L, lo * Math.cos(H), lo * Math.sin(H)]);
+        }
+        return [delin(Math.max(0, Math.min(1, x[0]))), delin(Math.max(0, Math.min(1, x[1]))), delin(Math.max(0, Math.min(1, x[2])))].map(Math.round);
+    }
+    /** Mezcla en OKLab: p (0-1) de b sobre a. */
+    function mezclar(a, b, p)
+    {
+        var x = aOklab(a), y = aOklab(b);
+        var o = [x[0] + (y[0] - x[0]) * p, x[1] + (y[1] - x[1]) * p, x[2] + (y[2] - x[2]) * p];
+        var c = Math.sqrt(o[1] * o[1] + o[2] * o[2]);
+        return deLch(o[0], c, Math.atan2(o[2], o[1]));
+    }
+    /** Mueve c en OKLab lo mismo que va de desde a hacia (conserva la relación de un fondo con el fondo base). */
+    function desplazar(c, desde, hacia)
+    {
+        var x = aOklab(c), a = aOklab(desde), b = aOklab(hacia);
+        var o = [x[0] + b[0] - a[0], x[1] + b[1] - a[1], x[2] + b[2] - a[2]];
+        var ch = Math.sqrt(o[1] * o[1] + o[2] * o[2]);
+        return deLch(o[0], ch, Math.atan2(o[2], o[1]));
+    }
+    /**
+     * Ajusta la luminosidad (OKLCH, mismo tono) de fg hasta que contraste al menos min con fondo. Se aleja del fondo:
+     * hacia el negro si el fondo contrasta más con el negro, hacia el blanco si no. Siempre se alcanza 4.5:1, porque
+     * todo color contrasta al menos 4.58:1 con el blanco o con el negro.
+     */
+    function asegurar(fg, fondo, min)
+    {
+        if (contraste(fg, fondo) >= min) return fg;
+        var lf = luminancia(fondo), oscurecer = (lf + 0.05) / 0.05 >= 1.05 / (lf + 0.05);
+        var lch = aLch(fg), lo, hi, mejor = oscurecer ? [0, 0, 0] : [255, 255, 255];
+        // Búsqueda binaria del valor de L más cercano al original que cumple.
+        if (oscurecer) { lo = 0; hi = lch[0]; } else { lo = lch[0]; hi = 1; }
+        for (var i = 0; i < 30; i++)
+        {
+            var mid = (lo + hi) / 2, c = deLch(mid, lch[1], lch[2]);
+            if (contraste(c, fondo) >= min) { mejor = c; if (oscurecer) lo = mid; else hi = mid; }
+            else { if (oscurecer) hi = mid; else lo = mid; }
+        }
+        // El redondeo a 8 bits puede dejarlo apenas abajo: un paso más hacia el extremo.
+        var g = 0;
+        while (contraste(mejor, fondo) < min && g++ < 255) mejor = mejor.map(function (x) { return oscurecer ? Math.max(0, x - 1) : Math.min(255, x + 1); });
+        return mejor;
+    }
+    // Pares de texto contra fondo que deben cumplir AA (4.5:1) y de elementos de interfaz (3:1, WCAG 1.4.11).
+    var TEXTO_AA = [
+        ['fg', 'bg'], ['muted-fg', 'bg'], ['header-fg', 'header-bg'], ['footer-fg', 'footer-bg'], ['sel-fg', 'sel-bg'],
+        ['active-fg', 'active-bg'], ['input-fg', 'input-bg'], ['menu-fg', 'menu-bg'], ['mark-fg', 'mark-bg'],
+        ['accent', 'bg'], ['error', 'bg'], ['warn', 'bg'], ['ok', 'bg'], ['neg-fg', 'bg'],
+        ['tooltip-fg', 'tooltip-bg'], ['badge-color', 'badge-bg']
+    ];
+    // Fondos derivados contra un texto ya fijado: si no alcanzan, el fondo se acerca a 'bg' (que ya cumple con ese
+    // texto), porque mover el texto rompería su contraste con 'bg'.
+    var FONDO_AA = [['fg', 'row-alt-bg'], ['fg', 'hover-bg'], ['fg', 'sel-bg-soft'], ['fg', 'checked-bg'], ['error', 'error-bg']];
+    function acercarFondo(texto, fondo, haciaBg, min)
+    {
+        if (contraste(texto, fondo) >= min) return fondo;
+        var lo = 0, hi = 1, mejor = haciaBg;
+        for (var i = 0; i < 24; i++) { var mid = (lo + hi) / 2, c = mezclar(fondo, haciaBg, mid); if (contraste(texto, c) >= min) { mejor = c; hi = mid; } else lo = mid; }
+        return mejor;
+    }
+    var INTERFAZ_3 = [['focus-ring', 'bg'], ['active-cell', 'bg'], ['input-border', 'input-bg']];   // si cambiaron
+    function esColor(v) { return /^#[0-9a-f]{3,8}$/i.test(String(v || '').trim()); }
+    /**
+     * fromColors({bar, barText, bg}, {base}) -> paleta (claves de las variables --et-* sin el prefijo, valores #RRGGBB,
+     * más 'color-scheme'). Solo colores: tipografía, radios y espaciados quedan los del tema activo.
+     * - base: tema del que salen los colores que no se derivan ('libro-mayor' por omisión).
+     * - bar (color de la barra, webshell_nav_background_color): acento, selección, foco, celda activa, encabezados,
+     *   hover y bordes (tonalidades de la barra mezcladas con el fondo).
+     * - barText (webshell_nav_text_color): texto sobre el acento (sel-fg).
+     * - bg (webshell_secbg_color): fondo (bg, input-bg, menús) y, si es oscuro, color-scheme 'dark'.
+     * Lo que no se da o no se entiende se toma de la base. Todo texto contra su fondo queda en 4.5:1 o más
+     * (se ajusta la luminosidad del texto, nunca el fondo ni la barra: los colores del cliente ganan).
+     */
+    function fromColors(colores, o)
+    {
+        colores = colores || {};
+        var nb = (o && o.base) || 'libro-mayor';
+        var base = interno(nb) || interno('libro-mayor');
+        var r = {}, k;
+        for (k in base) if (esColor(base[k])) r[k] = leerColor(base[k]);
+        var bar = leerColor(colores.bar), barText = leerColor(colores.barText), bg = leerColor(colores.bg);
+        var bg0 = r.bg, fg0 = r.fg;
+        var oscuro = false;
+        if (bg)
+        {
+            oscuro = luminancia(bg) < 0.18;
+            var claroBase = luminancia(bg0) >= 0.18;
+            // Si el fondo cambia de claro a oscuro (o al revés), los fondos y textos de la base se invierten respecto
+            // a su fondo: se recalculan como mezclas del nuevo fondo con el texto.
+            var invertir = oscuro === claroBase;
+            var fg = invertir ? (oscuro ? [230, 237, 243] : [27, 31, 36]) : fg0;
+            ['bg', 'input-bg', 'active-bg', 'menu-bg', 'fixed-bg', 'chip-bg'].forEach(function (x) { if (r[x] && aHex(r[x]) === aHex(bg0)) r[x] = bg; });
+            r.bg = bg;
+            if (invertir)
+            {
+                r.fg = r['input-fg'] = r['active-fg'] = r['menu-fg'] = r['mark-fg'] = fg;
+                r['header-fg'] = r['footer-fg'] = mezclar(fg, bg, 0.15);
+                r['muted-fg'] = mezclar(fg, bg, 0.35);
+                r['header-bg'] = r['footer-bg'] = r['panel-bg'] = r['group-bg'] = r['fixed-head-bg'] = mezclar(bg, fg, 0.07);
+                r['row-alt-bg'] = mezclar(bg, fg, 0.03);
+                r['hover-bg'] = r['menu-hover-bg'] = r['group-hover-bg'] = r['fixed-hover-bg'] = mezclar(bg, fg, 0.09);
+                r.border = r['menu-border'] = r['panel-border'] = r['card-border'] = mezclar(bg, fg, 0.14);
+                r['header-border'] = mezclar(bg, fg, 0.22);
+                r['input-border'] = mezclar(bg, fg, 0.45);
+                r['input-disabled-bg'] = mezclar(bg, fg, 0.07);
+                r['error-bg'] = mezclar(bg, r.error, 0.15);
+                r['mark-bg'] = mezclar(bg, r['mark-bg'], oscuro ? 0.35 : 1);
+                r['tooltip-bg'] = fg; r['tooltip-fg'] = bg;
+            }
+            else
+            {
+                // Mismo lado (claro con claro): los fondos de la base se acercan al nuevo fondo.
+                ['header-bg', 'footer-bg', 'panel-bg', 'group-bg', 'fixed-head-bg', 'row-alt-bg', 'hover-bg', 'menu-hover-bg', 'group-hover-bg', 'fixed-hover-bg', 'input-disabled-bg', 'sel-bg-soft']
+                    .forEach(function (x) { if (r[x]) r[x] = desplazar(r[x], bg0, bg); });
+            }
+        }
+        if (bar)
+        {
+            var f = r.bg, t = r.fg;
+            r['sel-bg'] = bar;
+            r.accent = bar;
+            r['focus-ring'] = bar;
+            r['active-cell'] = bar;
+            r['sel-bg-soft'] = r['checked-bg'] = mezclar(f, bar, oscuro ? 0.30 : 0.14);
+            r['hover-bg'] = r['menu-hover-bg'] = r['group-hover-bg'] = r['fixed-hover-bg'] = mezclar(f, bar, oscuro ? 0.16 : 0.07);
+            r['header-bg'] = r['footer-bg'] = r['panel-bg'] = r['group-bg'] = r['fixed-head-bg'] = mezclar(f, bar, oscuro ? 0.12 : 0.06);
+            r['row-alt-bg'] = mezclar(f, bar, oscuro ? 0.05 : 0.025);
+            r['header-fg'] = r['footer-fg'] = mezclar(t, bar, 0.25);
+            r['header-border'] = mezclar(f, bar, oscuro ? 0.35 : 0.24);
+            r.border = r['menu-border'] = r['panel-border'] = r['card-border'] = mezclar(f, bar, oscuro ? 0.24 : 0.13);
+            r['input-border'] = mezclar(mezclar(f, t, 0.45), bar, 0.25);
+            if (!barText) r['sel-fg'] = contraste([255, 255, 255], bar) >= contraste([0, 0, 0], bar) ? [255, 255, 255] : [27, 31, 36];
+        }
+        if (barText) r['sel-fg'] = barText;
+        // Contraste: primero las interfaces (3:1), luego el texto (4.5:1). Solo se mueve el primer color del par, y
+        // solo en los pares que cambiaron respecto a la base (sin colores, la paleta es la de la base, tal cual).
+        var cambio = function (p) { return aHex(r[p[0]]) !== aHex(leerColor(base[p[0]])) || aHex(r[p[1]]) !== aHex(leerColor(base[p[1]])); };
+        INTERFAZ_3.forEach(function (p) { if (r[p[0]] && r[p[1]] && cambio(p)) r[p[0]] = asegurar(r[p[0]], r[p[1]], 3); });
+        TEXTO_AA.forEach(function (p) { if (r[p[0]] && r[p[1]] && cambio(p)) r[p[0]] = asegurar(r[p[0]], r[p[1]], 4.5); });
+        FONDO_AA.forEach(function (p) { if (r[p[0]] && r[p[1]] && cambio(p)) r[p[1]] = acercarFondo(r[p[0]], r[p[1]], r.bg, 4.5); });
+        var out = { 'color-scheme': bg ? (oscuro ? 'dark' : 'light') : (base['color-scheme'] || 'light') };
+        for (k in r) out[k] = aHex(r[k]);
+        return out;
+    }
+    /**
+     * applyColors(elemento, colores, {base}) -> paleta. Fija fromColors(colores) como data-et-palette del elemento
+     * (<html> por omisión), así que la heredan sus descendientes, los shadow DOM y los iframes del mismo origen.
+     * base: por omisión, el tema efectivo del elemento (o 'libro-mayor' si no tiene). colores null quita la paleta.
+     */
+    function applyColors(el, colores, o)
+    {
+        el = el || (w.document && w.document.documentElement);
+        if (!el) return null;
+        if (colores == null) { el.removeAttribute(ATTR.palette); return null; }
+        var b = o && o.base;
+        if (!b) { var res = resolve(el); b = res.effective && interno(res.effective) ? res.effective : 'libro-mayor'; }
+        var p = fromColors(colores, { base: b });
+        el.setAttribute(ATTR.palette, JSON.stringify(p));
+        return copia(p);
     }
 
     // ---------------------------------------------------------------- utilidades para los componentes
@@ -489,6 +742,11 @@
         unsubscribe: unsubscribe,
         cssVars: cssVars,
         fontStack: fontStack,
+        none: NINGUNO,
+        isNone: esNinguno,
+        fromColors: fromColors,
+        applyColors: applyColors,
+        contrast: contraste,
         _interno: interno,
         _exportar: function () { return { explicitos: asignar({}, EXPLICITOS), resueltos: asignar({}, RESUELTOS), subs: subs }; },
         _detener: function () { try { if (obs) obs.disconnect(); } catch (e) { } try { if (mql) { if (mql.removeEventListener) mql.removeEventListener('change', alCambiarEsquema); else if (mql.removeListener) mql.removeListener(alCambiarEsquema); } } catch (e) { } }

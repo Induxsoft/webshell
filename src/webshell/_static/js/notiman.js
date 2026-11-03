@@ -287,6 +287,31 @@ var notiman =
     {
         const openNotifInfo = function() {
             const notif_info = document.getElementById("notif-info");
+            // Sin bootstrap.bundle (tema con induxsoft.dialogs.js), bootstrap.Offcanvas es el inerte de bootstrapCompat
+            // (VERSION "5.0.1-induxsoft") y no hace nada: el panel se abre y
+            // se cierra aquí con las clases de induxsoft.base.css. Con Bootstrap (tema ninguno), como antes.
+            if (!(window.bootstrap && bootstrap.Offcanvas) || /induxsoft/.test(String(bootstrap.Offcanvas.VERSION))) {
+                notif_info.style.visibility = "visible";
+                notif_info.classList.add("show");
+                notif_info.setAttribute("aria-modal", "true");
+                notif_info.setAttribute("role", "dialog");
+                if (!notif_info.dataset.cierre) {
+                    notif_info.dataset.cierre = "1";
+                    const cerrar = function() {
+                        notif_info.classList.remove("show");
+                        notif_info.style.visibility = "hidden";
+                        notif_info.removeAttribute("aria-modal");
+                        notif_info.removeAttribute("role");
+                    };
+                    notif_info.addEventListener("click", function(ev) {
+                        if (ev.target.closest('[data-bs-dismiss="offcanvas"]')) cerrar();
+                    });
+                    document.addEventListener("keydown", function(ev) {
+                        if (ev.key === "Escape" && notif_info.classList.contains("show")) cerrar();
+                    });
+                }
+                return;
+            }
             let instance = bootstrap.Offcanvas.getInstance(notif_info);
             if (!instance) instance = new bootstrap.Offcanvas(notif_info);
             instance.show();
