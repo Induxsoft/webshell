@@ -1,11 +1,11 @@
 .btn-main-action:hover {
-    background-color: #EDEDED !important;
+    background-color: var(--et-hover-bg, var(--ixt-hover-bg, #EDEDED)) !important;
 }
 .text-logo {
     font-weight: 600;
 }
 
-.bg-light-gray { background-color: #DCDCDC !important; }
+.bg-light-gray { background-color: var(--et-header-bg, var(--ixt-header-bg, #DCDCDC)) !important; }
 .bg-yellow { background-color: #ffe484 !important; }
 .fw-500 { font-weight:500!important; }
 

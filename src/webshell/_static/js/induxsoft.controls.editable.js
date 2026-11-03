@@ -1,4 +1,4 @@
-/* <induxsoft-theme v=1.1.0> */
+/* <induxsoft-theme v=1.2.0> */
 /*!
  * induxsoft.theme.js: tema común de los web components de Induxsoft (EdiTable, InputKey y los que vengan).
  *
@@ -14,6 +14,8 @@
  *   que el cliente configuró, con contraste AA (4.5:1) en el texto; applyColors(elemento, colores, {base}) la fija
  *   con data-et-palette. data-et-theme="ninguno" corta el tema: ese elemento y lo de arriba no aportan tema, paleta ni
  *   densidad (resolve agrega none: true). Sin llamar a fromColors/applyColors ni usar «ninguno», nada cambia.
+ * - 1.2.0: color 'info' en los cuatro temas (avisos informativos; fromColors lo toma de la base y solo le ajusta el
+ *   contraste contra el fondo) y letra de Windows 11 ("Segoe UI Variable" con respaldo, 0.875rem) en los cuatro.
  *
  * Este archivo se copia tal cual dentro de induxsoft.controls.editable.js e induxsoft.controls.js, entre los
  * marcadores induxsoft-theme (tests/tools/embed-theme.mjs). Se edita solo aquí.
@@ -21,7 +23,7 @@
 (function ()
 {
     'use strict';
-    var VERSION = '1.1.0';
+    var VERSION = '1.2.0';
     if (typeof window === 'undefined') return;
     var w = window;
 
@@ -52,11 +54,13 @@
         'fixed-bg': 'bg', 'fixed-head-bg': 'header-bg', 'fixed-hover-bg': 'hover-bg', 'badge-bg': 'muted-fg',
         'checked-bg': 'sel-bg-soft'
     };
-    // Temas predeterminados (los de EditTable F8b, mismos valores). Claves sin '--et-'; 'color-scheme' no es variable.
+    // Letra de los temas (1.2.0): la de Windows 11 (Segoe UI Variable), con respaldo para otros sistemas.
+    var FUENTE_W11 = '"Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif';
+    // Temas predeterminados (los de EditTable F8b, mismos valores; 1.2.0: letra de Windows 11 e 'info'). Claves sin '--et-'; 'color-scheme' no es variable.
     var EXPLICITOS = {
         claro: {
             'color-scheme': 'light',
-            font: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', 'font-size': '0.875rem',
+            font: FUENTE_W11, 'font-size': '0.875rem',
             bg: '#FFFFFF', fg: '#1F2328', 'muted-fg': '#59636E',
             'header-bg': '#F3F5F8', 'header-fg': '#1F2328', 'header-border': '#D0D7DE', 'header-weight': '600',
             border: '#E1E5EA', 'row-alt-bg': '#F8FAFC', 'hover-bg': '#EDF2F8',
@@ -64,7 +68,7 @@
             'active-cell': '#0B3D91', 'active-bg': '#FFFFFF', 'active-fg': '#1F2328', 'active-border': '#FFFFFF',
             accent: '#2F66CC', 'focus-ring': '#2F66CC',
             'input-bg': '#FFFFFF', 'input-fg': '#1F2328', 'input-border': '#8C959F', 'input-disabled-bg': '#EEF1F4',
-            'mark-bg': '#FFF1A8', 'mark-fg': '#1F2328', error: '#C62828', 'error-bg': '#FDECEC', warn: '#8A5A00', ok: '#1A7F37', 'neg-fg': '#C62828',
+            'mark-bg': '#FFF1A8', 'mark-fg': '#1F2328', error: '#C62828', 'error-bg': '#FDECEC', warn: '#8A5A00', ok: '#1A7F37', info: '#0B7285', 'neg-fg': '#C62828',
             'tooltip-bg': '#1F2328', 'tooltip-fg': '#FFFFFF', 'badge-bg': '#6E7781', 'badge-color': '#FFFFFF',
             radius: '4px', 'chip-radius': '12px', 'badge-radius': '999px',
             'cell-pad-x': '6px', 'cell-pad-y': '4px', 'header-pad-x': '8px', 'row-height': '1.6rem',
@@ -72,7 +76,7 @@
         },
         oscuro: {
             'color-scheme': 'dark',
-            font: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', 'font-size': '0.875rem',
+            font: FUENTE_W11, 'font-size': '0.875rem',
             bg: '#15181C', fg: '#E6EDF3', 'muted-fg': '#9DA7B3',
             'header-bg': '#1F242B', 'header-fg': '#E6EDF3', 'header-border': '#3A424C', 'header-weight': '600',
             border: '#2C333B', 'row-alt-bg': '#1A1E23', 'hover-bg': '#242B33',
@@ -80,7 +84,7 @@
             'active-cell': '#8CC2FF', 'active-bg': '#0D1117', 'active-fg': '#E6EDF3', 'active-border': '#0D1117',
             accent: '#6CA8FF', 'focus-ring': '#8CC2FF',
             'input-bg': '#0D1117', 'input-fg': '#E6EDF3', 'input-border': '#5A6572', 'input-disabled-bg': '#1F242B',
-            'mark-bg': '#6B5800', 'mark-fg': '#FFF6CC', error: '#FF8A80', 'error-bg': '#3D1F1F', warn: '#E3B341', ok: '#5FD07A', 'neg-fg': '#FF8A80',
+            'mark-bg': '#6B5800', 'mark-fg': '#FFF6CC', error: '#FF8A80', 'error-bg': '#3D1F1F', warn: '#E3B341', ok: '#5FD07A', info: '#56C8E0', 'neg-fg': '#FF8A80',
             'tooltip-bg': '#E6EDF3', 'tooltip-fg': '#15181C', 'badge-bg': '#56606C', 'badge-color': '#FFFFFF',
             'select-arrow': "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23C9D1D9' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e\")",
             radius: '4px', 'chip-radius': '12px', 'badge-radius': '999px',
@@ -90,7 +94,7 @@
         // Inspirado en la bandeja de agentes de agent.induxsoft.net (ai_broadcast.css).
         jade: {
             'color-scheme': 'light',
-            font: '"Segoe UI", system-ui, -apple-system, Roboto, sans-serif', 'font-size': '0.875rem',
+            font: FUENTE_W11, 'font-size': '0.875rem',
             bg: '#FFFFFF', fg: '#1A202C', 'muted-fg': '#5A6577',
             'header-bg': '#F4F6F9', 'header-fg': '#4A5568', 'header-border': '#E2E8F0', 'header-weight': '600',
             'header-transform': 'uppercase', 'header-spacing': '.04em', 'header-font-size': '0.72rem',
@@ -99,7 +103,7 @@
             'active-cell': '#128C4A', 'active-bg': '#FFFFFF', 'active-fg': '#1A202C', 'active-border': '#FFFFFF',
             accent: '#0F7A41', 'focus-ring': '#128C4A',
             'input-bg': '#FFFFFF', 'input-fg': '#1A202C', 'input-border': '#A0AEC0', 'input-disabled-bg': '#F4F6F9',
-            'mark-bg': '#FDE68A', 'mark-fg': '#1A202C', error: '#C53030', 'error-bg': '#FFF5F5', warn: '#B45309', ok: '#0F7A41', 'neg-fg': '#C53030',
+            'mark-bg': '#FDE68A', 'mark-fg': '#1A202C', error: '#C53030', 'error-bg': '#FFF5F5', warn: '#B45309', ok: '#0F7A41', info: '#2B6CB0', 'neg-fg': '#C53030',
             'tooltip-bg': '#1A202C', 'tooltip-fg': '#FFFFFF', 'badge-bg': '#667781', 'badge-color': '#FFFFFF',
             radius: '8px', 'chip-radius': '20px', 'badge-radius': '999px',
             'cell-pad-x': '12px', 'cell-pad-y': '7px', 'header-pad-x': '12px', 'header-pad-y': '8px', 'row-height': '2rem',
@@ -108,7 +112,7 @@
         // Estilo «Libro mayor» de V12 (cuenta-maestra-dk2, recursos/libro-mayor.css).
         'libro-mayor': {
             'color-scheme': 'light',
-            font: '"IBM Plex Sans", system-ui, sans-serif', 'font-size': '0.875rem',
+            font: FUENTE_W11, 'font-size': '0.875rem',
             'num-font': '"IBM Plex Mono", ui-monospace, monospace',
             bg: '#FFFFFF', fg: '#1B1F24', 'muted-fg': '#5B6470',
             'header-bg': '#F3F4F6', 'header-fg': '#4E5661', 'header-border': '#D9DDE3', 'header-weight': '600',
@@ -118,7 +122,7 @@
             'active-cell': '#1B1F24', 'active-bg': '#FFFFFF', 'active-fg': '#1B1F24', 'active-border': '#FFFFFF',
             accent: '#1D4F91', 'focus-ring': '#1D4F91',
             'input-bg': '#FFFFFF', 'input-fg': '#1B1F24', 'input-border': '#9AA3AE', 'input-disabled-bg': '#F3F4F6',
-            'mark-bg': '#FBEBD0', 'mark-fg': '#4A3200', error: '#A13A14', 'error-bg': '#FBE9E3', warn: '#6E4700', ok: '#1E6B3A', 'neg-fg': '#A13A14',
+            'mark-bg': '#FBEBD0', 'mark-fg': '#4A3200', error: '#A13A14', 'error-bg': '#FBE9E3', warn: '#6E4700', ok: '#1E6B3A', info: '#1F6F80', 'neg-fg': '#A13A14',
             'tooltip-bg': '#1B1F24', 'tooltip-fg': '#FFFFFF', 'badge-bg': '#5B6470', 'badge-color': '#FFFFFF',
             radius: '0', 'chip-radius': '0', 'badge-radius': '0',
             'cell-pad-x': '10px', 'cell-pad-y': '5px', 'header-pad-x': '10px', 'header-pad-y': '6px', 'row-height': '1.8rem',
@@ -589,7 +593,7 @@
     var TEXTO_AA = [
         ['fg', 'bg'], ['muted-fg', 'bg'], ['header-fg', 'header-bg'], ['footer-fg', 'footer-bg'], ['sel-fg', 'sel-bg'],
         ['active-fg', 'active-bg'], ['input-fg', 'input-bg'], ['menu-fg', 'menu-bg'], ['mark-fg', 'mark-bg'],
-        ['accent', 'bg'], ['error', 'bg'], ['warn', 'bg'], ['ok', 'bg'], ['neg-fg', 'bg'],
+        ['accent', 'bg'], ['error', 'bg'], ['warn', 'bg'], ['ok', 'bg'], ['info', 'bg'], ['neg-fg', 'bg'],
         ['tooltip-fg', 'tooltip-bg'], ['badge-color', 'badge-bg']
     ];
     // Fondos derivados contra un texto ya fijado: si no alcanzan, el fondo se acerca a 'bg' (que ya cumple con ese

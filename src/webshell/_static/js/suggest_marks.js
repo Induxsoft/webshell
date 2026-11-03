@@ -133,13 +133,14 @@ var macros = {
 
     style.textContent = `
     .macros-autocomplete {
-        background: #fff;
-        border: 1px solid #ccc;
+        background: var(--et-menu-bg, var(--ixt-menu-bg, #fff));
+        color: var(--et-menu-fg, var(--ixt-menu-fg, inherit));
+        border: 1px solid var(--et-menu-border, var(--ixt-menu-border, #ccc));
         border-radius: 6px;
         max-height: 200px;
         overflow-y: auto;
         font-family: sans-serif;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        box-shadow: var(--et-shadow, var(--ixt-shadow, 0 4px 12px rgba(0,0,0,0.1)));
     }
 
     .macros-autocomplete .item {
@@ -148,8 +149,8 @@ var macros = {
     }
 
     .macros-autocomplete .item.active {
-        background: #007bff;
-        color: #fff;
+        background: var(--et-sel-bg, var(--ixt-sel-bg, #007bff));
+        color: var(--et-sel-fg, var(--ixt-sel-fg, #fff));
     }
 
     .macros-autocomplete small {

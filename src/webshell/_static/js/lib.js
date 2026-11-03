@@ -189,7 +189,7 @@ var tools =
         if (v12FormBar) v12FormBar.querySelectorAll("button,a").forEach(v12btn => 
         {
             v12btn.style.pointerEvents = (disable) ? "none" : "";
-            v12btn.style.backgroundColor = (disable) ? "#e9ecef" : "";
+            v12btn.style.backgroundColor = (disable) ? "var(--ix-input-disabled-bg, #e9ecef)" : "";
             v12btn.style.opacity = (disable) ? "1" : "";
         });
         
