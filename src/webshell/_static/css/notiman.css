@@ -17,9 +17,9 @@
 #tab-filters input[type="radio"]:checked + label
 {
     border: none !important;
-    border-bottom: 2px solid #0B5ED7 !important;
-    color: #000 !important;
-    background-color: #F0F8FF !important;
+    border-bottom: 2px solid var(--et-accent, var(--ixt-accent, #0B5ED7)) !important;
+    color: var(--et-fg, var(--ixt-fg, #000)) !important;
+    background-color: var(--et-sel-bg-soft, var(--ixt-sel-bg-soft, #F0F8FF)) !important;
 }
 
 #targets-container .btn-close {

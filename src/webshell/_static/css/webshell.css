@@ -72,7 +72,9 @@ body {
 /* =============== ACCESOS DIRECTOS */
 
 .category-title {
-    background-color: var(--light-gray-color);
+    /* Con tema (data-et-theme), los colores de encabezado del tema; sin tema, los de siempre */
+    background-color: var(--et-header-bg, var(--ixt-header-bg, var(--light-gray-color)));
+    color: var(--et-header-fg, var(--ixt-header-fg, inherit));
     font-weight: 500;
 }
 .category-shortcuts {
@@ -252,7 +254,8 @@ body {
 }
 #webshell-right-panel-header,#webshell-left-panel-header
 {
-    background-color: var(--light-gray-color);
+    background-color: var(--et-header-bg, var(--ixt-header-bg, var(--light-gray-color)));
+    color: var(--et-header-fg, var(--ixt-header-fg, inherit));
 }
 #right-frame, #left-frame
 {
