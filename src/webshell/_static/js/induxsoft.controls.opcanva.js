@@ -33,6 +33,9 @@ class OpCanva extends HTMLElement
     _moveSteps = 2;
     _resizeElementsInMouseDevices = true;
     _resizeElementsInTouchDevices = true;
+    _tema = null;
+    _temaActivo = false;
+    _temaCancelar = null;
 
     constructor() 
     {
@@ -53,6 +56,7 @@ class OpCanva extends HTMLElement
 
     connectedCallback()
     {
+        if (this._shadow) this._temaConectar(); // vuelto a insertar: el shadow ya existe
         document.addEventListener('DOMContentLoaded', () => 
         {
             this._shadow    = this.attachShadow({ mode: 'closed' });
@@ -240,7 +244,75 @@ class OpCanva extends HTMLElement
             this._shadow.appendChild(contnr);
 
             this._printItems();
+            this._temaConectar();
         });
+    }
+
+    disconnectedCallback()
+    {
+        if (this._temaCancelar) { this._temaCancelar(); this._temaCancelar = null; }
+        if (this._tema) { this._tema.dispose(); this._tema = null; }
+        if (this._temaActivo) this._temaCambio({ theme: '' });
+    }
+
+    // ========== TEMA (InduxsoftTheme.bind; sin el módulo o sin tema, el control queda como siempre)
+
+    static _temaModulo(fn)
+    {
+        const listo = () => { const T = window.InduxsoftTheme; return (T && typeof T.bind === 'function') ? T : null; };
+        const T = listo();
+        if (T) { fn(T); return null; }
+        if (document.readyState === 'complete') return null;
+        let hecho = false;
+        const fin = () => { hecho = true; window.removeEventListener('load', probar); };
+        const probar = () => { if (hecho) return; fin(); const t = listo(); if (t) fn(t); };
+        window.addEventListener('load', probar);
+        return fin;
+    }
+    _temaConectar()
+    {
+        if (this._tema || this._temaCancelar || !this._shadow) return;
+        this._temaCancelar = OpCanva._temaModulo(T => {
+            this._temaCancelar = null;
+            if (!this.isConnected || this._tema) return;
+            this._tema = T.bind(this, { root: this._shadow, name: 'op-canva', css: V => OpCanva._temaCss(V, !this.hasAttribute('background-color')), onChange: e => this._temaCambio(e) });
+        });
+    }
+    _temaCambio(e)
+    {
+        const activo = !!(e && e.theme);
+        if (activo === this._temaActivo) return;
+        this._temaActivo = activo;
+        // El color por omisión de los elementos se pone en línea al pintarlos: se vuelven a pintar desde los datos.
+        if (this._ccanva) this._printItems();
+    }
+    static _temaCss(V, fondoPorOmision)
+    {
+        // :host(:not(...)) tiene más especificidad que las reglas de la hoja del control, que va después.
+        const P = ':host(:not(.ix-sin-tema))';
+        const H = 'var(--ix-h, var(--ix-t-h))', PAD = 'var(--ix-pad, var(--ix-t-pad))', FS = 'var(--ix-fs, var(--ix-t-fs))';
+        const flecha = `linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%)`;
+        return `
+${P} #OpCanva_contnr { background-color: ${V('bg', '#FFFFFF')}; color: ${V('fg', '#1F2328')}; font-family: ${V('font', 'system-ui, sans-serif')}; color-scheme: var(--ix-t-cs, normal); }
+${P} .outline { outline: 1px solid ${V('border', '#E1E5EA')}; }
+${P} .bordered { border-color: ${V('border', '#E1E5EA')}; }
+${P} .text-secondary { color: ${V('muted-fg', '#59636E')}; }
+${P} #OpCanva_cfootr { background-color: ${V('bg', '#FFFFFF')}; border-top: 1px solid ${V('header-border', '#D0D7DE')}; outline: none; gap: 1px; }
+${P} #OpCanva_cfootr > div { padding: 6px 8px !important; gap: 2px; }
+${P} #OpCanva_cfootr h5 { font-size: 12px; font-weight: ${V('header-weight', '600')}; }
+${P} #OpCanva_ccanva { border-color: ${V('header-bg', '#F3F5F8')}; outline: 1px solid ${V('header-border', '#D0D7DE')}; color: ${V('fg', '#1F2328')}; }
+${fondoPorOmision ? `${P} #OpCanva_ccanva { background-color: ${V('input-bg', '#FFFFFF')} !important; }` : ''}
+${P} .induxsoft-form-control, ${P} .induxsoft-form-select { box-sizing: border-box; min-height: ${H}; padding: ${PAD} !important; font-family: inherit; font-size: ${FS}; line-height: 1.2; background-color: ${V('input-bg', '#FFFFFF')}; color: ${V('input-fg', '#1F2328')}; border: 1px solid ${V('input-border', '#8C959F')}; outline: none; border-radius: ${V('radius', '4px')}; transition: box-shadow 0.15s ease-in-out; }
+${P} .induxsoft-form-select { padding-right: 28px !important; background-image: ${flecha}; background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
+${P} .induxsoft-form-control:focus, ${P} .induxsoft-form-select:focus { outline: none; border-color: ${V('accent', '#2F66CC')}; box-shadow: 0 0 0 3px color-mix(in srgb, ${V('focus-ring', '#2F66CC')} 30%, transparent); }
+${P} .induxsoft-form-control:disabled, ${P} .induxsoft-form-control[readonly], ${P} .induxsoft-form-select:disabled { background-color: ${V('input-disabled-bg', '#EEF1F4')}; color: ${V('muted-fg', '#59636E')}; }
+${P} input[type="range"] { accent-color: ${V('accent', '#2F66CC')}; }
+${P} .item { color: ${V('fg', '#1F2328')}; }
+${P} .item:hover, ${P} .item-selected { outline: 1px solid ${V('accent', '#2F66CC')}; }
+${P} .item:hover .move-point, ${P} .item:hover .resizer, ${P} .item-selected .move-point, ${P} .item-selected .resizer { background-color: ${V('bg', '#FFFFFF')}; color: ${V('fg', '#1F2328')}; outline: 1px solid ${V('accent', '#2F66CC')}; }
+${P} .item-selected { outline: 2px solid ${V('accent', '#2F66CC')} !important; }
+${P} .resizer-point:active, ${P} .resizer-point:hover, ${P} .move-point:active, ${P} .move-point:hover { background-color: ${V('bg', '#FFFFFF')}; color: ${V('muted-fg', '#59636E')}; outline: 1px solid ${V('accent', '#2F66CC')}; }
+`;
     }
 
     // ========== PREPARE ELEMENTS
@@ -791,7 +863,7 @@ class OpCanva extends HTMLElement
 
                 element.innerHTML = (item.html ?? '');
                 element.style.backgroundColor = (item['background-color'] ?? 'transparent')
-                element.style.color = (item['color'] ?? '#000');
+                element.style.color = (item['color'] ?? (this._temaActivo ? '' : '#000'));
 
                 if (item['background-image'] && item['background-image'].trim() != '' )
                     element.style.backgroundImage = `url(${item['background-image']})`;

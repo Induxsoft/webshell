@@ -49,6 +49,9 @@ class CustomSchedule extends HTMLElement
     #table_layer = null;
     #tasks_layer = null;
     #resizeObserver = null;
+    #tema = null;
+    #temaActivo = false;
+    #temaCancelar = null;
 
     constructor() {
         super();
@@ -265,6 +268,7 @@ class CustomSchedule extends HTMLElement
         
         this.#resizeObserver = new ResizeObserver(() => this.#onResizeOrScroll());
         this.#resizeObserver.observe(wrapper);
+        this.#temaConectar();
     }
     // Se llama cuando se quita del DOM
     disconnectedCallback() {
@@ -272,6 +276,7 @@ class CustomSchedule extends HTMLElement
             this.#resizeObserver.disconnect();
             this.#resizeObserver = null;
         }
+        this.#temaDesconectar();
     }
 
     //#region Métodos públicos
@@ -443,6 +448,20 @@ class CustomSchedule extends HTMLElement
 
         const style = document.createElement('style');
         style.id = 'readonly-styles';
+        if (this.#temaActivo && window.InduxsoftTheme)
+        {
+            // Con tema: mismas celdas, colores de la paleta y la especificidad del CSS de tema.
+            const V = window.InduxsoftTheme.cssVar, P = CustomSchedule.#temaP;
+            style.innerHTML = `
+        ${selectors.split(',').map(x => P + ' ' + x).join(',')}
+        {
+            background-color: ${V('input-disabled-bg', '#e9ecef')};
+            opacity: 1;
+            outline: 1px solid ${V('bg', '#ffffff')};
+        }
+        `;
+        }
+        else
         style.innerHTML = `
         ${selectors}
         {
@@ -563,6 +582,11 @@ class CustomSchedule extends HTMLElement
             background-color: ${event.backcolor || '#FFFFE1'};
             color: ${event.color || '#000'};
         `;
+        // Con tema, sin colores propios del evento, los pone la hoja del tema.
+        if (this.#temaActivo) {
+            if (!event.backcolor) taskEl.style.removeProperty('background-color');
+            if (!event.color) taskEl.style.removeProperty('color');
+        }
     }
 
     #createTaskElement(event)
@@ -955,7 +979,11 @@ class CustomSchedule extends HTMLElement
     setCustomStyles(styles)
     {
         if (typeof styles != 'string' || styles.trim() == '') return;
+        // El <style> del tema no se copia con innerHTML: se quita y bind lo vuelve a poner al principio.
+        const tema = this.#tema ? this.#shadow.querySelector('style[data-ix-theme]') : null;
+        if (tema) tema.remove();
         this.#shadow.innerHTML += `<style>${styles}</style>`;
+        if (this.#tema) this.#tema.update();
     }
 
     #setControlStyles()
@@ -967,6 +995,71 @@ class CustomSchedule extends HTMLElement
             this.setCustomStyles(styles);
         });
     }
+
+    //#region Tema (InduxsoftTheme.bind; sin el módulo o sin tema, el control queda como siempre)
+    static #temaP = ':host(:not(.ix-sin-tema))';
+    static #temaModulo(fn)
+    {
+        const listo = () => { const T = window.InduxsoftTheme; return (T && typeof T.bind === 'function') ? T : null; };
+        const T = listo();
+        if (T) { fn(T); return null; }
+        if (document.readyState === 'complete') return null;
+        let hecho = false;
+        const fin = () => { hecho = true; document.removeEventListener('DOMContentLoaded', probar); window.removeEventListener('load', probar); };
+        const probar = () => { if (hecho) return; const t = listo(); if (t) { fin(); fn(t); } else if (document.readyState === 'complete') fin(); };
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', probar);
+        window.addEventListener('load', probar);
+        return fin;
+    }
+    #temaConectar()
+    {
+        if (this.#tema || this.#temaCancelar) return;
+        this.#temaCancelar = CustomSchedule.#temaModulo(T => {
+            this.#temaCancelar = null;
+            if (!this.isConnected || this.#tema) return;
+            this.#tema = T.bind(this, { root: this.#shadow, name: 'custom-schedule', css: (V) => CustomSchedule.#temaCss(V), onChange: (e) => this.#temaCambio(e) });
+        });
+    }
+    #temaDesconectar()
+    {
+        if (this.#temaCancelar) { this.#temaCancelar(); this.#temaCancelar = null; }
+        if (this.#tema) { this.#tema.dispose(); this.#tema = null; }
+        if (this.#temaActivo) this.#temaCambio({ theme: '' });
+    }
+    #temaCambio(e)
+    {
+        const activo = !!(e && e.theme);
+        if (activo === this.#temaActivo) return;
+        this.#temaActivo = activo;
+        // Lo que el control pinta en línea: colores por omisión de los eventos y celdas no laborables.
+        this.events.forEach(item => {
+            const element = this.getTaskElementById(item.id);
+            if (element) this.#setElementPosition(item, element);
+        });
+        if (this.#shadow.querySelector('#readonly-styles')) this.setReadonlyStyles();
+    }
+    static #temaCss(V)
+    {
+        const P = CustomSchedule.#temaP;
+        const ROW = 'var(--ix-row, var(--ix-t-row))', FS = 'var(--ix-fs, var(--ix-t-fs))';
+        return `
+${P} #schedule-wrapper { background-color: ${V('bg', '#FFFFFF')}; color: ${V('fg', '#1F2328')}; font-family: ${V('font', 'system-ui, sans-serif')}; color-scheme: var(--ix-t-cs, normal); border: 1px solid ${V('border', '#E1E5EA')}; border-radius: ${V('radius', '4px')}; box-sizing: border-box; }
+${P} table { font-size: ${FS}; }
+${P} tr th { background-color: ${V('header-bg', '#F3F5F8')}; color: ${V('header-fg', '#1F2328')}; outline: 1px solid ${V('header-border', '#D0D7DE')}; }
+${P} thead th label { font-weight: ${V('header-weight', '600')}; }
+${P} thead th small { font-size: .8em; }
+${P} tbody tr th { font-variant-numeric: tabular-nums; font-family: ${V('num-font', 'inherit')}; }
+${P} thead th.now { background-color: ${V('sel-bg', '#2F66CC')}; color: ${V('sel-fg', '#FFFFFF')}; }
+${P} tr td { box-sizing: border-box; height: ${ROW}; outline: 1px solid ${V('border', '#E1E5EA')}; }
+${P} tbody tr:hover { background-color: ${V('hover-bg', '#EDF2F8')}; }
+${P} td.breaks, ${P} td.weekend, ${P} td.holidays { background-color: ${V('input-disabled-bg', '#EEF1F4')}; outline: 1px solid ${V('bg', '#FFFFFF')}; }
+${P} .event-task { background-color: ${V('sel-bg-soft', '#E3ECFA')}; color: ${V('fg', '#1F2328')}; border-radius: ${V('radius', '4px')}; box-shadow: inset 3px 0 0 ${V('accent', '#2F66CC')}, 0 1px 3px rgba(0,0,0,.18); }
+${P} .event-task.selected { box-shadow: inset 3px 0 0 ${V('accent', '#2F66CC')}, 0 0 0 2px color-mix(in srgb, ${V('focus-ring', '#2F66CC')} 70%, transparent); }
+${P} .resize-handle { background-color: color-mix(in srgb, ${V('border', '#E1E5EA')} 70%, transparent); }
+${P} .resize-handle:hover { background-color: ${V('accent', '#2F66CC')}; }
+`;
+    }
+    //#endregion
 
     #deepFreeze(obj) {
         Object.getOwnPropertyNames(obj).forEach(prop => {

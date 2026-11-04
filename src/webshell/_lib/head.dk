@@ -21,7 +21,7 @@ module "Encabezado común de los sitios V12:webshell"
     #include "dbr.vars.dkl"
 
     // Debe coincidir con "version" de pack.manifest (lo revisa herramientas/sync-webcomponents.sh --check)
-    @WEBSHELL_VERSION = "1.0.136"
+    @WEBSHELL_VERSION = "1.0.137"
     @WEBSHELL_THEMES = "|libro-mayor|claro|oscuro|jade|ninguno|"
 
     ref @webshell_head_info = @null

@@ -1,4 +1,4 @@
-/* <induxsoft-theme v=1.2.0> */
+/* <induxsoft-theme v=1.3.0> */
 /*!
  * induxsoft.theme.js: tema común de los web components de Induxsoft (EdiTable, InputKey y los que vengan).
  *
@@ -16,6 +16,11 @@
  *   densidad (resolve agrega none: true). Sin llamar a fromColors/applyColors ni usar «ninguno», nada cambia.
  * - 1.2.0: color 'info' en los cuatro temas (avisos informativos; fromColors lo toma de la base y solo le ajusta el
  *   contraste contra el fondo) y letra de Windows 11 ("Segoe UI Variable" con respaldo, 0.875rem) en los cuatro.
+ * - 1.3.0: bind(host, {root, name, css}) liga cualquier componente al tema con el mismo mecanismo que InputKey: los
+ *   atributos propios theme/palette/density del host ganan a lo heredado; con tema mantiene un <style data-ix-theme>
+ *   al principio de root (su shadow, o document.head para los de DOM claro) con las variables --et-t-*, la densidad
+ *   (--ix-t-h, --ix-t-pad, --ix-t-row, --ix-t-fs) y lo que devuelva css(V, estado); sin tema no deja nada (el
+ *   componente queda byte por byte como antes). V(n, respaldo) = var(--et-n, [var(--et-padre,)] var(--et-t-n, respaldo)).
  *
  * Este archivo se copia tal cual dentro de induxsoft.controls.editable.js e induxsoft.controls.js, entre los
  * marcadores induxsoft-theme (tests/tools/embed-theme.mjs). Se edita solo aquí.
@@ -23,7 +28,7 @@
 (function ()
 {
     'use strict';
-    var VERSION = '1.2.0';
+    var VERSION = '1.3.0';
     if (typeof window === 'undefined') return;
     var w = window;
 
@@ -719,6 +724,112 @@
     }
     function fontStack(p) { return (p && p.font) || FONT_STACK; }
 
+
+    // ---------------------------------------------------------------- 1.3.0: bind (tema para cualquier componente)
+    var DENSIDADES = {
+        compacta: { h: '28px', pad: '3px 8px', row: '26px', fs: '13px' },
+        normal: { h: '34px', pad: '6px 10px', row: '32px', fs: '14px' },
+        comoda: { h: '42px', pad: '9px 12px', row: '40px', fs: '15px' }
+    };
+    var bindSeq = 0;
+    /** V(n, respaldo): la variable de tema n con su derivada (PADRES) y el valor del tema (--et-t-n). */
+    function cssVar(n, fb)
+    {
+        var t = 'var(--et-t-' + n + (fb != null ? ', ' + fb : '') + ')';
+        var p = PADRES[n];
+        return p ? 'var(--et-' + n + ', var(--et-' + p + ', ' + t + '))' : 'var(--et-' + n + ', ' + t + ')';
+    }
+    /** Estado de tema de un componente: propios (theme, palette, density del host, aunque estén vacíos) o heredados. */
+    function estadoDe(host)
+    {
+        var r = null;
+        function her() { if (r === null) { try { r = resolve(host) || {}; } catch (e) { r = {}; } } return r; }
+        var theme;
+        if (host.hasAttribute('theme')) theme = normalizar(host.getAttribute('theme')) || '';
+        else theme = her().none ? '' : (normalizar(her().theme) || '');
+        if (theme && theme !== 'auto' && !interno(theme)) theme = '';
+        var palette;
+        if (host.hasAttribute('palette')) palette = limpiar(host.getAttribute('palette'), (host.localName || 'componente') + ' palette');
+        else palette = her().palette;
+        if (palette && (typeof palette !== 'object' || !Object.keys(palette).length)) palette = null;
+        var density = normalizarDensidad(host.hasAttribute('density') ? host.getAttribute('density') : her().density);
+        if (!DENSIDADES[density]) density = '';
+        if (theme === 'auto') escucharEsquema();
+        var ef = theme === 'auto' ? (oscuroDelSistema() ? 'oscuro' : 'claro') : theme;
+        var pal = ef ? interno(ef) : null;
+        return { theme: theme, palette: palette || null, density: density, effective: ef || '', scheme: pal ? (pal['color-scheme'] || '') : '' };
+    }
+    function varsDe(nombre) { var p = interno(nombre); return p ? cssVars(p, { prefix: '--et-t-' }) + (p['color-scheme'] ? ' --ix-t-cs: ' + p['color-scheme'] + ';' : '') : ''; }
+    function cssEstado(sel, e)
+    {
+        var s = '';
+        if (e.theme === 'auto') s += sel + ' { ' + varsDe('claro') + ' }\n@media (prefers-color-scheme: dark) { ' + sel + ' { ' + varsDe('oscuro') + ' } }\n';
+        else s += sel + ' { ' + varsDe(e.theme) + ' }\n';
+        var d = DENSIDADES[e.density || 'normal'];
+        s += sel + ' { --ix-t-h: ' + d.h + '; --ix-t-pad: ' + d.pad + '; --ix-t-row: ' + d.row + '; --ix-t-fs: ' + d.fs + '; }\n';
+        if (e.palette) { var x = []; for (var k in e.palette) if (Object.prototype.hasOwnProperty.call(e.palette, k)) x.push('--et-' + k + ': ' + e.palette[k] + ' !important;'); s += sel + ' { ' + x.join(' ') + ' }\n'; }
+        return s;
+    }
+    /**
+     * bind(host, {root, name, css, onChange}) -> {state(), update(), dispose(), active}
+     *  root: ShadowRoot del componente; si se omite o no es shadow, el <style> va a document.head con el selector
+     *        name[data-ix-themed="N"] (el componente queda marcado con ese atributo solo mientras tiene tema).
+     *  css(V, estado): CSS del componente con tema; estado.sel es el selector del host (':host' o el de DOM claro).
+     *  onChange(estado): se llama tras cada cambio (con o sin tema), por si el componente cambia clases o ARIA.
+     */
+    function bind(host, o)
+    {
+        o = o || {};
+        var root = o.root && o.root.nodeType === 11 ? o.root : null;
+        var nombre = o.name || (host.localName || 'componente');
+        var id = String(++bindSeq), estilo = null, baja = null, mo = null, vivo = true, ultimo = null;
+        var h = { active: false };
+        function quitar()
+        {
+            if (estilo) { try { estilo.remove(); } catch (e) { } estilo = null; }
+            if (!root && host.getAttribute('data-ix-themed') === id) host.removeAttribute('data-ix-themed');
+        }
+        function update()
+        {
+            if (!vivo) return h;
+            var e = estadoDe(host);
+            e.sel = root ? ':host' : nombre + '[data-ix-themed="' + id + '"]';
+            h.estado = e;
+            h.active = !!e.theme;
+            if (!e.theme) quitar();
+            else
+            {
+                var css = '/* ' + nombre + ': tema ' + e.theme + ' */\n' + cssEstado(e.sel, e) + (typeof o.css === 'function' ? (o.css(cssVar, e) || '') : '');
+                if (!root) host.setAttribute('data-ix-themed', id);
+                var destinoEstilo = root || (w.document && w.document.head);
+                if (!estilo || !estilo.isConnected)
+                {
+                    estilo = w.document.createElement('style');
+                    estilo.setAttribute('data-ix-theme', nombre);
+                    if (destinoEstilo === root) root.insertBefore(estilo, root.firstChild); else if (destinoEstilo) destinoEstilo.appendChild(estilo);
+                }
+                if (estilo.textContent !== css) estilo.textContent = css;
+            }
+            var clave = JSON.stringify([e.theme, e.palette, e.density, e.effective]);
+            if (typeof o.onChange === 'function' && clave !== ultimo) { try { o.onChange(e); } catch (x) { console.warn('InduxsoftTheme.bind: onChange falló', x); } }
+            ultimo = clave;
+            return h;
+        }
+        h.state = function () { return estadoDe(host); };
+        h.update = update;
+        h.dispose = function ()
+        {
+            vivo = false;
+            if (baja) { try { baja(); } catch (e) { } baja = null; }
+            if (mo) { try { mo.disconnect(); } catch (e) { } mo = null; }
+            quitar();
+        };
+        baja = subscribe(host, update);
+        if (typeof MutationObserver !== 'undefined') { mo = new MutationObserver(update); mo.observe(host, { attributes: true, attributeFilter: ['theme', 'palette', 'density'] }); }
+        update();
+        return h;
+    }
+
     var api = {
         version: VERSION,
         attributes: ATTRS.slice(),
@@ -745,6 +856,9 @@
         subscribe: subscribe,
         unsubscribe: unsubscribe,
         cssVars: cssVars,
+        cssVar: cssVar,
+        bind: bind,
+        densities: JSON.parse(JSON.stringify(DENSIDADES)),
         fontStack: fontStack,
         none: NINGUNO,
         isNone: esNinguno,
