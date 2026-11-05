@@ -1560,6 +1560,7 @@ class EditTable extends HTMLElement
         if (!cols || cols.length < 1) return;
         
         cols.forEach(col => {
+            if (col.classList.contains('et-sel-col') || Array.from(col.children).some(x => x.classList?.contains('sizable-border'))) return;   // columna del sistema o ya tiene borde (se vuelve a llamar al redibujar)
             const sizableBorder = this._createFullElement('div', { class:'sizable-border', style:`height:${table.offsetHeight}px;` });
             this._addSizableFunction(sizableBorder);
             col.appendChild(sizableBorder);
@@ -1575,6 +1576,7 @@ class EditTable extends HTMLElement
             e.stopPropagation();
             e.preventDefault();
             curCol = e.target.parentElement;
+            this._etBordeActivo = true;
             nxtCol = curCol.nextElementSibling;
             pageX = e.pageX;
             curColWidth = curCol.offsetWidth
@@ -1587,8 +1589,8 @@ class EditTable extends HTMLElement
             if (curCol) {
                 var diffX = e.pageX - pageX;
                 if (nxtCol)
-                    nxtCol.style.width = (nxtColWidth - (diffX))+'px';
-                curCol.style.width = (curColWidth + diffX)+'px';
+                    this._etAnchoTh(nxtCol, (nxtColWidth - (diffX))+'px');
+                this._etAnchoTh(curCol, (curColWidth + diffX)+'px');
             }
         });
         this._f1Global(document, 'mouseup', (e) => {
@@ -1599,6 +1601,7 @@ class EditTable extends HTMLElement
                 if (f != undefined && th.style.width) this._f1EstadoColumna(f).ancho = th.style.width;
             });
             if (curCol) this._f3Redimensionado?.(curCol, curColWidth);   // F3: posiciones de las fijas y LayoutChanged 'resize'
+            this._etBordeActivo = false;
             curCol = undefined;
             nxtCol = undefined;
             nxtCol = undefined;
@@ -1606,6 +1609,26 @@ class EditTable extends HTMLElement
             nxtColWidth = undefined;
             curColWidth = undefined;
         });    
+    }
+    // Ancho de un th puesto por el usuario o por el diseño. Con table-layout auto, si la tabla ya es más ancha que su
+    // contenedor cada columna queda en su ancho mínimo y width no tiene efecto: también se fija min-width (y al quitar
+    // el ancho vuelve el min-width declarado).
+    // Solo se pone min-width si el width no alcanzó (así, donde width ya funcionaba, el DOM queda igual que antes).
+    _etAnchoTh(th, css)
+    {
+        if (!th) return;
+        if (th._etMinDecl === undefined) th._etMinDecl = th.style.minWidth;
+        th.style.width = (css ?? '');
+        if (th.style.minWidth !== th._etMinDecl) th.style.minWidth = th._etMinDecl;
+        const m = /^\s*(\d+(?:\.\d+)?)px\s*$/i.exec(String(css ?? ''));
+        if (m && th.isConnected && th.getBoundingClientRect().width < Number(m[1]) - 1) th.style.minWidth = css;
+    }
+    // dragstart de un th que empezó en el borde de ancho (o en el borde mismo): se cancela.
+    _etDragDesdeBorde(e)
+    {
+        if (!this._etBordeActivo && !e.target?.classList?.contains?.('sizable-border')) return false;
+        e.preventDefault(); e.stopImmediatePropagation();
+        return true;
     }
     _getRowIndex=(tr)=>
     {
@@ -6227,6 +6250,8 @@ class EditTable extends HTMLElement
     _f5DatosVisibles()   // F2 (summary-scope="visible"): filas de datos de la lista, dibujadas o no
     {
         const d = (this.DataArray ?? []);
+        // Con grupos, las filas de un grupo colapsado no están en la lista, pero cuentan: colapsar no cambia el total.
+        if ((this._f6Grupos ?? []).length) return d.filter((r, i) => r != undefined && !this._f8EsFuera(i));
         return this._f5Lista.filter(e => e && e.tipo === 'datos').map(e => d[e.indice]).filter(r => r != undefined);
     }
 
@@ -6900,6 +6925,7 @@ class EditTable extends HTMLElement
 
         const nuevas = perm.map(p => cols[p]);
         cols.splice(0, n, ...nuevas);
+        if (t) this._resizableGrid(t);   // bordes de ancho en todos los th (idempotente)
         this._f1TitulosDeclarados.clear();
         titulos.forEach(([c, v]) => this._f1TitulosDeclarados.set(cols.indexOf(c), v));
         cols.forEach((c, i) => { if (c?.field != undefined) this._f1EstadoColumna(c.field).orden = i; });
@@ -7015,6 +7041,10 @@ class EditTable extends HTMLElement
         if (this._f3Indice(field) < 0 || this.IsColumnVisible(field) === visible) return false;
         if (!visible && this.getVisibleColumns().length <= 1) return false;   // siempre queda una visible
         this.hideColumn(field, !visible);
+        // F6 (group-hide-columns): si el usuario cambia una columna agrupada, manda su decisión.
+        this._f6OcultasPorGrupo?.delete(field);
+        if (visible && this._f6Grupos?.includes(field)) this._f6VisiblesPorUsuario.add(field);
+        else this._f6VisiblesPorUsuario?.delete(field);
         if (!visible) this._f3SacarFoco();
         this._f3Disparar('ColumnVisibilityChanged', { field, visible });
         this._f3Cambio('visibility');
@@ -7082,6 +7112,9 @@ class EditTable extends HTMLElement
             m.setAttribute('role', 'menu');
             m.tabIndex = -1;
             m.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this._f3CerrarMenu(true); } });
+            // El menú no depende de la página: sus clics no salen del componente (un manejador de la página que
+            // cancele el clic revertiría la casilla) y su mousedown no llega a los cierres de document.
+            ['mousedown', 'pointerdown', 'click', 'dblclick', 'contextmenu'].forEach(n => m.addEventListener(n, (e) => e.stopPropagation()));
             this._f3Menu = m;
         }
         if (!m.isConnected) cont.appendChild(m);
@@ -7172,7 +7205,7 @@ class EditTable extends HTMLElement
             w = Math.max(w, medir(td.querySelector('div[iscellcontent]') ?? td) + 18);
         });
         const css = Math.ceil(w) + 'px';
-        th.style.width = css;
+        this._etAnchoTh(th, css);
         this._f1EstadoColumna(field).ancho = css;
         if (this._f3TeniaFijas) this._f3Posiciones();
         this._f3Cambio('resize');
@@ -7281,6 +7314,7 @@ class EditTable extends HTMLElement
                 this._f3AbrirMenu(e.clientX, e.clientY, th.getAttribute('field'));
             });
             thead.addEventListener('dragstart', (e) => {
+                if (this._etDragDesdeBorde(e)) return;   // arrastrar desde el borde de ancho no mueve la columna
                 if (!this._f3Reorder) return;
                 const th = this._f3ThDeEvento(e);
                 const f = th?.getAttribute('field');
@@ -7338,8 +7372,17 @@ class EditTable extends HTMLElement
             this._f3Globales = true;
             this._f1Global(document, 'mousedown', (e) => {
                 if (!this._f3MenuAbierto()) return;
+                // Con shadow DOM cerrado (así se usa en V12), composedPath() visto desde document no incluye los nodos
+                // internos: el menú se cerraba en el mousedown de su propia casilla. Si el evento viene del componente,
+                // se mira qué hay bajo el puntero dentro del shadow.
                 const ruta = e.composedPath?.() ?? [];
-                if (!ruta.includes(this._f3Menu) && !ruta.includes(this._f3Boton)) this._f3CerrarMenu(false);
+                if (ruta.includes(this._f3Menu) || ruta.includes(this._f3Boton)) return;
+                if (ruta.includes(this) || e.target === this)
+                {
+                    const el = (typeof this._shadow?.elementFromPoint === 'function' ? this._shadow.elementFromPoint(e.clientX, e.clientY) : null);
+                    if (el && (this._f3Menu?.contains(el) || this._f3Boton?.contains(el))) return;
+                }
+                this._f3CerrarMenu(false);
             });
             this._f1Global(document, 'keydown', (e) => { if (e.key === 'Escape' && this._f3MenuAbierto()) this._f3CerrarMenu(true); });
         }
@@ -7397,7 +7440,7 @@ class EditTable extends HTMLElement
         const columns = [];
         this.Columns.forEach((c, i) => {
             if (!c || c.field == undefined) return;
-            columns.push({ field: c.field, order: i, width: this._f3Ancho(c), hidden: this._f1ColumnaOculta(c.field), fixed: this._f3EsFija(c.field) });
+            columns.push({ field: c.field, order: i, width: this._f3Ancho(c), hidden: (this._f1ColumnaOculta(c.field) && !this._f6OcultasPorGrupo?.has(c.field)), fixed: this._f3EsFija(c.field) });
         });
         let groups = [];
         try { if (typeof this.getGroups === 'function') groups = (this.getGroups() ?? []).slice(); } catch (e) { }
@@ -7444,6 +7487,8 @@ class EditTable extends HTMLElement
 
         if (o.visibilidad)
         {
+            this._f6SyncOcultas?.(true);   // F6: primero vuelven las ocultas por agrupar; al final se ocultan otra vez
+            this._f6VisiblesPorUsuario?.clear();
             const objetivo = new Map();
             porCampo.forEach(({ x }, f) => { if (typeof x.hidden === 'boolean') objetivo.set(f, x.hidden); });
             const oculta = (c) => (c.field == undefined ? false : (objetivo.has(c.field) ? objetivo.get(c.field) : this._f1ColumnaOculta(c.field)));
@@ -7461,7 +7506,7 @@ class EditTable extends HTMLElement
             if (w == null || w === '' || (typeof w === 'number' && !isFinite(w))) return;
             const css = (typeof w === 'number' ? w + 'px' : String(w));
             const th = this._f3ThDe(f);
-            if (th) th.style.width = css;
+            if (th) this._etAnchoTh(th, css);
             this._f1EstadoColumna(f).ancho = css;
         });
 
@@ -7477,6 +7522,7 @@ class EditTable extends HTMLElement
                 if (JSON.stringify(g) !== JSON.stringify(act)) { if (g.length) this.GroupBy(g); else this.Ungroup?.(); }
             }
         }
+        this._f6SyncOcultas?.();   // F6 (group-hide-columns): las agrupadas, ocultas
         this._f3Posiciones();
         this._f3ActualizarMenu();
     }
@@ -7513,7 +7559,7 @@ class EditTable extends HTMLElement
                 st.fija = d.fixed;
                 if (st.oculta) this.hideColumn(d.field, false);
                 const th = this._f3ThDe(d.field);
-                if (th) th.style.width = (d.width ?? '');
+                if (th) this._etAnchoTh(th, (d.width ?? ''));
                 st.ancho = (d.width ?? null);
             });
             this._f3Permutar(this._f3Normalizar(this._f3Declarado.map(d => d.col)));
@@ -8505,7 +8551,9 @@ class EditTable extends HTMLElement
             if (!tbody) return datos;
             for (const tr of tbody.rows)
             {
-                if (tr.classList.contains('hidde-row') || tr.classList.contains('et-group-row') || tr.classList.contains('et-spacer')) continue;
+                if (tr.classList.contains('et-group-row') || tr.classList.contains('et-spacer')) continue;
+                // Colapsar un grupo no cambia el total: solo deja de contar lo que quita un filtro (F8a) o un árbol colapsado.
+                if (tr.classList.contains('hidde-row') && (tr.classList.contains('et-filter-hidden') || !tr.classList.contains('et-group-hidden'))) continue;
                 const i = this._getRowIndex(tr);
                 if (i >= 0 && datos[i] != undefined) filas.push(datos[i]);
             }
@@ -8667,6 +8715,37 @@ class EditTable extends HTMLElement
     _f6Col = 0;                // última columna visible de datos (para volver de una fila de grupo)
     _f6UI = false;
     GroupPanel = false;        // group-panel ↔ GroupPanel
+    _f6OcultarAgrupadas = true;    // group-hide-columns (por omisión true): agrupar por una columna la oculta
+    _f6OcultasPorGrupo = new Set();// fields que estaban visibles y se ocultaron por agrupar (al desagrupar vuelven)
+    _f6VisiblesPorUsuario = new Set();   // fields agrupados que el usuario volvió a mostrar (no se ocultan otra vez)
+    get GroupHideColumns() { return this._f6OcultarAgrupadas; }
+    set GroupHideColumns(v)
+    {
+        this._f6OcultarAgrupadas = !(v === false || this._f1EsFalso(v ?? ''));
+        this._f6SyncOcultas();
+    }
+    // Columnas ocultas por agrupar: las agrupadas se ocultan si estaban visibles, y las que dejan de estar agrupadas
+    // vuelven a verse (solo si se ocultaron por agrupar; si ya estaban ocultas, se quedan así). soltar=true devuelve
+    // todas sin cambiar los grupos (antes de aplicar un diseño guardado).
+    _f6SyncOcultas(soltar = false)
+    {
+        if (!this._table) return false;
+        const g = ((this._f6OcultarAgrupadas && !soltar) ? this._f6Grupos : []);
+        let cambio = false;
+        Array.from(this._f6OcultasPorGrupo).forEach(f => {
+            if (g.includes(f)) return;
+            this._f6OcultasPorGrupo.delete(f);
+            if (this._f1ColumnaOculta(f) && this.hideColumn(f, false)) { cambio = true; this._f3Disparar?.('ColumnVisibilityChanged', { field: f, visible: true, reason: 'group' }); }
+        });
+        Array.from(this._f6VisiblesPorUsuario).forEach(f => { if (!this._f6Grupos.includes(f)) this._f6VisiblesPorUsuario.delete(f); });
+        g.forEach(f => {
+            if (this._f6OcultasPorGrupo.has(f) || this._f6VisiblesPorUsuario.has(f) || this._f1ColumnaOculta(f)) return;
+            if ((this.getVisibleColumns?.() ?? []).length <= 1) return;   // siempre queda una visible
+            if (this.hideColumn(f, true)) { this._f6OcultasPorGrupo.add(f); cambio = true; this._f3SacarFoco?.(); this._f3Disparar?.('ColumnVisibilityChanged', { field: f, visible: false, reason: 'group' }); }
+        });
+        if (cambio) this._f3ActualizarMenu?.();
+        return cambio;
+    }
     _f6Resumen = 'cell';       // group-summary: 'cell' (una celda) | 'inline' (una celda por columna)
     _f6Eventos = Object.assign(this.EdiTable.Const.Events, { BeforeGroup: 'beforegroup', GroupChanged: 'groupchanged', GroupToggled: 'grouptoggled' });
 
@@ -8743,6 +8822,7 @@ class EditTable extends HTMLElement
         try
         {
             if (this.hasAttribute('group-summary')) this._f6Resumen = (String(this.getAttribute('group-summary')).trim().toLowerCase() === 'inline' ? 'inline' : 'cell');
+            if (this.hasAttribute('group-hide-columns')) this._f6OcultarAgrupadas = !this._f1EsFalso(this.getAttribute('group-hide-columns') ?? '');
             if (this.hasAttribute('group-panel')) this.GroupPanel = this._f3Bool ? this._f3Bool(this.getAttribute('group-panel')) : (this.getAttribute('group-panel') == 'true');
             if (this.GroupPanel) this._f6AplicarPanel();
         }
@@ -8828,6 +8908,7 @@ class EditTable extends HTMLElement
     {
         const enc = this._f3FilaEnc ? this._f3FilaEnc() : this._table?.tHead?.rows[0];
         if (!enc) return;
+        if (this._table) this._resizableGrid(this._table);   // bordes de ancho (idempotente)
         Array.from(enc.cells).forEach(th => {
             const f = th.getAttribute('field');
             if (th.classList.contains('et-sel-col') || f == null) return;
@@ -8841,6 +8922,7 @@ class EditTable extends HTMLElement
         if (!thead || thead._f6UI) return;
         thead._f6UI = true;
         thead.addEventListener('dragstart', (e) => {
+            if (this._etDragDesdeBorde(e)) return;   // arrastrar desde el borde de ancho no agrupa
             if (!this.GroupPanel) return;
             let el = e.target; if (el && el.nodeType !== 1) el = el.parentElement;
             const th = el?.closest?.('th');
@@ -8962,6 +9044,7 @@ class EditTable extends HTMLElement
         if (args.cancel) return false;
         if (Array.isArray(args.groups)) g = args.groups.map(f => String(f)).filter((f, k, a) => a.indexOf(f) === k && this._f6Agrupable(f));
         this._f6Aplicar(g);
+        this._f6SyncOcultas();   // group-hide-columns: oculta las agrupadas y devuelve las desagrupadas
         this._f6PintarPanel();
         this._f6Disparar('GroupChanged', { groups: g.slice() });
         this._f3Cambio?.('group');
