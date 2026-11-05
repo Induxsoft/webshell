@@ -6044,12 +6044,17 @@ class FilterDateRange extends HTMLElement
         const input_mont = this._createFullElement('input', { type: 'hidden', name: monthfield });
         container.appendChild(input_mont);
 
-        if (this._selection && this._selection[this._field_mod.name] == 'month')
-        {
-            select_year.value = (this._selection[yearfield] ?? '');
-            input_mont.value = (this._selection[monthfield] ?? '');
-            this._setFieldValues(select_year, input_mont);
-        }
+        // Sin año en la selección (o al volver al modo por mes): el año actual si está en las opciones, sin importar su
+        // orden, y el mes actual si no hay mes. Con el modo por mes activo, el formulario envía esos valores (D50).
+        const sel_mes = (this._selection && this._selection[this._field_mod.name] == 'month') ? this._selection : null;
+        const anios = Array.from(select_year.options).map(o => o.value.trim());
+        const activo = (sel_mes || this._field_mod.value == 'month');   // con otro modo, el panel oculto queda como antes
+        let anio = String(sel_mes?.[yearfield] ?? '').trim(), mes = String(sel_mes?.[monthfield] ?? '').trim();
+        if (activo && !anio && anios.includes(String(now.getFullYear()))) anio = String(now.getFullYear());
+        if (activo && !mes) mes = String(now.getMonth() + 1);
+        if (anio) select_year.value = anio;   // sin año ni el actual en la lista: queda la primera opción (nunca vacío)
+        if (mes) input_mont.value = mes;   // (input hidden: value escribe el atributo)
+        if (activo) this._setFieldValues(select_year, input_mont);
 
         select_year.addEventListener('change', e => { 
             this._setFieldValues(select_year, input_mont);
@@ -6166,6 +6171,7 @@ class FilterDateRange extends HTMLElement
         }
         btn_accept.onclick = () => {
             edit_dates(false);
+            this._completarRango(input_datef, input_datet);
             this._setFieldValues(input_datef, input_datet);
             this._setTisSelection({[this._field_mod.name]:'range', [name_datef]: input_datef.value, [name_datet]: input_datet.value});
             if (this._isAutoSubmit())
@@ -6177,6 +6183,23 @@ class FilterDateRange extends HTMLElement
         input_datet.addEventListener('keyup', e => {
             if (e.key == 'Enter') btn_accept.focus();
         });
+    }
+    // Personalizado, al pulsar «Aplicar» (D50): completa las fechas vacías. Solo inicio: final = hoy. Solo final: inicio =
+    // min-date (por omisión 1900-01-01). Las dos: igual, intercambiadas si inicio > final. Ninguna: inicio = final = hoy.
+    // «Hoy» es la fecha local del navegador. Los campos muestran las fechas resultantes.
+    _completarRango(input_desde, input_hasta)
+    {
+        const iso = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v ?? '').trim()) ? String(v).trim() : '');
+        const d = new Date();
+        const hoy = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        const origen = iso(this.getAttribute('min-date')) || '1900-01-01';
+        let a = iso(input_desde.value), b = iso(input_hasta.value);
+        if (!a && !b) { a = hoy; b = hoy; }
+        else if (!b) b = hoy;
+        else if (!a) a = origen;
+        if (a > b) { const x = a; a = b; b = x; }
+        input_desde.value = a;
+        input_hasta.value = b;
     }
     _setFieldValues(field1, field2)
     {

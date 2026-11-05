@@ -1,6 +1,20 @@
 .btn-main-action:hover {
     background-color: var(--et-hover-bg, var(--ixt-hover-bg, #EDEDED)) !important;
 }
+
+/* Barras (la de la vista, uie.printV12FormBar, y las de las cuadrículas de los paquetes): todos los botones
+   pequeños con el mismo alto, el de un .btn-sm con una línea de texto (1.5em + 2 x .25rem + 2 x 1px de borde),
+   tengan ícono, texto o los dos, y los íconos de 16 px. */
+.btn.btn-sm, .input-group-sm > .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    column-gap: .375rem;
+    min-height: calc(1.5em + .5rem + 2px);
+    vertical-align: middle;
+}
+.btn.btn-sm svg { width: 16px; height: 16px; flex: none; }
+
 .text-logo {
     font-weight: 600;
 }

@@ -1058,7 +1058,7 @@ class EditTable extends HTMLElement
                     }
                     .EdiTable-Row-Selected
                     {
-                        background-color: #3D75DD !important;
+                        background-color: #2F66CC !important;
                         color: #FFF !important;
                     }
                     
@@ -1295,17 +1295,17 @@ class EditTable extends HTMLElement
     _f1NumIntervalos = 0;      // cuántos había al desconectar
     _f1Conectada = true;
 
-    _f1Global(target, type, fn)
+    _f1Global(target, type, fn, opts)
     {
-        this._f1Globales.push({ target, type, fn });
-        if (this._f1Conectada) target.addEventListener(type, fn);
+        this._f1Globales.push({ target, type, fn, opts });
+        if (this._f1Conectada) target.addEventListener(type, fn, opts);
     }
 
     _f1Liberar()
     {
         if (!this._f1Conectada) return;
         this._f1Conectada = false;
-        this._f1Globales.forEach(g => g.target.removeEventListener(g.type, g.fn));
+        this._f1Globales.forEach(g => g.target.removeEventListener(g.type, g.fn, g.opts));
         this._f1NumIntervalos = this._f1Intervalos.length;
         this._f1Intervalos.forEach(id => clearInterval(id));
         this._f1Intervalos = [];
@@ -1322,7 +1322,7 @@ class EditTable extends HTMLElement
     {
         if (this._f1Conectada) return;
         this._f1Conectada = true;
-        this._f1Globales.forEach(g => g.target.addEventListener(g.type, g.fn));
+        this._f1Globales.forEach(g => g.target.addEventListener(g.type, g.fn, g.opts));
         const n = this._f1NumIntervalos;
         this._f1NumIntervalos = 0;
         for (let i = 0; i < n; i++) this.setAutoConfirm();
@@ -6866,10 +6866,16 @@ class EditTable extends HTMLElement
     _f3Liberar()
     {
         if (this._f3RO) { this._f3RO.disconnect(); this._f3ROClave = ''; }
+        if (this._f3SigueRO) { this._f3SigueRO.disconnect(); this._f3SigueCont?.removeEventListener('scroll', this._f3SigueFn); this._f3SigueCont = null; }
+        if (this._f3SigueRaf) { cancelAnimationFrame(this._f3SigueRaf); this._f3SigueRaf = 0; }
         this._f3CerrarMenu(false);
         this._f3FinArrastre();
     }
-    _f3Reconectar() { if (this._f3TeniaFijas) this._f3Posiciones(); }
+    _f3Reconectar()
+    {
+        if (this._f3TeniaFijas) this._f3Posiciones();
+        if (this._f3Chooser && this._table?.parentElement) { this._f3SeguirBotonIniciar(this._table.parentElement); this._f3SeguirBoton(); }
+    }
     _f3TrasDibujar() { if (this._f3TeniaFijas) this._f3Posiciones(); }
     _f3TrasOcultar(field, hide)
     {
@@ -7089,6 +7095,8 @@ class EditTable extends HTMLElement
             }
             if (!this._f3Boton.isConnected) cont.appendChild(this._f3Boton);
             this._f3EventosUI();
+            this._f3SeguirBotonIniciar(cont);
+            this._f3SeguirBoton();
         }
         else
         {
@@ -7098,6 +7106,72 @@ class EditTable extends HTMLElement
             this._f3Menu = null;
             cont.classList.remove('et-chooser-host');
         }
+    }
+    // El botón de columnas se queda en la orilla derecha visible de la tabla al desplazarla a lo ancho, la desplace
+    // el contenedor interno, uno de la página (V12: list_table_container, control-styles con overflow:revert) o la
+    // ventana; a lo alto se queda sobre el encabezado (sticky).
+    // Sin desplazamiento no se toca su estilo (el DOM es el de antes).
+    _f3SeguirBotonIniciar(cont)
+    {
+        if (this._f3SigueCont === cont) return;
+        const fn = () => this._f3SeguirBoton();
+        if (!this._f3SigueFn)
+        {
+            this._f3SigueFn = fn;
+            this._f1Global(document, 'scroll', fn, { capture: true, passive: true });   // cualquier ancestro del light DOM
+            this._f1Global(window, 'resize', fn);
+        }
+        cont.addEventListener('scroll', this._f3SigueFn, { passive: true });   // el contenedor interno (shadow cerrado)
+        if (this._f3SigueCont) this._f3SigueCont.removeEventListener('scroll', this._f3SigueFn);
+        this._f3SigueCont = cont;
+        if (typeof ResizeObserver !== 'undefined')
+        {
+            if (!this._f3SigueRO) this._f3SigueRO = new ResizeObserver(() => this._f3SeguirBoton());
+            this._f3SigueRO.disconnect();
+            this._f3SigueRO.observe(cont);
+            if (this._table) this._f3SigueRO.observe(this._table);
+        }
+    }
+    _f3SeguirBoton()
+    {
+        if (!this._f3Boton || this._f3SigueRaf) return;
+        this._f3SigueRaf = requestAnimationFrame(() => { this._f3SigueRaf = 0; this._f3PosBoton(); });
+    }
+    _f3PosBoton()
+    {
+        const b = this._f3Boton, cont = this._table?.parentElement;
+        if (!b || !b.isConnected || !cont || !this._f3Chooser) return;
+        const rc = cont.getBoundingClientRect();
+        if (!rc.width || !b.offsetWidth) return;   // oculta (pestaña, display:none): se recoloca al mostrarse (ResizeObserver)
+        // Orilla derecha visible: la ventana recortada por cada ancestro (y el propio contenedor) con overflow-x.
+        let der = document.documentElement.clientWidth || window.innerWidth;
+        for (let el = cont; el; el = this._composedParent(el))
+        {
+            if (el === document.body || el === document.documentElement) break;
+            if (getComputedStyle(el).overflowX === 'visible') continue;
+            const r = el.getBoundingClientRect();
+            der = Math.min(der, r.left + el.clientLeft + el.clientWidth);
+        }
+        // Sin pasarse del final de la tabla (ni del contenedor, si la tabla es más angosta)
+        const fin = Math.max(rc.left + cont.clientLeft + cont.clientWidth, this._table.getBoundingClientRect().right);
+        const objetivo = Math.min(der, fin) - 8;
+        // Arriba: a 3 px del encabezado, que es sticky en el contenedor que desplace a lo alto
+        const rb = b.getBoundingClientRect(), th = this._table.tHead?.getBoundingClientRect();
+        const tx = Math.round(((this._f3SigueTx ?? 0) + objetivo - rb.right) * 100) / 100;
+        let ty = this._f3SigueTy ?? 0;
+        if (th && th.height) ty = Math.round((ty + th.top + 3 - rb.top) * 100) / 100;
+        if (ty < 2) ty = 0;   // sin desplazar, el encabezado queda 1 px abajo (border-spacing): el botón no se mueve
+        this._f3SigueTx = tx;
+        this._f3SigueTy = ty;
+        if (Math.abs(tx) < 0.5 && ty < 0.5)
+        {
+            this._f3SigueTx = 0;
+            this._f3SigueTy = 0;
+            if (b.style.transform) { b.style.transform = ''; if (!b.getAttribute('style')) b.removeAttribute('style'); }
+            return;
+        }
+        const t = `translate(${tx}px, ${ty}px)`;
+        if (b.style.transform !== t) b.style.transform = t;
     }
     _f3MenuAbierto() { return !!this._f3Menu && this._f3Menu.classList.contains('et-open'); }
     _f3AbrirMenu(x, y, field, alinearDerecha = false)
@@ -11238,7 +11312,7 @@ class EditTable extends HTMLElement
             // ---- base (shadow principal y _getExtraCss)
             '.EdiTable-Selector': [['background-color', V('active-bg', 'rgba(255,255,255,.7)')], ['border-color', V('active-border', '#FFF')], ['border-radius', V('radius', '3px')], ['color', V('active-fg', '#000')]],
             '.EdiTable-Cell': [['height', V('row-height', '1.4rem')], ['outline-color', V('border', '#EDEDED')], ['padding', `${V('cell-pad-y', '4px')} ${V('cell-pad-x', '4px')}`]],
-            '.EdiTable-Row-Selected': [['background-color', V('sel-bg', '#3D75DD')], ['color', V('sel-fg', '#FFF')]],
+            '.EdiTable-Row-Selected': [['background-color', V('sel-bg', '#2F66CC')], ['color', V('sel-fg', '#FFF')]],
             'table': [['font-size', V('font-size', '1rem')]],
             'tbody tr:hover': [['background-color', V('hover-bg', '#F5F5F5')]],
             'thead': [['background-color', V('header-bg', '#F5F5F5')]],

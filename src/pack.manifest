@@ -1,6 +1,6 @@
 {
 	"id":"webshell",
 	"installable":["webshell"],
-	"version":"1.0.138",
+	"version":"1.0.139",
 	"schema_ver":"1.0.11"
 }
