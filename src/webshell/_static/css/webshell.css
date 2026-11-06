@@ -100,9 +100,21 @@ body {
 }
 
 /* NOTIFICACIONES */
+/* Anclado al encabezado (#nav_main es sticky-top), justo debajo y pegado al borde derecho.
+   El Bootstrap del webshell no usa Popper dentro del navbar y dropdown-menu-end no alinea el
+   menú: quedaba a la izquierda del botón, se salía por la derecha y agrandaba la página
+   (global_issues#18). Ancho y alto acotados a la ventana para que nunca la desborde. */
+#dropdown-notis {
+    position: static;
+}
 #notis_container {
+    position: absolute;
+    top: 100%;
+    right: .5rem;
+    left: auto;
     width: 25rem;
-    max-height: 80vh;
+    max-width: calc(100vw - 1rem);
+    max-height: calc(100vh - 7rem);
     overflow-y: auto;
 }
 .notify-not-readed_ {
@@ -548,44 +560,6 @@ body {
         display: block;
     }
 }
-/* Ajustar menu de notificaciones (325px - 454px) */
-@media (max-width: 453px) {
-    #dropdown-notis .dropdown-menu {
-        right: auto;
-        left: 0;
-    }
-}
-@media (max-width: 421px) {
-    #dropdown-notis .dropdown-menu {
-        right: auto;
-        left: -100px;
-    }
-}
-@media (max-width: 410px) {
-    #dropdown-notis .dropdown-menu {
-        top: 18px;
-        right: auto;
-        left: -100px;
-        transform: scale(.9);
-    }
-}
-@media (max-width: 389px) {
-    #dropdown-notis .dropdown-menu {
-        top: 10px;
-        right: auto;
-        left: -150px;
-        transform: scale(.8);
-    }
-}
-@media (max-width: 325px) {
-    #dropdown-notis .dropdown-menu {
-        top: 0;
-        right: auto;
-        left: -150px;
-        transform: scale(.7);
-    }
-}
-
 @keyframes loading {
     0% { left: -15%; }
     100% { left: 100%; }
