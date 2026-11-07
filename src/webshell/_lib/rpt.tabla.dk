@@ -1,0 +1,992 @@
+#include "dkli.dkh"
+#!
+module "Vista común de reportes para imprimir (webshell):"
+{
+    // rpt.tabla(&root, &def): reporte como tabla HTML simple, pensada para papel (carta vertical u horizontal).
+    // Sin EdiTable: los grupos, subtotales y totales se calculan aquí, en el servidor.
+    //
+    //  root: contexto del reporte (@("&.") en la vista): lista (filas), titles (FXCA108-111) y las listas de los filtros.
+    //  def:
+    //   title        título del reporte;
+    //   file         nombre del archivo CSV (sin extensión);
+    //   urlexit      dirección del botón de salir;
+    //   usuario      nombre del usuario;
+    //   parameters*  parámetros del reporte (@("&parameters")): fechas, filtros;
+    //   orientation  "portrait" (carta vertical, por omisión) o "landscape" (carta horizontal);
+    //   currency     campo de la fila con el código de la divisa del documento (vacío: una sola moneda).
+    //                Los importes "amount" nunca se suman entre divisas distintas;
+    //   fechas       "corte" (fil_fcorte) o "periodo" (finicio, ffinal) en el formulario de filtros;
+    //   texto        1: filtro de texto (texto_name, por omisión fil_cliente; texto_caption, por omisión «Cliente»);
+    //   filters      lista de {name, caption, data[, opciones, default]}, como la vista anterior;
+    //   columns      registro campo → {caption, kind, align, width, sum, sub, sub_caption, print, blank_zero}:
+    //                kind: "money" (importe en moneda base, suma con gran total), "amount" (importe en la divisa
+    //                del documento, suma por divisa), "qty" (cantidad), "count" (cuenta de filas), "date"
+    //                (aaaa-mm-dd → dd/mm/aaaa) o "text"; width: ancho relativo (1 por omisión);
+    //                sum: si suma (por omisión sí en money, amount, qty y count); sub: segundo campo que se pinta
+    //                debajo en la misma celda (p. ej. vencimiento bajo la emisión); print: false = solo en el CSV;
+    //                blank_zero: true = celda vacía cuando vale 0; const (sub_const): true = el texto (el de sub) es
+    //                una constante de cdocumentos (cFactura → Factura);
+    //   groups       lista de niveles {field, header, subtotal}: field es el campo que corta; header, el texto del
+    //                encabezado con {campo} (p. ej. "Divisa: {divisa}"); subtotal: false = sin renglón de subtotal.
+    //  Decimales: money con V12-0A-001, qty con V12-0A-002 y amount con divisa.decimales (2 si no hay base).
+    //  Se llama dentro de un elemento declarativo.
+
+    rpt.tabla.bool::&o, campo, predeterminado
+    {
+        if not(field.exist(o,campo)) { return predeterminado }
+        s = tolower(field.dstr(o,campo,""))
+        if s == "1" { return @true }
+        if s == "true" { return @true }
+        return @false
+    }
+
+    rpt.tabla.redondea.cero::v, decs
+    {
+        m = 0.5
+        for i = 0; i < decs
+        {
+            m = m / 10
+        }
+        if abs(v) < m { return 0 }
+        return v
+    }
+
+    rpt.tabla.num::v, decs
+    {
+        fmt = "#,0"
+        if decs > 0 { fmt = fmt + "." + padright("",decs,"0") }
+        return format(rpt.tabla.redondea.cero(v,decs), fmt)
+    }
+
+    rpt.tabla.fecha::s
+    {
+        if length(s) < 10 { return s }
+        return substring(s,8,2) + "/" + substring(s,5,2) + "/" + substring(s,0,4)
+    }
+
+    // Sustituye {campo} por el valor del campo de la fila
+    rpt.tabla.plantilla::tpl, &o
+    {
+        salida = ""
+        s = tpl
+        i = findstr(s,"{")
+        while i >= 0
+        {
+            j = findstr(s,"}")
+            if j < i
+            {
+                i = -1
+            }
+            else
+            {
+                campo = substring(s, i + 1, j - i - 1)
+                salida = salida + lremove(s,i) + field.dstr(o,campo,"")
+                s = left(s, j + 1)
+                i = findstr(s,"{")
+            }
+        }
+        return salida + s
+    }
+
+    // cFactura → Factura, cNota_de_cargo → Nota de cargo (constantes de cdocumentos)
+    rpt.tabla.constante::t
+    {
+        if length(t) > 1
+        {
+            if substring(t,0,1) == "c"
+            {
+                if substring(t,1,1) == toupper(substring(t,1,1)) { t = left(t,1) }
+            }
+        }
+        return replace(t,"_"," ")
+    }
+
+    rpt.tabla.llave::v
+    {
+        return "k" + replace(v,"/","|") + "_"
+    }
+
+    rpt.tabla.decs.div::&decs, cur
+    {
+        k = "d_" + cur
+        if cur != ""
+        {
+            if field.exist(decs,k) { return @@(decs,"#"+k) }
+        }
+        return @@(decs,"#money")
+    }
+
+    rpt.tabla.decimales.db::&db, &d
+    {
+        ref l = dbr.list(db,"SELECT varname, IFNULL(NULLIF(varvalue,''),vardefault) AS v FROM globalvar WHERE varname IN ('V12-0A-001','V12-0A-002')",@null)
+        for i = 0; i < list.count(l)
+        {
+            ref o = list.obj(l,i)
+            v = parse.num(field.dstr(o,"v","2"))
+            if field.dstr(o,"varname","") == "V12-0A-001" { d<"money">: v }
+            if field.dstr(o,"varname","") == "V12-0A-002" { d<"qty">: v }
+        }
+        ref dv = dbr.list(db,"SELECT codigo, IFNULL(decimales,-1) AS decimales FROM divisa WHERE NOT IFNULL(sys_deleted,0)",@null)
+        for i = 0; i < list.count(dv)
+        {
+            ref o = list.obj(dv,i)
+            n = field.dnum(o,"decimales",-1)
+            if n >= 0 { d<"d_" + field.dstr(o,"codigo","")>: n }
+        }
+        exception
+        {
+            do clear_exceptions()
+        }
+    }
+
+    rpt.tabla.decimales::
+    {
+        new d
+        {
+            @"money": 2
+            @"qty": 2
+        }
+        if isset("@crud_context")
+        {
+            ref db = @@(@crud_context,"&database")
+            if not(isnull(db)) { do rpt.tabla.decimales.db(db,d) }
+        }
+        return d
+    }
+
+    // Columnas normalizadas: lista de {field, caption, kind, align, width, sum, sub, sub_caption, print, blank_zero}
+    rpt.tabla.columnas::&cols_def
+    {
+        ref cols = list.create()
+        go foreach.fobj(index:i, key:key, value:opt) with(cols_def)
+        {
+            kind = field.dstr(opt,"kind","text")
+            alin = "l"
+            suma = @false
+            if kind == "money" { suma = @true }
+            if kind == "amount" { suma = @true }
+            if kind == "qty" { suma = @true }
+            if kind == "count" { suma = @true }
+            if suma { alin = "r" }
+            if kind == "date" { alin = "c" }
+            a = field.dstr(opt,"align","")
+            if a == "end" { alin = "r" }
+            if a == "center" { alin = "c" }
+            if a == "start" { alin = "l" }
+            new c
+            {
+                @"field": key
+                @"caption": field.dstr(opt,"caption",key)
+                @"kind": kind
+                @"align": alin
+                @"width": field.dnum(opt,"width",1)
+                @"sum": rpt.tabla.bool(opt,"sum",suma)
+                @"sub": field.dstr(opt,"sub","")
+                @"sub_caption": field.dstr(opt,"sub_caption","")
+                @"print": rpt.tabla.bool(opt,"print",@true)
+                @"blank_zero": rpt.tabla.bool(opt,"blank_zero",@false)
+                @"const": rpt.tabla.bool(opt,"const",@false)
+                @"sub_const": rpt.tabla.bool(opt,"sub_const",@false)
+            }
+            do list.add(cols,c)
+        }
+        return cols
+    }
+
+    rpt.tabla.reinicia::&acc, &cols
+    {
+        acc<"_n">: 0
+        acc<"_cur">: ""
+        acc<"_mix">: 0
+        for c = 0; c < list.count(cols)
+        {
+            ref col = list.obj(cols,c)
+            acc<"s_" + @@(col,"$field")>: 0
+        }
+    }
+
+    rpt.tabla.acumula::&acc, &cols, &o, cur
+    {
+        acc<"_n">: @@(acc,"#_n") + 1
+        if @@(acc,"#_n") == 1
+        {
+            acc<"_cur">: cur
+        }
+        else
+        {
+            if @@(acc,"$_cur") != cur { acc<"_mix">: 1 }
+        }
+        for c = 0; c < list.count(cols)
+        {
+            ref col = list.obj(cols,c)
+            if @@(col,"#sum")
+            {
+                k = "s_" + @@(col,"$field")
+                v = 1
+                if @@(col,"$kind") != "count" { v = field.dnum(o,@@(col,"$field"),0) }
+                acc<k>: @@(acc,"#"+k) + v
+            }
+        }
+    }
+
+    // Ordena las filas por los niveles de agrupación, conservando el orden de aparición de cada grupo y,
+    // dentro de un grupo, el orden de la consulta (clasificación estable por cubetas, del último nivel al primero).
+    rpt.tabla.ordena::&rows, &groups
+    {
+        ref actual = rows
+        ng = list.count(groups)
+        for g = ng - 1; g >= 0; g - 1
+        {
+            ref grp = list.obj(groups,g)
+            campo = field.dstr(grp,"field","")
+            ref idx = record.create()
+            ref cubetas = list.create()
+            for i = 0; i < list.count(actual)
+            {
+                ref o = list.obj(actual,i)
+                k = rpt.tabla.llave(field.dstr(o,campo,""))
+                if not(field.exist(idx,k))
+                {
+                    idx<k>: list.count(cubetas)
+                    ref nb = list.create()
+                    do list.add(cubetas,nb)
+                }
+                ref b = list.obj(cubetas,@@(idx,"#"+k))
+                do list.add(b,o)
+            }
+            ref nueva = list.create()
+            for j = 0; j < list.count(cubetas)
+            {
+                ref b = list.obj(cubetas,j)
+                for i = 0; i < list.count(b)
+                {
+                    ref o = list.obj(b,i)
+                    do list.add(nueva,o)
+                }
+            }
+            ref actual = nueva
+        }
+        return actual
+    }
+
+    rpt.tabla.valor::&col, &o, campo, &decs, cur
+    {
+        kind = @@(col,"$kind")
+        if kind == "date" { return rpt.tabla.fecha(field.dstr(o,campo,"")) }
+        if kind == "text"
+        {
+            t = field.dstr(o,campo,"")
+            if campo == @@(col,"$field")
+            {
+                if @@(col,"#const") { t = rpt.tabla.constante(t) }
+            }
+            else
+            {
+                if @@(col,"#sub_const") { t = rpt.tabla.constante(t) }
+            }
+            return t
+        }
+        if kind == "count" { return field.dstr(o,campo,"") }
+        v = field.dnum(o,campo,0)
+        if @@(col,"#blank_zero")
+        {
+            if v == 0 { return "" }
+        }
+        if kind == "money" { return rpt.tabla.num(v, @@(decs,"#money")) }
+        if kind == "qty" { return rpt.tabla.num(v, @@(decs,"#qty")) }
+        if kind == "amount" { return rpt.tabla.num(v, rpt.tabla.decs.div(decs,cur)) }
+        return field.dstr(o,campo,"")
+    }
+
+    // Valor de una columna en un renglón de subtotal o total; base = 1: solo moneda base (sin "amount")
+    rpt.tabla.valsum::&col, &acc, &decs, con_divisa, base
+    {
+        if not(@@(col,"#sum")) { return "" }
+        kind = @@(col,"$kind")
+        v = @@(acc,"#s_" + @@(col,"$field"))
+        if kind == "count" { return format(v,"#,0") }
+        if @@(col,"#blank_zero")
+        {
+            if rpt.tabla.redondea.cero(v,@@(decs,"#money")) == 0 { return "" }
+        }
+        if kind == "money" { return rpt.tabla.num(v, @@(decs,"#money")) }
+        if kind == "qty" { return rpt.tabla.num(v, @@(decs,"#qty")) }
+        if kind == "amount"
+        {
+            if base { return "" }
+            if not(con_divisa) { return rpt.tabla.num(v, @@(decs,"#money")) }
+            if @@(acc,"#_mix") { return "" }
+            return rpt.tabla.num(v, rpt.tabla.decs.div(decs,@@(acc,"$_cur")))
+        }
+        return ""
+    }
+
+    rpt.tabla.fila::&cols, &o, &decs, cur
+    {
+        #$
+        tr(class="rpt-d")
+        {
+            #!
+            for c = 0; c < list.count(cols)
+            {
+                ref col = list.obj(cols,c)
+                txt = rpt.tabla.valor(col,o,@@(col,"$field"),decs,cur)
+                sub = @@(col,"$sub")
+                #$
+                td(class="rpt-#<@@(col,'$align')>")
+                {
+                    "#<txt>"
+                    #!
+                    if sub != ""
+                    {
+                        txt2 = rpt.tabla.valor(col,o,sub,decs,cur)
+                        #$
+                        div(class="rpt-s"){"#<txt2>"}
+                    }
+                    #$
+                }
+                #!
+            }
+            #$
+        }
+        #!
+    }
+
+    rpt.tabla.encabezado::nivel, texto, ncols
+    {
+        #$
+        tr(class="rpt-g rpt-g#<nivel>")
+        {
+            td(colspan="#<ncols>"){"#<texto>"}
+        }
+        #!
+    }
+
+    rpt.tabla.subtotal::&cols, &acc, &decs, etiqueta, clase, con_divisa, base
+    {
+        ncols = list.count(cols)
+        lead = 0
+        sigue = @true
+        for c = 0; c < ncols
+        {
+            ref col = list.obj(cols,c)
+            if @@(col,"#sum") { sigue = @false }
+            if sigue { lead = lead + 1 }
+        }
+        if lead == 0
+        {
+            #$
+            tr(class="#<clase>")
+            {
+                td(class="rpt-etq" colspan="#<ncols>"){"#<etiqueta>"}
+            }
+            #!
+        }
+        #$
+        tr(class="#<clase>")
+        {
+            #!
+            if lead > 0
+            {
+                #$
+                td(class="rpt-etq" colspan="#<lead>"){"#<etiqueta>"}
+            }
+            #!
+            for c = lead; c < ncols
+            {
+                ref col = list.obj(cols,c)
+                txt = rpt.tabla.valsum(col,acc,decs,con_divisa,base)
+                #$
+                td(class="rpt-#<@@(col,'$align')>"){"#<txt>"}
+                #!
+            }
+            #$
+        }
+        #!
+    }
+
+    // Texto de los filtros aplicados (los que no están en «Todos»)
+    rpt.tabla.aplicados::&root, &def, &params
+    {
+        ref filters = ifnull(@@(def,"&filters"), list.create())
+        s = ""
+        if field.dnum(def,"texto",0) > 0
+        {
+            t = trim(field.dstr(params,field.dstr(def,"texto_name","fil_cliente"),""))
+            if t != "" { s = field.dstr(def,"texto_caption","Cliente") + ": «" + t + "»" }
+        }
+        for f = 0; f < list.count(filters)
+        {
+            ref flt = list.obj(filters,f)
+            fval = field.dstr(params,field.dstr(flt,"name",""),"")
+            if fval != ""
+            {
+                if fval != "*"
+                {
+                    ref opciones = ifnull(@@(root,"&"+field.dstr(flt,"data","")), list.create())
+                    if field.exist(flt,"opciones") { ref opciones = @@(flt,"&opciones") }
+                    texto = fval
+                    for i = 0; i < list.count(opciones)
+                    {
+                        ref obj = list.obj(opciones,i)
+                        if field.dstr(obj,"sys_pk","") == fval { texto = field.dstr(obj,"descripcion","") }
+                    }
+                    if s != "" { s = s + " · " }
+                    s = s + field.dstr(flt,"caption","") + ": " + texto
+                }
+            }
+        }
+        return s
+    }
+
+    function rpt.tabla(&root, &def)
+    {
+        // Dentro de #<…> en un texto $"…" no se puede escribir '' (cadena vacía): se usa esta variable
+        vacio = ""
+        ref rows0 = ifnull(@@(root,"&lista"), list.create())
+        ref titles = ifnull(@@(root,"&titles"), record.create())
+        ref filters = ifnull(@@(def,"&filters"), list.create())
+        ref params = ifnull(@@(def,"&parameters"), record.create())
+        ref groups = ifnull(@@(def,"&groups"), list.create())
+        ref todas = rpt.tabla.columnas(@@(def,"&columns"))
+        ref decs = rpt.tabla.decimales()
+
+        title = field.dstr(def,"title","")
+        archivo = field.dstr(def,"file","reporte")
+        orientacion = "portrait"
+        if field.dstr(def,"orientation","") == "landscape" { orientacion = "landscape" }
+        ancho_hoja = "196mm"
+        ancho_min = "680px"
+        if orientacion == "landscape"
+        {
+            ancho_hoja = "259mm"
+            ancho_min = "900px"
+        }
+        moneda = field.dstr(def,"currency","")
+        con_divisa = @false
+        if moneda != "" { con_divisa = @true }
+
+        // Columnas que se imprimen y anchos relativos
+        ref cols = list.create()
+        ref csv = list.create()
+        total_w = 0
+        hay_base = @false
+        for c = 0; c < list.count(todas)
+        {
+            ref col = list.obj(todas,c)
+            new cc
+            {
+                @"f": @@(col,"$field")
+                @"t": @@(col,"$caption")
+            }
+            do list.add(csv,cc)
+            if @@(col,"$sub") != ""
+            {
+                new cs
+                {
+                    @"f": @@(col,"$sub")
+                    @"t": ifstr(@@(col,"$sub_caption") == "", @@(col,"$sub"), @@(col,"$sub_caption"))
+                }
+                do list.add(csv,cs)
+            }
+            if @@(col,"#print")
+            {
+                do list.add(cols,col)
+                total_w = total_w + @@(col,"#width")
+                if @@(col,"#sum")
+                {
+                    if @@(col,"$kind") != "amount" { hay_base = @true }
+                }
+            }
+        }
+        if total_w <= 0 { total_w = 1 }
+        ncols = list.count(cols)
+        if ncols < 1 { ncols = 1 }
+
+        ref rows = rpt.tabla.ordena(rows0, groups)
+        ng = list.count(groups)
+
+        // Acumuladores: uno por nivel, uno por divisa y el general
+        ref accs = list.create()
+        ref llaves = record.create()
+        for g = 0; g < ng
+        {
+            ref a = record.create()
+            do rpt.tabla.reinicia(a,cols)
+            do list.add(accs,a)
+            llaves<"g" + str(g)>: ""
+        }
+        ref gt = record.create()
+        do rpt.tabla.reinicia(gt,cols)
+        ref por_divisa = record.create()
+        ref divisas = list.create()
+
+        // Encabezados de la hoja
+        modo_fechas = field.dstr(def,"fechas","periodo")
+        fechai = field.dstr(params,"finicio","")
+        fechaf = field.dstr(params,"ffinal","")
+        fcorte = field.dstr(params,"fil_fcorte","")
+        if fcorte == "" { fcorte = date_str(now(), "yyyy-MM-dd") }
+        etiqueta_fechas = "Periodo: "
+        texto_fechas = rpt.tabla.fecha(fechai) + " a " + rpt.tabla.fecha(fechaf)
+        if fechai == "" { texto_fechas = "hasta " + rpt.tabla.fecha(fechaf) }
+        if modo_fechas == "corte"
+        {
+            etiqueta_fechas = "Corte: "
+            texto_fechas = rpt.tabla.fecha(fcorte)
+        }
+        aplicados = rpt.tabla.aplicados(root, def, params)
+        // Un ":" dentro de #<…> en un texto $"…" corta la expresión: la fecha de impresión se arma aquí
+        impreso = date_str(now(),"dd/MM/yyyy HH:mm")
+        texto_name = field.dstr(def,"texto_name","fil_cliente")
+
+        new nav_config
+        {
+            @"title": title
+            @"urlexit": field.dstr(def,"urlexit","")
+        }
+
+        new datos_csv
+        {
+            @"file": archivo
+            @"cols*": csv
+            @"rows*": rows
+        }
+        json_csv = replace(to.json(datos_csv),"<","\\u003c")
+
+        #$
+        div(class="rpt-vista-papel" id="view")
+        {
+            div(class="rpt-nopr container")
+            {
+                #!
+                do uie.printV12FormBar(nav_config)
+                #$
+            }
+            style
+            {$'
+                @page { size: letter #<orientacion>; margin: 10mm 10mm 12mm 10mm;
+                    @bottom-right { content: "Página " counter(page) " de " counter(pages); font-size: 7pt; color: #555; } }
+                .rpt-filtros { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:.5rem; align-items:end; margin:.5rem 0; }
+                .rpt-filtros label { display:block; font-size:.8rem; margin:0; }
+                .rpt-acciones { display:flex; gap:.25rem; justify-content:flex-end; }
+                .rpt-papel { max-width: #<ancho_hoja>; margin: .5rem auto 2rem auto; background:#fff; color:#000; padding: 6mm; box-shadow: 0 0 .4rem rgba(0,0,0,.25); }
+                table.rpt { width:100%; border-collapse:collapse; table-layout:fixed; font-size:8.5pt; line-height:1.25; }
+                table.rpt th, table.rpt td { padding:1px 3px; vertical-align:top; overflow-wrap:anywhere; }
+                table.rpt thead { display: table-header-group; }
+                table.rpt thead th { border-top:.75pt solid #000; border-bottom:.75pt solid #000; font-weight:600; background:#e9e9e9; }
+                table.rpt tr { break-inside: avoid; page-break-inside: avoid; }
+                table.rpt tbody.rpt-k { break-inside: avoid; page-break-inside: avoid; }
+                table.rpt td.rpt-l, table.rpt th.rpt-l { text-align:left; }
+                table.rpt td.rpt-r, table.rpt th.rpt-r { text-align:right; }
+                table.rpt td.rpt-r { white-space:nowrap; overflow:hidden; }
+                table.rpt td.rpt-c, table.rpt th.rpt-c { text-align:center; }
+                table.rpt tr.rpt-d td { border-bottom:.25pt solid #d0d0d0; }
+                table.rpt .rpt-s { color:#444; font-size:7.5pt; }
+                table.rpt th .rpt-s { font-weight:400; }
+                table.rpt tr.rpt-g td { padding-top:4px; }
+                table.rpt tr.rpt-g0 td { font-weight:700; font-size:9pt; background:#e9e9e9; border-top:.75pt solid #000; }
+                table.rpt tr.rpt-g1 td { font-weight:700; }
+                table.rpt tr.rpt-g2 td { font-weight:600; font-style:italic; }
+                table.rpt tr.rpt-st td { font-weight:700; border-top:.5pt solid #555; }
+                table.rpt tr.rpt-st0 td { background:#f2f2f2; border-top:.75pt solid #000; }
+                table.rpt tr.rpt-tot td { font-weight:700; border-top:.75pt solid #000; background:#e9e9e9; }
+                table.rpt tr.rpt-gran td { font-weight:700; border-top:1.5pt double #000; border-bottom:1.5pt double #000; }
+                table.rpt td.rpt-etq { text-align:right; }
+                .rpt-cab { font-size:8.5pt; }
+                .rpt-cab .rpt-tit { font-size:12pt; font-weight:700; text-align:center; }
+                .rpt-cab .rpt-emp { text-align:center; font-weight:400; }
+                .rpt-cab .rpt-lin { display:flex; justify-content:space-between; gap:1rem; font-weight:400; }
+                .rpt-pie { text-align:center; font-size:8pt; margin-top:.5rem; }
+                @media screen and (max-width: 900px) {
+                    .rpt-papel { overflow-x:auto; padding:2mm; }
+                    table.rpt { min-width: #<ancho_min>; }
+                }
+                @media print {
+                    .rpt-nopr, .no-print { display:none !important; }
+                    html, body { background:#fff !important; height:auto !important; overflow:visible !important; }
+                    .rpt-papel { max-width:none; margin:0; padding:0; box-shadow:none; }
+                    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                }
+            '}
+            div(class="rpt-nopr container")
+            {
+                #!
+                if @@(root,"$error/message") != ""
+                {
+                    #$
+                    p(class="text-danger"){"#<@@(root,'$error/message')>"}
+                }
+                #$
+                form(action="./" method="GET" id="form-filter" class="rpt-filtros")
+                {
+                    #!
+                    if modo_fechas == "corte"
+                    {
+                        #$
+                        div
+                        {
+                            label("for"="rpt_fcorte"){$"Fecha de corte"}
+                            input(class="form-control form-control-sm rounded-0" type="date" id="rpt_fcorte" name="fil_fcorte" value="#<fcorte>")
+                        }
+                    }
+                    #!
+                    if modo_fechas == "periodo"
+                    {
+                        #$
+                        div
+                        {
+                            label("for"="rpt_finicio"){$"Fecha inicial"}
+                            input(class="form-control form-control-sm rounded-0" type="date" id="rpt_finicio" name="finicio" value="#<fechai>")
+                        }
+                        div
+                        {
+                            label("for"="rpt_ffinal"){$"Fecha final"}
+                            input(class="form-control form-control-sm rounded-0" type="date" id="rpt_ffinal" name="ffinal" value="#<fechaf>")
+                        }
+                    }
+                    #!
+                    if field.dnum(def,"texto",0) > 0
+                    {
+                        #$
+                        div
+                        {
+                            label("for"="rpt_texto"){"#<field.dstr(def,'texto_caption','Cliente')>"}
+                            input(class="form-control form-control-sm rounded-0" type="search" id="rpt_texto" name="#<texto_name>" value="#<field.dstr(params,texto_name,vacio)>" placeholder="Código, nombre o RFC")
+                        }
+                    }
+                    #!
+                    for f = 0; f < list.count(filters); f+1
+                    {
+                        ref flt = list.obj(filters,f)
+                        fname = field.dstr(flt,"name","")
+                        fval = field.dstr(params,fname,"")
+                        ref opciones = ifnull(@@(root,"&"+field.dstr(flt,"data","")), list.create())
+                        con_todos = @true
+                        if field.exist(flt,"opciones")
+                        {
+                            ref opciones = @@(flt,"&opciones")
+                            con_todos = @false
+                        }
+                        if fval == "" { fval = field.dstr(flt,"default","") }
+                        #$
+                        div
+                        {
+                            label("for"="rpt_#<fname>"){"#<field.dstr(flt,'caption',vacio)>"}
+                            select(class="form-select form-select-sm rounded-0" id="rpt_#<fname>" name="#<fname>")
+                            {
+                                #!
+                                if con_todos
+                                {
+                                    #$
+                                    option(value="*"){$"Todos"}
+                                }
+                                #!
+                                for i = 0; i < list.count(opciones); i+1
+                                {
+                                    ref obj = list.obj(opciones,i)
+                                    #$
+                                    option("#<ifstr(field.dstr(obj,'sys_pk',vacio)==fval,'selected',vacio)>"="true" value="#<field.dstr(obj,'sys_pk',vacio)>")
+                                    {"#<field.dstr(obj,'descripcion',vacio)>"}
+                                }
+                                #$
+                            }
+                        }
+                    }
+                    #$
+                    div(class="rpt-acciones")
+                    {
+                        button(class="btn btn-sm btn-primary rounded-0" type="submit" id="btn_filter"){$"Aplicar"}
+                        button(class="btn btn-sm btn-outline-secondary rounded-0" type="button" id="rpt_imprimir" title="Imprimir"){$"Imprimir"}
+                        button(class="btn btn-sm btn-outline-secondary rounded-0" type="button" id="rpt_csv" title="Exportar a CSV (todas las columnas, sin totales)"){$"CSV"}
+                    }
+                }
+            }
+            div(class="rpt-papel" id="section-to-print")
+            {
+                table(class="rpt" id="rpt_tabla")
+                {
+                    colgroup
+                    {
+                        #!
+                        for c = 0; c < list.count(cols)
+                        {
+                            ref col = list.obj(cols,c)
+                            w = format(@@(col,"#width") * 100 / total_w, "0.##")
+                            #$
+                            col(style="width:#<w>%"){}
+                            #!
+                        }
+                        #$
+                    }
+                    thead
+                    {
+                        tr
+                        {
+                            td(colspan="#<ncols>" class="rpt-cab")
+                            {
+                                #!
+                                if field.dstr(titles,"title","") != ""
+                                {
+                                    #$
+                                    div(class="rpt-emp"){"#<field.dstr(titles,'title',vacio)>"}
+                                }
+                                #!
+                                if field.dstr(titles,"subtitle","") != ""
+                                {
+                                    #$
+                                    div(class="rpt-emp"){"#<field.dstr(titles,'subtitle',vacio)>"}
+                                }
+                                #!
+                                if field.dstr(titles,"subtitle_2","") != ""
+                                {
+                                    #$
+                                    div(class="rpt-emp"){"#<field.dstr(titles,'subtitle_2',vacio)>"}
+                                }
+                                #$
+                                div(class="rpt-tit"){"#<title>"}
+                                div(class="rpt-lin")
+                                {
+                                    span{"#<cut(field.dstr(def,'usuario',vacio),25)>"}
+                                    span
+                                    {
+                                        b{"#<etiqueta_fechas>"}
+                                        "#<texto_fechas>"
+                                    }
+                                    span
+                                    {
+                                        b{$"Impresión: "}
+                                        "#<impreso>"
+                                    }
+                                }
+                                #!
+                                if aplicados != ""
+                                {
+                                    #$
+                                    div(class="rpt-lin")
+                                    {
+                                        span{"#<aplicados>"}
+                                    }
+                                }
+                                #$
+                            }
+                        }
+                        tr
+                        {
+                            #!
+                            for c = 0; c < list.count(cols)
+                            {
+                                ref col = list.obj(cols,c)
+                                subc = @@(col,"$sub_caption")
+                                #$
+                                th(class="rpt-#<@@(col,'$align')>")
+                                {
+                                    "#<@@(col,'$caption')>"
+                                    #!
+                                    if subc != ""
+                                    {
+                                        #$
+                                        div(class="rpt-s"){"#<subc>"}
+                                    }
+                                    #$
+                                }
+                                #!
+                            }
+                            #$
+                        }
+                    }
+                    #!
+                    n = list.count(rows)
+                    for i = 0; i < n
+                    {
+                        ref o = list.obj(rows,i)
+                        cur = ""
+                        if con_divisa { cur = field.dstr(o,moneda,"") }
+
+                        // Nivel más alto que cambia respecto a la fila anterior
+                        cambio = ng
+                        if i == 0 { cambio = 0 }
+                        for g = 0; g < ng
+                        {
+                            if cambio == ng
+                            {
+                                ref grp = list.obj(groups,g)
+                                if field.dstr(o,field.dstr(grp,"field",""),"") != @@(llaves,"$g" + str(g)) { cambio = g }
+                            }
+                        }
+
+                        // Cierra los niveles que terminan (de abajo hacia arriba)
+                        if i > 0
+                        {
+                            if cambio < ng
+                            {
+                                for g = ng - 1; g >= cambio; g - 1
+                                {
+                                    ref grp = list.obj(groups,g)
+                                    ref a = list.obj(accs,g)
+                                    if rpt.tabla.bool(grp,"subtotal",@true)
+                                    {
+                                        etq = "Total " + @@(llaves,"$t" + str(g)) + " (" + format(@@(a,"#_n"),"#,0") + ")"
+                                        #$
+                                        tbody(class="rpt-k")
+                                        {
+                                            #!
+                                            do rpt.tabla.subtotal(cols,a,decs,etq,"rpt-st rpt-st" + str(g),con_divisa,@false)
+                                            #$
+                                        }
+                                        #!
+                                    }
+                                    do rpt.tabla.reinicia(a,cols)
+                                }
+                            }
+                        }
+
+                        // Abre los niveles nuevos con su encabezado, pegado a la primera fila
+                        clase_tb = ""
+                        if cambio < ng { clase_tb = "rpt-k" }
+                        #$
+                        tbody(class="#<clase_tb>")
+                        {
+                            #!
+                            for g = cambio; g < ng
+                            {
+                                ref grp = list.obj(groups,g)
+                                campo = field.dstr(grp,"field","")
+                                texto = rpt.tabla.plantilla(field.dstr(grp,"header","{" + campo + "}"), o)
+                                llaves<"g" + str(g)>: field.dstr(o,campo,"")
+                                llaves<"t" + str(g)>: texto
+                                do rpt.tabla.encabezado(g, texto, ncols)
+                            }
+                            do rpt.tabla.fila(cols,o,decs,cur)
+                            #$
+                        }
+                        #!
+
+                        for g = 0; g < ng
+                        {
+                            ref a = list.obj(accs,g)
+                            do rpt.tabla.acumula(a,cols,o,cur)
+                        }
+                        do rpt.tabla.acumula(gt,cols,o,cur)
+                        if con_divisa
+                        {
+                            kd = rpt.tabla.llave(cur)
+                            if not(field.exist(por_divisa,kd))
+                            {
+                                ref ad = record.create()
+                                do rpt.tabla.reinicia(ad,cols)
+                                por_divisa<kd + "*">: ad
+                                new dd
+                                {
+                                    @"cur": cur
+                                }
+                                do list.add(divisas,dd)
+                            }
+                            ref ad = @@(por_divisa,"&" + kd)
+                            do rpt.tabla.acumula(ad,cols,o,cur)
+                        }
+                    }
+
+                    // Subtotales pendientes y totales
+                    if n > 0
+                    {
+                        for g = ng - 1; g >= 0; g - 1
+                        {
+                            ref grp = list.obj(groups,g)
+                            ref a = list.obj(accs,g)
+                            if rpt.tabla.bool(grp,"subtotal",@true)
+                            {
+                                etq = "Total " + @@(llaves,"$t" + str(g)) + " (" + format(@@(a,"#_n"),"#,0") + ")"
+                                #$
+                                tbody(class="rpt-k")
+                                {
+                                    #!
+                                    do rpt.tabla.subtotal(cols,a,decs,etq,"rpt-st rpt-st" + str(g),con_divisa,@false)
+                                    #$
+                                }
+                                #!
+                            }
+                        }
+                    }
+                    #$
+                    tbody(class="rpt-k")
+                    {
+                        #!
+                        if n == 0
+                        {
+                            #$
+                            tr
+                            {
+                                td(colspan="#<ncols>" class="rpt-c"){$"Sin datos con estos filtros."}
+                            }
+                        }
+                        #!
+                        if n > 0
+                        {
+                            if con_divisa
+                            {
+                                for d = 0; d < list.count(divisas)
+                                {
+                                    ref dd = list.obj(divisas,d)
+                                    ref ad = @@(por_divisa,"&" + rpt.tabla.llave(@@(dd,"$cur")))
+                                    etq = "Total " + @@(dd,"$cur") + " (" + format(@@(ad,"#_n"),"#,0") + ")"
+                                    do rpt.tabla.subtotal(cols,ad,decs,etq,"rpt-tot",con_divisa,@false)
+                                }
+                                if hay_base
+                                {
+                                    etq = "Total general en moneda base (" + format(@@(gt,"#_n"),"#,0") + ")"
+                                    do rpt.tabla.subtotal(cols,gt,decs,etq,"rpt-gran",con_divisa,@true)
+                                }
+                            }
+                            if not(con_divisa)
+                            {
+                                etq = "Total general (" + format(@@(gt,"#_n"),"#,0") + ")"
+                                do rpt.tabla.subtotal(cols,gt,decs,etq,"rpt-gran",con_divisa,@false)
+                            }
+                        }
+                        #$
+                    }
+                }
+                #!
+                if field.dstr(titles,"footer","") != ""
+                {
+                    #$
+                    div(class="rpt-pie"){"#<field.dstr(titles,'footer',vacio)>"}
+                }
+                #$
+            }
+            script(type="application/json" id="rpt_datos"){$'#<json_csv>'}
+            script(type="text/javascript")
+            {$'
+                (function () {
+                    function q(v) {
+                        if (v === null || v === undefined) return "";
+                        v = String(v);
+                        if (/[",;]/.test(v) || v.indexOf(String.fromCharCode(10)) >= 0 || v.indexOf(String.fromCharCode(13)) >= 0) { const dq = String.fromCharCode(34); return dq + v.replace(/"/g, dq + dq) + dq; }
+                        return v;
+                    }
+                    document.addEventListener("DOMContentLoaded", function () {
+                        const p = document.getElementById("rpt_imprimir");
+                        if (p) p.addEventListener("click", function () { window.print(); });
+                        const b = document.getElementById("rpt_csv");
+                        if (!b) return;
+                        b.addEventListener("click", function () {
+                            const d = JSON.parse(document.getElementById("rpt_datos").textContent);
+                            const fin = String.fromCharCode(13, 10);
+                            const lineas = [d.cols.map(function (c) { return q(c.t); }).join(",")];
+                            d.rows.forEach(function (r) { lineas.push(d.cols.map(function (c) { return q(r[c.f]); }).join(",")); });
+                            const blob = new Blob([String.fromCharCode(0xFEFF) + lineas.join(fin)], { type: "text/csv;charset=utf-8" });
+                            const a = document.createElement("a");
+                            a.href = URL.createObjectURL(blob);
+                            a.download = d.file + ".csv";
+                            document.body.appendChild(a);
+                            a.click();
+                            setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+                        });
+                    });
+                })();
+            '}
+        }
+        #!
+    }
+}
