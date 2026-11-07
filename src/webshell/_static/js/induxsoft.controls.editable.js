@@ -924,7 +924,7 @@ class EditTable extends HTMLElement
     // show-tree, hidde-selector y hide-row-selector tienen efecto después de la carga.
     static _f1Observados = ['show-tree', 'hidde-selector', 'hide-row-selector',
         'summary-scope', 'multi-select', 'column-chooser', 'column-reorder',
-        'design-auto-save', 'design-key', 'design-auto-save-sort',
+        'design-auto-save', 'design-key', 'design-auto-save-sort', 'design-auto-save-group',
         'virtual-rows', 'group-panel'];   // F1: P28 de la spec §13
 
     static get observedAttributes()
@@ -6743,7 +6743,8 @@ class EditTable extends HTMLElement
 
     DesignAutoSave = true;          // §9.2: design-auto-save
     DesignKey = null;               // §9.2: design-key (reemplaza pathname + '#' + id)
-    DesignAutoSaveSort = false;     // §9.2: design-auto-save-sort (orden de filas y agrupación)
+    DesignAutoSaveSort = false;     // §9.2: design-auto-save-sort (orden de filas; también la agrupación, por compatibilidad)
+    DesignAutoSaveGroup = true;     // design-auto-save-group: la agrupación se guarda con el resto del diseño (2026-11-06)
 
     _f3Chooser = false;
     _f3Reorder = false;
@@ -6830,6 +6831,7 @@ class EditTable extends HTMLElement
             if (this.hasAttribute('design-auto-save')) this.DesignAutoSave = this._f3Bool(a('design-auto-save'));
             if (this.hasAttribute('design-key')) this.DesignKey = ((a('design-key') ?? '').trim() || null);
             if (this.hasAttribute('design-auto-save-sort')) this.DesignAutoSaveSort = this._f3Bool(a('design-auto-save-sort'));
+            if (this.hasAttribute('design-auto-save-group')) this.DesignAutoSaveGroup = this._f3Bool(a('design-auto-save-group'));
 
             this._f3Declarado = this.Columns.map(c => ({
                 col: c, field: c?.field,
@@ -6861,6 +6863,7 @@ class EditTable extends HTMLElement
             case 'design-auto-save': this.DesignAutoSave = (v === null ? true : this._f3Bool(v)); break;
             case 'design-key': this.DesignKey = ((v ?? '').trim() || null); break;
             case 'design-auto-save-sort': this.DesignAutoSaveSort = (v !== null && this._f3Bool(v)); break;
+            case 'design-auto-save-group': this.DesignAutoSaveGroup = (v === null ? true : this._f3Bool(v)); break;
         }
     }
     _f3Liberar()
@@ -7584,10 +7587,10 @@ class EditTable extends HTMLElement
             this._f1EstadoColumna(f).ancho = css;
         });
 
-        if (o.filas)
+        if (o.filas || o.grupos)
         {
             const s = layout.sort;
-            if (s && s.field != undefined && this._f3Indice(s.field) >= 0) this._f3AplicarOrden(s.field, String(s.dir ?? '').toUpperCase() === 'DESC');
+            if (o.filas && s && s.field != undefined && this._f3Indice(s.field) >= 0) this._f3AplicarOrden(s.field, String(s.dir ?? '').toUpperCase() === 'DESC');
             if (Array.isArray(layout.groups) && typeof this.GroupBy === 'function')
             {
                 const g = layout.groups.filter(f => this._f3Indice(f) >= 0);
@@ -7665,10 +7668,13 @@ class EditTable extends HTMLElement
         }
         catch (e) { return null; }
     }
+    // La agrupación se guarda por omisión (design-auto-save-group); design-auto-save-sort="true" también la guarda (compatibilidad).
+    _f3GuardaGrupos() { return this.DesignAutoSaveGroup || this.DesignAutoSaveSort; }
     _f3ProgramarGuardado(reason)
     {
         if (!this.DesignAutoSave || reason === 'reset' || reason === 'set') return;
-        if ((reason === 'sort' || reason === 'group') && !this.DesignAutoSaveSort) return;
+        if (reason === 'sort' && !this.DesignAutoSaveSort) return;
+        if (reason === 'group' && !this._f3GuardaGrupos()) return;
         if (!this._f3Llave()) return;
         clearTimeout(this._f3Timer);
         this._f3Timer = setTimeout(() => { this._f3Timer = 0; this._f3Guardar(); }, 500);
@@ -7680,7 +7686,8 @@ class EditTable extends HTMLElement
             const k = this._f3Llave();
             if (!k || !this.DesignAutoSave) return;
             const layout = this.getLayout();
-            if (!this.DesignAutoSaveSort) { layout.sort = null; layout.groups = []; }
+            if (!this.DesignAutoSaveSort) layout.sort = null;
+            if (!this._f3GuardaGrupos()) layout.groups = [];
             const rec = { v: 1, huella: this._f3Huella, layout, fecha: new Date().toISOString() };
             EditTable._f3Op('readwrite', s => s.put(rec, k));
         }
@@ -7706,7 +7713,7 @@ class EditTable extends HTMLElement
                     {
                         this._f3Aplicar(rec.layout, {
                             orden: this._f3Reorder, visibilidad: this._f3Chooser, fijacion: this._f3Chooser,
-                            anchos: true, filas: this.DesignAutoSaveSort
+                            anchos: true, filas: this.DesignAutoSaveSort, grupos: this._f3GuardaGrupos()
                         });
                     }
                     finally { this._f3Silencio = antes; }
