@@ -40,7 +40,7 @@
             if (!url) return false;
             opciones = opciones || {};
             var ws = shell();
-            var cierre = 'url=' + encodeURIComponent('javascript:top.WebShell.closeModal();');
+            var cierre = 'url=' + tools.url_encode('javascript:top.WebShell.closeModal();');
             var destino = url + (url.indexOf('?') >= 0 ? '&' : '?') + cierre;
             if (!ws || typeof ws.browseAsModal !== 'function') {
                 global.location.href = url;
