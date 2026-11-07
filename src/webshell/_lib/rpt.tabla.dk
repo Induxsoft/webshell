@@ -15,12 +15,14 @@ module "Vista común de reportes para imprimir (webshell):"
     //   orientation  "portrait" (carta vertical, por omisión) o "landscape" (carta horizontal);
     //   currency     campo de la fila con el código de la divisa del documento (vacío: una sola moneda).
     //                Los importes "amount" nunca se suman entre divisas distintas;
-    //   fechas       "corte" (fil_fcorte) o "periodo" (finicio, ffinal) en el formulario de filtros;
+    //   fechas       "corte" (fil_fcorte), "periodo" (finicio, ffinal) o "none" (sin fechas, 1.2.2) en el formulario de filtros;
     //   fcorte_name, finicio_name, ffinal_name  nombre de esos parámetros si el modelo usa otros (1.2.1;
     //                p. ej. "fcorte", "finicial"); fcorte_caption: texto de la fecha de corte («Fecha de corte»);
     //   footer       nota al pie de la tabla (1.2.1); «#» se cambia por el número de filas;
     //   texto        1: filtro de texto (texto_name, por omisión fil_cliente; texto_caption, por omisión «Cliente»);
-    //   filters      lista de {name, caption, data[, opciones, default]}, como la vista anterior;
+    //   filters      lista de {name, caption, data[, opciones, default]}, como la vista anterior. Desde 1.2.2:
+    //                type ("select" por omisión, "number", "date" o "text"); en select, all (texto de la opción
+    //                «Todos»), all_value (su valor, "*" por omisión) y no_all (true: sin «Todos», con data de root);
     //   columns      registro campo → {caption, kind, align, width, sum, sub, sub_caption, print, blank_zero}:
     //                kind: "money" (importe en moneda base, suma con gran total), "amount" (importe en la divisa
     //                del documento, suma por divisa), "qty" (cantidad), "count" (cuenta de filas), "date"
@@ -34,8 +36,9 @@ module "Vista común de reportes para imprimir (webshell):"
     //  Decimales: money con V12-0A-001, qty con V12-0A-002 y amount con divisa.decimales (2 si no hay base).
     //  Se llama dentro de un elemento declarativo.
 
-    // Versión de la vista (desde 1.2.1): los paquetes que usan fcorte_name, finicio_name o ffinal_name la revisan
-    @rpt.tabla.ver = 121
+    // Versión de la vista (desde 1.2.1): los paquetes que usan fcorte_name, finicio_name o ffinal_name la revisan;
+    // 122: fechas "none" y filtros con type, all, all_value y no_all
+    @rpt.tabla.ver = 122
 
     rpt.tabla.bool::&o, campo, predeterminado
     {
@@ -428,21 +431,29 @@ module "Vista común de reportes para imprimir (webshell):"
         {
             ref flt = list.obj(filters,f)
             fval = field.dstr(params,field.dstr(flt,"name",""),"")
-            if fval != ""
+            ftipo = field.dstr(flt,"type","select")
+            aplica = @false
+            if trim(fval) != "" { aplica = @true }
+            if fval == field.dstr(flt,"all_value","*")
             {
-                if fval != "*"
+                if not(rpt.tabla.bool(flt,"no_all",@false)) { aplica = @false }
+            }
+            if aplica
+            {
+                texto = fval
+                if ftipo == "date" { texto = rpt.tabla.fecha(fval) }
+                if ftipo == "select"
                 {
                     ref opciones = ifnull(@@(root,"&"+field.dstr(flt,"data","")), list.create())
                     if field.exist(flt,"opciones") { ref opciones = @@(flt,"&opciones") }
-                    texto = fval
                     for i = 0; i < list.count(opciones)
                     {
                         ref obj = list.obj(opciones,i)
                         if field.dstr(obj,"sys_pk","") == fval { texto = field.dstr(obj,"descripcion","") }
                     }
-                    if s != "" { s = s + " · " }
-                    s = s + field.dstr(flt,"caption","") + ": " + texto
                 }
+                if s != "" { s = s + " · " }
+                s = s + field.dstr(flt,"caption","") + ": " + texto
             }
         }
         return s
@@ -547,6 +558,11 @@ module "Vista común de reportes para imprimir (webshell):"
         {
             etiqueta_fechas = "Corte: "
             texto_fechas = rpt.tabla.fecha(fcorte)
+        }
+        if modo_fechas == "none"
+        {
+            etiqueta_fechas = ""
+            texto_fechas = ""
         }
         aplicados = rpt.tabla.aplicados(root, def, params)
         // Un ":" dentro de #<…> en un texto $"…" corta la expresión: la fecha de impresión se arma aquí
@@ -674,6 +690,7 @@ module "Vista común de reportes para imprimir (webshell):"
                         ref flt = list.obj(filters,f)
                         fname = field.dstr(flt,"name","")
                         fval = field.dstr(params,fname,"")
+                        ftipo = field.dstr(flt,"type","select")
                         ref opciones = ifnull(@@(root,"&"+field.dstr(flt,"data","")), list.create())
                         con_todos = @true
                         if field.exist(flt,"opciones")
@@ -681,30 +698,47 @@ module "Vista común de reportes para imprimir (webshell):"
                             ref opciones = @@(flt,"&opciones")
                             con_todos = @false
                         }
+                        if rpt.tabla.bool(flt,"no_all",@false) { con_todos = @false }
+                        todos_txt = field.dstr(flt,"all","Todos")
+                        todos_val = field.dstr(flt,"all_value","*")
                         if fval == "" { fval = field.dstr(flt,"default","") }
-                        #$
-                        div
+                        if ftipo != "select"
                         {
-                            label("for"="rpt_#<fname>"){"#<field.dstr(flt,'caption',vacio)>"}
-                            select(class="form-select form-select-sm rounded-0" id="rpt_#<fname>" name="#<fname>")
+                            #$
+                            div
                             {
-                                #!
-                                if con_todos
-                                {
-                                    #$
-                                    option(value="*"){$"Todos"}
-                                }
-                                #!
-                                for i = 0; i < list.count(opciones); i+1
-                                {
-                                    ref obj = list.obj(opciones,i)
-                                    #$
-                                    option("#<ifstr(field.dstr(obj,'sys_pk',vacio)==fval,'selected',vacio)>"="true" value="#<field.dstr(obj,'sys_pk',vacio)>")
-                                    {"#<field.dstr(obj,'descripcion',vacio)>"}
-                                }
-                                #$
+                                label("for"="rpt_#<fname>"){"#<field.dstr(flt,'caption',vacio)>"}
+                                input(class="form-control form-control-sm rounded-0" type="#<ftipo>" id="rpt_#<fname>" name="#<fname>" value="#<fval>")
                             }
                         }
+                        #!
+                        if ftipo == "select"
+                        {
+                            #$
+                            div
+                            {
+                                label("for"="rpt_#<fname>"){"#<field.dstr(flt,'caption',vacio)>"}
+                                select(class="form-select form-select-sm rounded-0" id="rpt_#<fname>" name="#<fname>")
+                                {
+                                    #!
+                                    if con_todos
+                                    {
+                                        #$
+                                        option(value="#<todos_val>"){"#<todos_txt>"}
+                                    }
+                                    #!
+                                    for i = 0; i < list.count(opciones); i+1
+                                    {
+                                        ref obj = list.obj(opciones,i)
+                                        #$
+                                        option("#<ifstr(field.dstr(obj,'sys_pk',vacio)==fval,'selected',vacio)>"="true" value="#<field.dstr(obj,'sys_pk',vacio)>")
+                                        {"#<field.dstr(obj,'descripcion',vacio)>"}
+                                    }
+                                    #$
+                                }
+                            }
+                        }
+                        #!
                     }
                     #$
                     div(class="rpt-acciones")
