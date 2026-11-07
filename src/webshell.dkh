@@ -4,7 +4,6 @@ module ":webshell"
 {
     ref @DB=@null
     @webshell.delete_max_rows= 5
-    @webshell.max_rows= 200
     @webShell.tamanio_img= 300 //img en px
 
     getDB::
@@ -187,7 +186,7 @@ module ":webshell"
         {
             _order=@@(_get,"$_order")
         }
-        sql=sql + " ORDER BY wl.sys_pk "+_order+" LIMIT #<@webshell.max_rows>"
+        sql=sql + " ORDER BY wl.sys_pk "+_order+" LIMIT #<dbr.vars.max_rows_list(db)>"
     
         return dbr.list(db,ftext(sql),params)
     }
@@ -287,7 +286,7 @@ module ":webshell"
             sql=sql + " AND wl.sys_pk >= @from AND wl.sys_pk <= @to "
         }
 
-        sql=sql + " ORDER BY wl.sys_dtcreated DESC LIMIT #<@webshell.max_rows>"
+        sql=sql + " ORDER BY wl.sys_dtcreated DESC LIMIT #<dbr.vars.max_rows_list(db)>"
 
         return dbr.list(db,ftext(sql),params)
     }

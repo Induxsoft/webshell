@@ -26,7 +26,7 @@ module "Configuración de página de inicio:cfgfpage"
     WHERE NOT IFNULL(cfg.sys_deleted,0)
         AND IF(IFNULL(@type,'*')='*', TRUE, cfg.type = @type)
         AND IF(IFNULL(@search,'')='', TRUE, (cfg.id = @search OR cfg.shortcut LIKE CONCAT('%',@search,'%')))
-    LIMIT #<@default_max_rows>
+    LIMIT #<dbr.vars.max_rows_list(db)>
     "
     @read_query = "
     SELECT

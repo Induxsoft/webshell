@@ -1,6 +1,14 @@
 {
-	"id":"webshell",
-	"installable":["webshell"],
-	"version":"1.1.0",
-	"schema_ver":"1.0.11"
+	"id": "webshell",
+	"installable": [
+		"webshell"
+	],
+	"version": "1.1.1",
+	"schema_ver": "1.0.11",
+	"requires": [
+		{
+			"id": "dbext",
+			"min_version": "1.1.0"
+		}
+	]
 }
