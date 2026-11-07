@@ -16,12 +16,15 @@ module "Vista común de reportes para imprimir (webshell):"
     //   currency     campo de la fila con el código de la divisa del documento (vacío: una sola moneda).
     //                Los importes "amount" nunca se suman entre divisas distintas;
     //   fechas       "corte" (fil_fcorte) o "periodo" (finicio, ffinal) en el formulario de filtros;
+    //   fcorte_name, finicio_name, ffinal_name  nombre de esos parámetros si el modelo usa otros (1.2.1;
+    //                p. ej. "fcorte", "finicial"); fcorte_caption: texto de la fecha de corte («Fecha de corte»);
+    //   footer       nota al pie de la tabla (1.2.1); «#» se cambia por el número de filas;
     //   texto        1: filtro de texto (texto_name, por omisión fil_cliente; texto_caption, por omisión «Cliente»);
     //   filters      lista de {name, caption, data[, opciones, default]}, como la vista anterior;
     //   columns      registro campo → {caption, kind, align, width, sum, sub, sub_caption, print, blank_zero}:
     //                kind: "money" (importe en moneda base, suma con gran total), "amount" (importe en la divisa
     //                del documento, suma por divisa), "qty" (cantidad), "count" (cuenta de filas), "date"
-    //                (aaaa-mm-dd → dd/mm/aaaa) o "text"; width: ancho relativo (1 por omisión);
+    //                (aaaa-mm-dd → dd/mm/aaaa), "int" (entero con suma, 1.2.1) o "text"; width: ancho relativo (1 por omisión);
     //                sum: si suma (por omisión sí en money, amount, qty y count); sub: segundo campo que se pinta
     //                debajo en la misma celda (p. ej. vencimiento bajo la emisión); print: false = solo en el CSV;
     //                blank_zero: true = celda vacía cuando vale 0; const (sub_const): true = el texto (el de sub) es
@@ -30,6 +33,9 @@ module "Vista común de reportes para imprimir (webshell):"
     //                encabezado con {campo} (p. ej. "Divisa: {divisa}"); subtotal: false = sin renglón de subtotal.
     //  Decimales: money con V12-0A-001, qty con V12-0A-002 y amount con divisa.decimales (2 si no hay base).
     //  Se llama dentro de un elemento declarativo.
+
+    // Versión de la vista (desde 1.2.1): los paquetes que usan fcorte_name, finicio_name o ffinal_name la revisan
+    @rpt.tabla.ver = 121
 
     rpt.tabla.bool::&o, campo, predeterminado
     {
@@ -167,6 +173,7 @@ module "Vista común de reportes para imprimir (webshell):"
             if kind == "amount" { suma = @true }
             if kind == "qty" { suma = @true }
             if kind == "count" { suma = @true }
+            if kind == "int" { suma = @true }
             if suma { alin = "r" }
             if kind == "date" { alin = "c" }
             a = field.dstr(opt,"align","")
@@ -294,6 +301,7 @@ module "Vista común de reportes para imprimir (webshell):"
         }
         if kind == "money" { return rpt.tabla.num(v, @@(decs,"#money")) }
         if kind == "qty" { return rpt.tabla.num(v, @@(decs,"#qty")) }
+        if kind == "int" { return rpt.tabla.num(v, 0) }
         if kind == "amount" { return rpt.tabla.num(v, rpt.tabla.decs.div(decs,cur)) }
         return field.dstr(o,campo,"")
     }
@@ -311,6 +319,7 @@ module "Vista común de reportes para imprimir (webshell):"
         }
         if kind == "money" { return rpt.tabla.num(v, @@(decs,"#money")) }
         if kind == "qty" { return rpt.tabla.num(v, @@(decs,"#qty")) }
+        if kind == "int" { return rpt.tabla.num(v, 0) }
         if kind == "amount"
         {
             if base { return "" }
@@ -523,9 +532,13 @@ module "Vista común de reportes para imprimir (webshell):"
 
         // Encabezados de la hoja
         modo_fechas = field.dstr(def,"fechas","periodo")
-        fechai = field.dstr(params,"finicio","")
-        fechaf = field.dstr(params,"ffinal","")
-        fcorte = field.dstr(params,"fil_fcorte","")
+        n_corte = field.dstr(def,"fcorte_name","fil_fcorte")
+        n_ini = field.dstr(def,"finicio_name","finicio")
+        n_fin = field.dstr(def,"ffinal_name","ffinal")
+        cap_corte = field.dstr(def,"fcorte_caption","Fecha de corte")
+        fechai = field.dstr(params,n_ini,"")
+        fechaf = field.dstr(params,n_fin,"")
+        fcorte = field.dstr(params,n_corte,"")
         if fcorte == "" { fcorte = date_str(now(), "yyyy-MM-dd") }
         etiqueta_fechas = "Periodo: "
         texto_fechas = rpt.tabla.fecha(fechai) + " a " + rpt.tabla.fecha(fechaf)
@@ -626,8 +639,8 @@ module "Vista común de reportes para imprimir (webshell):"
                         #$
                         div
                         {
-                            label("for"="rpt_fcorte"){$"Fecha de corte"}
-                            input(class="form-control form-control-sm rounded-0" type="date" id="rpt_fcorte" name="fil_fcorte" value="#<fcorte>")
+                            label("for"="rpt_fcorte"){"#<cap_corte>"}
+                            input(class="form-control form-control-sm rounded-0" type="date" id="rpt_fcorte" name="#<n_corte>" value="#<fcorte>")
                         }
                     }
                     #!
@@ -637,12 +650,12 @@ module "Vista común de reportes para imprimir (webshell):"
                         div
                         {
                             label("for"="rpt_finicio"){$"Fecha inicial"}
-                            input(class="form-control form-control-sm rounded-0" type="date" id="rpt_finicio" name="finicio" value="#<fechai>")
+                            input(class="form-control form-control-sm rounded-0" type="date" id="rpt_finicio" name="#<n_ini>" value="#<fechai>")
                         }
                         div
                         {
                             label("for"="rpt_ffinal"){$"Fecha final"}
-                            input(class="form-control form-control-sm rounded-0" type="date" id="rpt_ffinal" name="ffinal" value="#<fechaf>")
+                            input(class="form-control form-control-sm rounded-0" type="date" id="rpt_ffinal" name="#<n_fin>" value="#<fechaf>")
                         }
                     }
                     #!
@@ -946,6 +959,14 @@ module "Vista común de reportes para imprimir (webshell):"
                         }
                         #$
                     }
+                }
+                #!
+                nota = field.dstr(def,"footer","")
+                if nota != ""
+                {
+                    nota = replace(nota,"#",format(list.count(rows),"#,0"))
+                    #$
+                    div(class="rpt-pie rpt-nota"){"#<nota>"}
                 }
                 #!
                 if field.dstr(titles,"footer","") != ""
