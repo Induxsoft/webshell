@@ -6,15 +6,21 @@
     - V12Vistas.esc(v): escapa un texto para HTML.
     - V12Vistas.abrirEnModal(url, alCerrar, opciones): abre una ficha en el modal del shell de V12 con
       paneles laterales; al cerrar llama alCerrar (refrescar la tarjeta o la fila). Sin shell, navega a
-      la ficha y devuelve false. opciones: { panels: [{lado:'izq'|'der', titulo}], showClose }.
+      la ficha y devuelve false (también si ya hay un modal abierto). opciones: { panels:
+      [{lado:'izq'|'der', titulo}], showClose, urlPagina (a dónde ir si no se puede abrir el modal;
+      por omisión, url) }.
     - V12Vistas.modo(clave) / ponModo(clave, modo) / selector(contenedor, clave, alCambiar, opciones):
       vista en 'tarjetas' (por omisión) o 'tabla', recordada en localStorage con la clave que da el
       paquete (p. ej. 'vendesk.vista.casos.<usuario>'). opciones del selector: { clase, claseBoton }.
     - V12Vistas.tabla(contenedor, id, columnas, datos, opciones): EdiTable de solo lectura con
       agrupación, totales, selector de columnas y diseño guardado. EdiTable pinta las celdas como HTML:
       los textos de los datos se escapan aquí, y alFila recibe la fila original (sin escapar).
-      columnas: [{field, caption, align, money, decs, summary ('sum'|'count'|'avg'), fixed, minwidth}].
-      opciones: { designKey, groups: [campos], alFila(fila, tr), clase, contador (muestra «N registro(s)») }.
+      columnas: [{field, caption, align, money, decs, summary ('sum'|'count'|'avg'), fixed, minwidth,
+      href(fila) (la celda es un enlace real <a href>: clic medio, Ctrl+clic y «abrir en pestaña nueva»),
+      enlaceTexto (texto del enlace; por omisión, el valor), pagina (true: el clic simple navega al enlace
+      en lugar de llamar alFila, para la acción «Abrir en página»)}].
+      opciones: { designKey, groups: [campos], alFila(fila, tr), clase, contador (muestra «N registro(s)»),
+      alto (height CSS de la tabla, p. ej. '100%': desplaza dentro de su contenedor, que debe tener alto) }.
 */
 (function (global) {
     'use strict';
@@ -42,8 +48,8 @@
             var ws = shell();
             var cierre = 'url=' + tools.url_encode('javascript:top.WebShell.closeModal();');
             var destino = url + (url.indexOf('?') >= 0 ? '&' : '?') + cierre;
-            if (!ws || typeof ws.browseAsModal !== 'function') {
-                global.location.href = url;
+            if (!ws || typeof ws.browseAsModal !== 'function' || ws.showingModal) {
+                global.location.href = opciones.urlPagina || url;
                 return false;
             }
             var P = (ws.Panels && ws.Panels.Const) ? ws.Panels.Const : {};
@@ -117,10 +123,13 @@
                 return '<edit-th' + a + '>' + esc(col.caption) + '</edit-th>';
             }).join('');
             var filas = datos || [];
-            var attrs = ' id="' + esc(id) + '" style="width:100%;" hidde-selector="true" cards-mode="never"' +
+            // Con alto, la envoltura es una columna: la tabla ocupa lo disponible y desplaza por dentro
+            var estilo = 'width:100%;' + (opciones.alto ? ' flex:1 1 auto; min-height:0; display:block;' : '');
+            var attrs = ' id="' + esc(id) + '" style="' + estilo + '" hidde-selector="true" cards-mode="never"' +
                 ' group-panel="true" column-chooser="true"' +
                 (opciones.designKey ? ' design-key="' + esc(opciones.designKey) + '"' : '');
-            c.innerHTML = '<div class="v12-tabla' + (opciones.clase ? ' ' + esc(opciones.clase) : '') + '"><edit-table' + attrs +
+            var estiloEnvoltura = opciones.alto ? ' style="height:' + esc(opciones.alto) + '; display:flex; flex-direction:column; overflow:hidden;"' : '';
+            c.innerHTML = '<div class="v12-tabla' + (opciones.clase ? ' ' + esc(opciones.clase) : '') + '"' + estiloEnvoltura + '><edit-table' + attrs +
                 '><edit-thead><edit-tr>' + ths + '</edit-tr></edit-thead></edit-table>' +
                 (opciones.contador ? '<small class="text-secondary d-block mt-1">' + filas.length + ' registro(s)</small>' : '') +
                 '</div>';
@@ -129,13 +138,41 @@
             // El componente arma su tabla interna al conectarse; se reintenta hasta que esté lista
             var pintar = function () {
                 try {
-                    if (typeof opciones.alFila === 'function') {
-                        // onTdPaint se llama por celda al dibujar la tabla (EdiTable); el clic abre la ficha
-                        t.onTdPaint = function (td, idx) {
+                    var enlaces = {};
+                    columnas.forEach(function (col) { if (typeof col.href === 'function') enlaces[col.field] = col; });
+                    var hayEnlaces = Object.keys(enlaces).length > 0;
+                    if (typeof opciones.alFila === 'function' || hayEnlaces) {
+                        // onTdPaint se llama por celda al dibujar la tabla (EdiTable, Shadow DOM)
+                        t.onTdPaint = function (td, idx, ic, campo) {
                             if (!td || td.__v12Fila) return;
                             td.__v12Fila = true;
+                            var col = enlaces[campo];
+                            var fila0 = (t.DataArray || [])[idx];
+                            if (col && fila0) {
+                                var orig = fila0.__orig || fila0;
+                                var destino = col.href(orig);
+                                if (destino) {
+                                    var c = td.querySelector('.cell-content') || td;
+                                    var a = global.document.createElement('a');
+                                    a.href = destino;
+                                    a.textContent = col.enlaceTexto || c.textContent;
+                                    a.style.color = 'var(--et-accent, var(--ixt-accent, #0266C8))';
+                                    a.style.textDecoration = 'underline';
+                                    if (col.pagina) { a.setAttribute('data-v12-pagina', '1'); a.title = 'Abrir en esta página (Ctrl+clic: pestaña nueva)'; }
+                                    c.innerHTML = '';
+                                    c.appendChild(a);
+                                }
+                            }
+                            if (typeof opciones.alFila !== 'function') return;
                             td.style.cursor = 'pointer';
-                            td.addEventListener('click', function () {
+                            td.addEventListener('click', function (ev) {
+                                var el = ev.target && ev.target.closest ? ev.target.closest('a[href]') : null;
+                                if (el) {
+                                    // Ctrl/⌘/Mayús+clic en el enlace: la pestaña nueva la abre el navegador, sin modal
+                                    if (ev.ctrlKey || ev.metaKey || ev.shiftKey) return;
+                                    if (el.hasAttribute('data-v12-pagina')) return;
+                                    ev.preventDefault();
+                                }
                                 var fila = (t.DataArray || [])[idx];
                                 if (fila) opciones.alFila(fila.__orig || fila, td.closest ? td.closest('tr') : null);
                             });
