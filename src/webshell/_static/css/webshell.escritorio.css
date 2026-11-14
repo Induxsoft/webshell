@@ -17,10 +17,8 @@
 #nav_main img { height: 26px; width: auto; }
 #nav_main .text-logo { font-size: .875rem; }
 #nav_main .btn.btn-sm { min-height: 30px; padding: 0 .5rem; }
-/* Globo de notificaciones: más chico y dentro de la barra delgada */
-#nav_main #notis_num { top: -2px; right: -4px; width: 1.125rem; height: 1.125rem; font-size: .625rem; line-height: 1; display: flex; align-items: center; justify-content: center; }
-#nav_main #notis_num.d-none { display: none !important; }
-#nav_main #notis_num small { font-size: .625rem; }
+/* Globo de notificaciones: unos píxeles más abajo para que no se salga de la barra delgada (mismo tamaño) */
+#nav_main #notis_num { top: -1px; }
 
 /* ---------- Vista: barra de título compacta ---------- */
 #top_area > .container-section.border-bottom { margin: 0 0 .375rem !important; padding: .25rem 0 !important; }
