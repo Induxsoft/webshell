@@ -564,3 +564,52 @@ body {
     0% { left: -15%; }
     100% { left: 100%; }
 }
+/* =============== BARRA DE ESTADO (pantalla ancha, >= 992 px)
+   Delgada, al estilo de Windows. Toma los colores de la barra de la instalación (style en línea, igual que el pie)
+   y, si no hay, los del tema (--ixt-*). En móvil se oculta y queda el pie de siempre (#nav_footer). */
+.ws-statusbar { display: none; }
+@media (min-width: 992px) {
+    #nav_footer { display: none !important; }
+    .ws-statusbar {
+        grid-area: footer;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        align-items: center;
+        height: 24px;
+        min-height: 24px;
+        padding: 0 .25rem;
+        font-size: .75rem;
+        line-height: 1;
+        background-color: var(--bg-main-color);
+        color: var(--text-main-color);
+        border-top: 1px solid var(--ixt-header-border, rgba(127,127,127,.35));
+        user-select: none;
+        overflow: hidden;
+        white-space: nowrap;
+        z-index: 1020;
+    }
+    .ws-sb-left, .ws-sb-center, .ws-sb-right { display: flex; align-items: center; min-width: 0; height: 100%; }
+    .ws-sb-left { justify-content: flex-start; }
+    .ws-sb-center { justify-content: center; padding: 0 .75rem; opacity: .8; }
+    .ws-sb-right { justify-content: flex-end; }
+    .ws-sb-item {
+        display: inline-flex; align-items: center; gap: .25rem;
+        height: 16px; padding: 0 .6rem;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    /* Separadores finos entre elementos */
+    .ws-sb-left > .ws-sb-item + .ws-sb-item:not([hidden]),
+    .ws-sb-right > .ws-sb-item + .ws-sb-item { border-left: 1px solid currentColor; border-left-color: color-mix(in srgb, currentColor 35%, transparent); }
+    .ws-sb-item[hidden] { display: none; }
+    .ws-sb-title { font-weight: 600; max-width: 22rem; }
+    .ws-sb-view { opacity: .7; max-width: 18rem; }
+    .ws-sb-btn {
+        background: transparent; border: 0; color: inherit; cursor: pointer; border-radius: 0;
+        height: 100%; padding: 0 .6rem;
+    }
+    .ws-sb-btn:hover, .ws-sb-btn:focus-visible { background-color: color-mix(in srgb, currentColor 15%, transparent); outline: none; }
+    .ws-sb-key { min-width: 4.2rem; justify-content: center; font-size: .6875rem; letter-spacing: .02em; transition: opacity .15s; }
+    .ws-sb-key[data-state="unknown"] { opacity: .3; }
+    .ws-sb-key[data-state="off"] { opacity: .45; }
+    .ws-sb-key[data-state="on"] { opacity: 1; font-weight: 700; }
+}

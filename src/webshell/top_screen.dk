@@ -217,6 +217,30 @@ module "webShell"
         }
     }
 
+    // Barra de estado (pantalla ancha, >= 992 px; statusbar.js y webshell.css). En móvil sigue el pie de siempre (#nav_footer).
+    // Decorativa: no consulta al servidor. Los ids del pie (language_info, c_view_info) no se repiten: statusbar.js los copia.
+    div(class="ws-statusbar" style="#<navfoot_style>" id="ws_statusbar" role="status" "aria-label"="Barra de estado")
+    {
+        div(class="ws-sb-left")
+        {
+            span(class="ws-sb-item ws-sb-title" title="#<webshell_title>"){$"#<webshell_title>"}
+            span(class="ws-sb-item ws-sb-count" id="ws_sb_count" hidden=""){$""}
+        }
+        div(class="ws-sb-center")
+        {
+            span(class="ws-sb-item" title="#<webshell_footer_text>"){$"#<webshell_footer_text>"}
+        }
+        div(class="ws-sb-right")
+        {
+            span(class="ws-sb-item ws-sb-view" id="ws_sb_view" title="Vista actual"){$""}
+            span(class="ws-sb-item" id="ws_sb_lang" title="Idioma y formato regional"){$""}
+            button(type="button" class="ws-sb-item ws-sb-btn" title="Enviar un comentario" "aria-label"="Enviar un comentario" onclick="opemodal()")
+            {$'<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M6.455 19L2 22.5V4a1 1 0 0 1 1-1h18a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H6.455zM4 18.385L5.763 17H20V5H4v13.385zM11 13h2v2h-2v-2zm0-6h2v5h-2V7z"/></svg>'}
+            span(class="ws-sb-item ws-sb-key" id="ws_sb_caps" "data-state"="unknown" title="Bloq Mayús: pulse una tecla o mueva el ratón para conocer su estado"){$"MAYÚS"}
+            span(class="ws-sb-item ws-sb-key" id="ws_sb_num" "data-state"="unknown" title="Bloq Num: pulse una tecla o mueva el ratón para conocer su estado"){$"BLOQ NUM"}
+        }
+    }
+
     div(class="sticky-bottom text-center border-top py-1 footer d-flex" style="#<navfoot_style>" id="nav_footer")
     {
         div(class="ps-4")
@@ -290,6 +314,7 @@ module "webShell"
     script(src="#<@JS_NOTIMAN>"){$""}
     script(src="#<@JS_WEBSHELL>"){$""}
     script(src="#<@JS_TOP_SCREEN>"){$""}
+    script(src="#<@JS_STATUSBAR>"){$""}
     script(type="text/javascript")
     {$'
         top_screen.url_notif = "#<@URL_NOTIF>";

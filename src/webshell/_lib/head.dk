@@ -21,7 +21,7 @@ module "Encabezado común de los sitios V12:webshell"
     #include "dbr.vars.dkl"
 
     // Debe coincidir con "version" de pack.manifest (lo revisa herramientas/sync-webcomponents.sh --check)
-    @WEBSHELL_VERSION = "1.1.0"
+    @WEBSHELL_VERSION = "1.2.6"
     @WEBSHELL_THEMES = "|libro-mayor|claro|oscuro|jade|ninguno|"
 
     ref @webshell_head_info = @null
@@ -130,6 +130,8 @@ module "Encabezado común de los sitios V12:webshell"
         else { h = h + head.css("css/bootstrap.min.css") }
         h = h + head.css("css/induxsoft.formstyles.css")
         h = h + head.css("css/induxsoft.v12.styles.css")
+        // Afinación del tema en V12 (variables --et-*; el CSS solo aplica con libro-mayor)
+        if tema != "" && head.exists("css/webshell.theme.css") { h = h + head.css("css/webshell.theme.css") }
 
         // JS de diálogos: con tema, induxsoft.dialogs.js y su compatibilidad de Bootstrap (window.bootstrap y el
         // marcado data-bs-*), antes que los demás scripts; con ninguno (o sin la copia), bootstrap.bundle como antes
@@ -150,6 +152,12 @@ module "Encabezado común de los sitios V12:webshell"
         h = h + head.js("js/induxsoft.number.fields.js")
         h = h + head.js("js/suggest_marks.js")
         h = h + head.js("js/lib.js")
+        // Común de las vistas: doble clic / Enter en listas (rowopen) y alto de la lista en pantalla ancha
+        if head.exists("js/webshell.views.js") { h = h + head.js("js/webshell.views.js") }
+        // UX escritorio: barra delgada, alto único de controles, acción principal resaltada, menú de filtros
+        // (div.v12-filtros-mas), agrupación inicial (edit-table[group-by]) y constantes traducidas en los <select>
+        if tema != "" && head.exists("css/webshell.escritorio.css") { h = h + head.css("css/webshell.escritorio.css") }
+        if head.exists("js/webshell.escritorio.js") { h = h + head.js("js/webshell.escritorio.js") }
 
         // Colores del cliente: ganan sobre el tema (no se aplican con ninguno). applyColors deja la paleta en
         // data-et-palette (la leen los componentes, también en los iframes); induxsoft.base.css no lee ese atributo,

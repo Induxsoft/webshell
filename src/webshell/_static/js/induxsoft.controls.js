@@ -6093,6 +6093,34 @@ class FilterDateRange extends HTMLElement
         month_select.innerHTML = select_template;
         div_months.appendChild(month_select);
 
+        // Meses abreviados cuando los nombres completos no caben en los botones (UX escritorio, 2026-11-13): las tres
+        // primeras letras de month-names (o month-short-names, si se da) y el nombre completo en el tooltip
+        if (typeof ResizeObserver !== 'undefined')
+        {
+            const cortosAttr = (this.getAttribute('month-short-names') ?? '').split(',');
+            const cortos = names.map((n, k) => (cortosAttr[k] ?? '').trim() || n.slice(0, 3));
+            const textos = Array.from(div_months.querySelectorAll('.month-button small'));
+            textos.forEach((t, k) => { t.parentElement.title = names[k] ?? ''; });
+            const poner = (lista) => textos.forEach((t, k) => { if (t.textContent !== lista[k]) t.textContent = lista[k]; });
+            const ajustar = () => {
+                poner(names);
+                // Se mide el texto con getBoundingClientRect (fraccionario): scrollWidth/clientWidth redondean y no ven
+                // desbordes de menos de 1 px aunque el navegador ya pinte «…»
+                const corta = textos.some(t => {
+                    const b = t.parentElement;
+                    if (!b.offsetWidth) return false;
+                    const cs = getComputedStyle(b);
+                    const libre = b.clientWidth - parseFloat(cs.paddingLeft || 0) - parseFloat(cs.paddingRight || 0);
+                    return t.getBoundingClientRect().width > libre - 0.5;
+                });
+                if (corta) poner(cortos);
+            };
+            new ResizeObserver(() => requestAnimationFrame(ajustar)).observe(div_months);
+            // El tema (.ixt) y la letra llegan después del primer pintado: se vuelve a medir
+            setTimeout(ajustar, 150); setTimeout(ajustar, 800);
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(ajustar));
+        }
+
         month_select.onchange = e => {
             input_mont.value = month_select.value;
             this._setFieldValues(select_year, input_mont);

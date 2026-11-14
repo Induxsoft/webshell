@@ -1,0 +1,27 @@
+/*
+    Afinación del tema libro-mayor de EdiTable en V12 (lo carga webshell/_lib/head.dk cuando la página tiene tema).
+    Solo variables --et-* (las lee el componente: --et-<n>, si no el valor del tema --et-t-<n>); el preset del
+    componente no se toca. Los colores salen de --ixt-* (tema o colores de la instalación) con respaldo fijo.
+*/
+html[data-et-theme="libro-mayor" i],
+html[data-et-theme="libro mayor" i],
+html[data-et-theme="libromayor" i] {
+    /* Encabezados en tipo oración: sin mayúsculas, sin espaciado extra y al tamaño de la tabla */
+    --et-header-transform: none;
+    --et-header-spacing: normal;
+    /* (no se usa inherit: en una variable heredaría la propia variable, que no existe) */
+    --et-header-font-size: var(--ixt-font-size, 0.875rem);
+
+    /* Cifras con la letra normal (EdiTable ya pone tabular-nums en td.et-num y en los totales) */
+    --et-num-font: var(--ixt-font, "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif);
+
+    /* Selección de renglón suave, con el texto normal; la celda activa conserva su marco (active-cell) */
+    --et-sel-bg: var(--ixt-sel-bg-soft, #E4ECF7);
+    --et-sel-fg: var(--ixt-fg, #1B1F24);
+    --et-active-cell: var(--ixt-accent, #1D4F91);
+}
+
+/* Números tabulares también en celdas numéricas que el paquete alinea a la derecha sin formato */
+html[data-et-theme] edit-table {
+    font-variant-numeric: tabular-nums;
+}

@@ -8,13 +8,16 @@ program ""
     @IMG_NOTIS = "/$/webshell/img/notis/"
     @IMG_MINIS = "/$/webshell/img/minis/"
 
-    @CSS_WEBSHELL = "/$/webshell/css/webshell.css"
+    // Versión de los recursos del shell en ?v= (rompe la caché); igual a "version" de pack.manifest
+    @WS_RES_VER = "1.2.5"
+    @CSS_WEBSHELL = "/$/webshell/css/webshell.css?v=" + @WS_RES_VER
     @CSS_NOTIMAN = "/$/webshell/css/notiman.css"
     
     @JS_IFRAME_RESIZER = "/$/webshell/js/iframeresizer.min.js"
     @JS_IFRAME_RESIZER_CONTENT = "/$/webshell/js/iframeresizer.contentwindow.min.js"
     @JS_TOP_SCREEN = "/$/webshell/js/top_screen.js"
     @JS_WEBSHELL = "/$/webshell/js/webshell.js"
+    @JS_STATUSBAR = "/$/webshell/js/statusbar.js?v=" + @WS_RES_VER
     @JS_NOTIMAN = "/$/webshell/js/notiman.js"
     @JS_CFGFPAGE = "/$/webshell/js/cfgfpage.js"
     @JS_LOG="/$/webshell/js/log.js"

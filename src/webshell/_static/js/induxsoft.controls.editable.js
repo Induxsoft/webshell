@@ -909,7 +909,7 @@ class EditTable extends HTMLElement
     _dataArrayBackup = null;
     _sorTable=true;
     // F1: versión y funciones disponibles (R6). La lista se llena en las fases siguientes.
-    static version = "2.0.0-beta.2";   // integración F1+F2+F3+F4+F5+F6
+    static version = "2.0.0-beta.4";   // integración F1+F2+F3+F4+F5+F6 (+F8, F9, F10)
     static features = [];
 
     constructor()
@@ -990,6 +990,8 @@ class EditTable extends HTMLElement
         this._f5AtributoCambiado?.(name, newValue);   // F5: virtual-rows
         this._f6AtributoCambiado(name, newValue);   // F6: group-panel
         this._f8bAtributoCambiado(name, newValue);   // F8b: theme, palette, striped, density
+        this._f9AtributoCambiado?.(name, newValue);   // F9: cell-cursor, text-select
+        this._f10AtributoCambiado?.(name, newValue);   // F10: cell-overflow, group-panel-mode, row-open
     }
 
     // F1 (C9, C11): se inicializa una sola vez. Mientras la página carga, en DOMContentLoaded y en el
@@ -1245,6 +1247,8 @@ class EditTable extends HTMLElement
             this._f3Inicializar?.();   // F3: columnas fijas, selector, reordenar y diseño guardado
             this._f6Iniciar();   // F6: group-panel y group-summary
             this._f8Iniciar();   // F8a: search-bar, enter-mode, skip-readonly y row-rules
+            this._f9Iniciar();   // F9: cell-cursor y text-select
+            this._f10Iniciar();   // F10: cell-overflow, group-panel-mode, rowopen y datachange
 
             // Si no se ha proporcionado el atributo data para el dataArray se genera a partir del contenido de la tabla
             if (this.DataArray.length < 1) this.UpdateData();
@@ -2274,6 +2278,7 @@ class EditTable extends HTMLElement
                         if (_current.AutoDelRow && e.ctrlKey) _current.InsertRow(_current.CurrentRowIndex());
                         break;
                     case "Enter":
+                        if (!e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) this._f10AbrirFila?.(selector);   // F10: rowopen en solo lectura (StartEdit sigue igual)
                     case "F2":
                         setTimeout(function(){
                             _current.StartEdit(selector.closest('td'),"");
@@ -5960,6 +5965,8 @@ class EditTable extends HTMLElement
     // ===== F4: fin
 
     addEventListener(type, listener) {
+        // F10: rowopen y datachange son eventos DOM (CustomEvent) del host: siempre se registran.
+        if (typeof type == "string" && (type.toLowerCase() == 'rowopen' || type.toLowerCase() == 'datachange')) return super.addEventListener(...arguments);
         const known = Object.values(this.EdiTable.Const.Events);
         if (typeof type == "string" && !known.includes(type.toLowerCase()))
         {
@@ -8608,6 +8615,7 @@ class EditTable extends HTMLElement
     }
     _f2Programar()
     {
+        this._f10Programar?.();   // F10: datachange (mismos puntos en que cambian los datos)
         if (!this._f2Pie) return;
         this._f2Sucio = true;
         if (this._f2Programado) return;
@@ -8931,7 +8939,7 @@ class EditTable extends HTMLElement
         const st = document.createElement('style');
         st.setAttribute('data-et', 'f6');
         st.textContent = `
-            .et-group-panel{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:2rem; padding:4px 6px; margin-bottom:4px; border:1px dashed #CCC; border-radius:4px; background:#FAFAFA; color:#555; font-size:.9rem; box-sizing:border-box; }
+            .et-group-panel{ position:sticky; left:0; z-index:3; display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:2rem; padding:4px 6px; margin-bottom:4px; border:1px dashed #CCC; border-radius:4px; background:#FAFAFA; color:#555; font-size:.9rem; box-sizing:border-box; }
             .et-group-panel:empty::before{ content: attr(data-placeholder); color:#888; }
             .et-group-panel.et-drop-over{ border-color:#3D75DD; background:#F0F4FB; }
             .et-group-chip{ display:inline-flex; align-items:center; gap:2px; padding:2px 2px 2px 10px; border:1px solid #BBB; border-radius:12px; background:#FFF; color:#212529; cursor:grab; user-select:none; outline:none; }
@@ -9009,9 +9017,10 @@ class EditTable extends HTMLElement
             const th = el?.closest?.('th');
             const f = th?.getAttribute('field');
             this._f6Arrastre = (f != null && this._f6Agrupable(f) && !this._f6Grupos.includes(f)) ? f : null;
+            if (this._f6Arrastre != null) this._f10GpArrastrando?.(true);   // F10: group-panel-mode="auto"
             if (this._f6Arrastre != null) { try { if (!e.dataTransfer.getData('text/plain')) e.dataTransfer.setData('text/plain', f); e.dataTransfer.effectAllowed = 'move'; } catch (x) { } }
         });
-        thead.addEventListener('dragend', () => { this._f6Arrastre = null; this._f6Panel?.classList.remove('et-drop-over'); });
+        thead.addEventListener('dragend', () => { this._f6Arrastre = null; this._f6Panel?.classList.remove('et-drop-over'); if (this._f10GpArrastre) this._f10GpArrastrando(false); });
     }
     _f6EventosPanel(p)
     {
@@ -9107,6 +9116,7 @@ class EditTable extends HTMLElement
             });
             p.appendChild(chip);
         });
+        this._f10Panel?.();   // F10: group-panel-mode="auto"
     }
 
     // ---------- API (§11) ----------
@@ -11133,6 +11143,12 @@ class EditTable extends HTMLElement
             if (r.class) String(r.class).split(/\s+/).filter(Boolean).forEach(x => res.cls.push(x));
             if (r.style) Object.assign(res.sty, this._f8Estilos(r.style));
             if (r.icon != null && r.icon !== '') res.icon = String(r.icon);
+            if (r.pill != null && r.pill !== false && !this._f1EsFalso(String(r.pill)))   // F10: píldora
+            {
+                res.cls.push('et-pill');
+                const t = (typeof r.pill === 'string' ? r.pill.trim().toLowerCase() : '');
+                if (EditTable._f10Tonos.includes(t)) res.cls.push('et-' + t);
+            }
         });
         return res;
     }
@@ -11141,6 +11157,7 @@ class EditTable extends HTMLElement
         const tenia = ((el._f8Cls?.length ?? 0) + (el._f8Sty?.length ?? 0) > 0) || !!el._f8Ico;
         if (!tenia && !res.cls.length && !Object.keys(res.sty).length && res.icon == null) return;
         this._f8Estilo();
+        if (res.cls.includes('et-pill') || res.cls.includes('et-info')) this._f10EstiloPill?.();   // F10: hoja de las píldoras
         (el._f8Cls ?? []).forEach(c => el.classList.remove(c));
         (el._f8Sty ?? []).forEach(p => el.style.removeProperty(p));
         if (el._f8Ico) { el.removeAttribute('data-et-icon'); el.style.removeProperty('--et-rule-icon'); }
@@ -11162,6 +11179,8 @@ class EditTable extends HTMLElement
         const r = this._f8ReglasDe(col);
         if (r && r.length) this._f8UsoReglas = true;
         this._f8Poner(td, this._f8Evaluar(r, data, col));
+        // F10: la píldora es un inline-block dentro del td; la alineación de la columna va en el td para que la siga
+        if (col?.textalign && td.classList.contains('et-pill')) td.style.textAlign = col.textalign;
         td._f8Listo = true;
     }
     // Reglas de las celdas y de la fila. pintada: true si viene de _decorateRow (las celdas recién pintadas ya las tienen).
@@ -11708,6 +11727,340 @@ class EditTable extends HTMLElement
         }
     }
     // ===== F8b: fin
+
+    // ===== F9: cursor de las celdas y selección de texto (cell-cursor, text-select) =====
+    // Cursor de escritorio: flecha en las celdas de solo lectura y la cruz de Excel (cursor: cell) en las editables;
+    // al editar, el control de captura conserva su cursor de texto. Es el comportamiento por omisión.
+    // cell-cursor: auto (por omisión) | browser (el de antes: cursor de texto) | cualquier valor de la propiedad CSS cursor.
+    // text-select: auto (por omisión, no cambia nada) | none (sin selección de texto en las celdas) | readonly (solo en
+    // las de solo lectura).
+    // Reglas por columna con el data-cell de cada celda (el título declarado): no se toca el DOM de las celdas. La hoja
+    // se crea al primer paso del puntero sobre la tabla y se recalcula en cada paso (sigue a ReadOnly, readonly y type
+    // de las columnas): en reposo el DOM y el CSS son los de antes. Columnas sin título: cursor del navegador.
+    static { this.features.push('cursor'); EditTable._f1Observados.push('cell-cursor', 'text-select'); }
+
+    _f9Cursor = 'auto';
+    _f9Sel = 'auto';
+    _f9EstiloEl = null;
+    _f9Escuchando = false;
+
+    get CellCursor() { return this._f9Cursor; }
+    set CellCursor(v) { this._f9Cursor = this._f9NormCursor(v); if (this._f1Inicializada) this._f9Aplicar(); }
+    get TextSelect() { return this._f9Sel; }
+    set TextSelect(v) { this._f9Sel = this._f9NormSel(v); if (this._f1Inicializada) this._f9Aplicar(); }
+
+    _f9NormCursor(v)
+    {
+        const s = (v == null ? '' : String(v)).trim();
+        if (s === '' || s.toLowerCase() === 'auto') return 'auto';
+        if (s.toLowerCase() === 'browser') return 'browser';
+        return s.replace(/[;{}<>]/g, '');   // un valor de cursor CSS (p. ej. pointer, default, url(...) x y, auto)
+    }
+    _f9NormSel(v)
+    {
+        const s = (v == null ? '' : String(v)).trim().toLowerCase();
+        return (s === 'none' || s === 'readonly') ? s : 'auto';
+    }
+
+    _f9Iniciar()
+    {
+        if (this.hasAttribute('cell-cursor')) this._f9Cursor = this._f9NormCursor(this.getAttribute('cell-cursor'));
+        if (this.hasAttribute('text-select')) this._f9Sel = this._f9NormSel(this.getAttribute('text-select'));
+        this._f9Aplicar();
+    }
+    _f9AtributoCambiado(name, v)
+    {
+        if (name === 'cell-cursor') { this._f9Cursor = this._f9NormCursor(v); this._f9Aplicar(); }
+        else if (name === 'text-select') { this._f9Sel = this._f9NormSel(v); this._f9Aplicar(); }
+    }
+    _f9Activo() { return this._f9Cursor !== 'browser' || this._f9Sel !== 'auto'; }
+
+    _f9Aplicar()
+    {
+        if (!this._shadow) return;
+        if (!this._f9Escuchando)
+        {
+            this._f9Escuchando = true;
+            // En el shadow (no es global): vive y muere con el componente.
+            this._shadow.addEventListener('pointerover', () => this._f9Sobre(), { passive: true });
+        }
+        if (this._f9EstiloEl) this._f9Actualizar();   // ya creada: se actualiza en caliente
+    }
+    _f9Sobre()
+    {
+        if (!this._f9EstiloEl)
+        {
+            if (!this._f9Activo()) return;
+            const st = document.createElement('style');
+            st.setAttribute('data-et', 'f9');
+            this._shadow.appendChild(st);
+            this._f9EstiloEl = st;
+        }
+        this._f9Actualizar();
+    }
+    _f9Actualizar()
+    {
+        const css = this._f9Css();
+        if (this._f9EstiloEl.textContent !== css) this._f9EstiloEl.textContent = css;
+    }
+    // ¿Se puede editar la columna? Las mismas reglas que StartEdit (sin disparar eventos).
+    _f9ColEditable(col)
+    {
+        if (!col || this.ReadOnly) return false;
+        if (col.readonly != null && col.readonly !== false && !this._f1EsFalso(col.readonly)) return false;
+        const ty = String(col.type ?? this.ColumnsDefaultType ?? '').toLowerCase();
+        if (ty === 'noeditable' || this._isBadgesCol(col)) return false;
+        return true;
+    }
+    _f9Css()
+    {
+        if (!this._f9Activo()) return '';
+        const ro = [], ed = [];
+        (this.Columns ?? []).forEach((col, i) =>
+        {
+            const t = ((this._f1TitulosDeclarados?.size && this._f1TitulosDeclarados.has(i)) ? this._f1TitulosDeclarados.get(i) : (col?.title ?? ''));
+            if (t === '' || t == null) return;
+            const sel = `td.EdiTable-Cell[data-cell="${String(t).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\a ')}"]`;
+            (this._f9ColEditable(col) ? ed : ro).push(sel);
+        });
+        const lista = (a, extra) => a.map(x => x + extra).join(', ');
+        const S = ' .EdiTable-Selector';
+        let css = '';
+        const c = this._f9Cursor;
+        if (c === 'auto')
+        {
+            if (ro.length) css += `${lista(ro, '')}, ${lista(ro, S)}{ cursor: default; }\n`;
+            if (ed.length) css += `${lista(ed, '')}, ${lista(ed, S)}{ cursor: cell; }\n`;   // después: con títulos repetidos gana editable
+        }
+        else if (c !== 'browser' && (ro.length || ed.length))
+        {
+            const todas = ro.concat(ed);
+            css += `${lista(todas, '')}, ${lista(todas, S)}{ cursor: ${c}; }\n`;
+        }
+        const celda = 'td.EdiTable-Cell';
+        if (c !== 'browser')
+        {
+            // Lo que va dentro de la celda conserva su propio cursor.
+            css += `${celda} input, ${celda} textarea, ${celda} select, ${celda} [contenteditable]{ cursor: auto; }\n`;
+            css += `${celda} input[type=checkbox], ${celda} input[type=radio], ${celda} button, ${celda} a[href], ${celda} .collapse-btn, ${celda} .et-clickable{ cursor: pointer; }\n`;
+        }
+        if (this._f9Sel === 'none')
+            css += `${celda}, ${celda}${S}{ -webkit-user-select: none; user-select: none; }\n`;
+        else if (this._f9Sel === 'readonly' && ro.length)
+            css += `${lista(ro, '')}, ${lista(ro, S)}{ -webkit-user-select: none; user-select: none; }\n`;
+        if (this._f9Sel !== 'auto')
+            css += `${celda} input, ${celda} textarea, ${celda} [contenteditable]{ -webkit-user-select: text; user-select: text; }\n`;
+        return css;
+    }
+    // ===== F9: fin
+
+    // ===== F10: celdas de una línea (cell-overflow), zona de agrupar automática (group-panel-mode), rowopen,
+    // píldoras en las reglas (pill), RowCount y datachange =====
+    // - cell-overflow: wrap (por omisión, como antes) | ellipsis: celdas de datos y encabezados en una línea con «…»;
+    //   title con el texto completo solo si está cortado, calculado al pasar el puntero (en reposo no toca el DOM).
+    //   No afecta celdas en edición ni la vista de tarjetas. --et-cell-max-width (24em) limita el ancho de la celda.
+    // - group-panel-mode: auto (por omisión) | always. En auto la zona «Arrastre aquí…» de group-panel se oculta
+    //   mientras no hay agrupación y aparece al empezar a arrastrar un encabezado agrupable.
+    // - rowopen (CustomEvent bubbles+composed, detail {index,row,tr}): doble clic en una fila de datos o Enter con una
+    //   fila seleccionada, solo si la tabla es de solo lectura (ReadOnly o ninguna columna editable). row-open="off".
+    // - pill en una regla de columna (rules): { op, value, class:'et-ok', pill:true } o pill:'ok'|'warn'|'info'|'err'|'muted'.
+    // - RowCount: filas de datos que pasan el filtro. datachange (bubbles+composed, detail {rows,total}) al cargar o
+    //   cuando cambian el número de filas visibles, el total o el arreglo DataArray.
+    static { this.features.push('overflow', 'rowopen', 'pill', 'rowcount'); EditTable._f1Observados.push('cell-overflow', 'group-panel-mode', 'row-open'); }
+    static _f10Tonos = ['ok', 'warn', 'info', 'err', 'muted'];
+
+    _f10Overflow = 'wrap';
+    _f10GpModo = 'auto';
+    _f10RowOpen = true;
+    _f10EstiloEl = null;
+    _f10PillEl = null;
+    _f10Escuchando = false;
+    _f10GpArrastre = false;
+    _f10DcProg = false;
+    _f10Ultimo = null;
+
+    get CellOverflow() { return this._f10Overflow; }
+    set CellOverflow(v) { this._f10Overflow = this._f10NormOverflow(v); if (this._f1Inicializada) this._f10Aplicar(); }
+    get GroupPanelMode() { return this._f10GpModo; }
+    set GroupPanelMode(v) { this._f10GpModo = this._f10NormGp(v); if (this._f1Inicializada) this._f10Panel(); }
+    get RowOpen() { return this._f10RowOpen; }
+    set RowOpen(v) { this._f10RowOpen = !(v === false || this._f1EsFalso(String(v ?? '')) || String(v ?? '').trim().toLowerCase() === 'off'); }
+    /** Filas de datos visibles después del filtro y la búsqueda (sin contar grupos, totales ni encabezados). */
+    get RowCount() { return (typeof this.getFilteredIndices === 'function' ? this.getFilteredIndices().length : (this.DataArray?.length ?? 0)); }
+
+    _f10NormOverflow(v) { return String(v ?? '').trim().toLowerCase() === 'ellipsis' ? 'ellipsis' : 'wrap'; }
+    _f10NormGp(v) { return String(v ?? '').trim().toLowerCase() === 'always' ? 'always' : 'auto'; }
+
+    _f10Iniciar()
+    {
+        if (this.hasAttribute('cell-overflow')) this._f10Overflow = this._f10NormOverflow(this.getAttribute('cell-overflow'));
+        if (this.hasAttribute('group-panel-mode')) this._f10GpModo = this._f10NormGp(this.getAttribute('group-panel-mode'));
+        if (this.hasAttribute('row-open')) this.RowOpen = this.getAttribute('row-open');
+        if (this._shadow && !this._f10Escuchando)
+        {
+            this._f10Escuchando = true;
+            // En el shadow (no son globales): viven y mueren con el componente.
+            this._shadow.addEventListener('pointerover', (e) => this._f10Sobre(e), { passive: true });
+            this._shadow.addEventListener('dblclick', (e) => this._f10DobleClic(e));
+        }
+        this._f10Aplicar();
+        this._f10Panel();
+        queueMicrotask(() => this._f10Datos());   // datachange de la carga
+    }
+    _f10AtributoCambiado(name, v)
+    {
+        if (name === 'cell-overflow') { this._f10Overflow = this._f10NormOverflow(v); this._f10Aplicar(); }
+        else if (name === 'group-panel-mode') { this._f10GpModo = this._f10NormGp(v); this._f10Panel(); }
+        else if (name === 'row-open') this.RowOpen = (v == null ? true : v);
+    }
+
+    // ---------- cell-overflow ----------
+    _f10Aplicar()
+    {
+        if (!this._shadow) return;
+        if (this._f10Overflow !== 'ellipsis' && !this._f10EstiloEl) return;   // wrap: nada nuevo en el DOM
+        if (!this._f10EstiloEl)
+        {
+            const st = document.createElement('style');
+            st.setAttribute('data-et', 'f10');
+            this._shadow.appendChild(st);
+            this._f10EstiloEl = st;
+        }
+        const css = (this._f10Overflow === 'ellipsis' ? this._f10Css() : '');
+        if (this._f10EstiloEl.textContent !== css) this._f10EstiloEl.textContent = css;
+        if (this._f10Overflow !== 'ellipsis')   // de vuelta a wrap: fuera los title que puso F10
+            this._shadow.querySelectorAll('[title]').forEach(el => { if (el._f10Tit) { el.removeAttribute('title'); el._f10Tit = false; } });
+    }
+    _f10Css()
+    {
+        // .table-cards solo es vista de tarjetas en pantallas de 768 px o menos (media query del estilo base); arriba de
+        // eso es una tabla normal y también lleva «…».
+        const reglas = T =>
+        {
+            const E = ':not(:has(input:not([type=checkbox]), select, textarea))';   // en edición: como antes
+            const td = `${T} > tbody > tr:not(.et-spacer) > td.EdiTable-Cell${E}`;
+            return `${T} > tbody > tr:not(.et-spacer) > td.EdiTable-Cell:not(.et-pill)${E} .cell-content{ display:block !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:var(--et-cell-max-width, 24em); }
+${td} .cell-content > .EdiTable-Selector{ display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+${T} > thead > tr > th{ white-space:nowrap; }
+${T} > thead > tr > th > span:first-child{ display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis; vertical-align:bottom; }
+`;
+        };
+        return reglas('table:not(.et-cards):not(.table-cards)')
+            + `@media screen and (min-width: 769px){\n${reglas('table.table-cards:not(.et-cards)')}}\n`;
+    }
+    _f10Sobre(e)
+    {
+        if (this._f10Overflow !== 'ellipsis') return;
+        let el = e.target;
+        if (el && el.nodeType !== 1) el = el.parentElement;
+        if (!el?.closest) return;
+        const th = el.closest('th');
+        if (th && th.parentElement?.parentElement?.tagName === 'THEAD')
+        {
+            const sp = th.querySelector(':scope > span');
+            if (sp) this._f10Titulo(th, [sp], sp);
+            return;
+        }
+        const td = el.closest('td.EdiTable-Cell');
+        if (!td || td.closest('table')?.classList.contains('et-cards')) return;
+        const cc = td.querySelector('.cell-content');
+        if (!cc || cc.querySelector('input:not([type=checkbox]), select, textarea')) return;
+        const sel = cc.querySelector(':scope > .EdiTable-Selector');
+        this._f10Titulo(td, sel ? [cc, sel] : [cc], cc);
+    }
+    // title con el texto completo solo si está cortado; un title puesto por otro no se toca.
+    _f10Titulo(host, medir, textoDe)
+    {
+        if (host.hasAttribute('title') && !host._f10Tit) return;
+        const cortado = medir.some(m => m.scrollWidth > m.clientWidth);
+        if (cortado)
+        {
+            const t = String(textoDe.textContent ?? '').replace(/\s+/g, ' ').trim();
+            if (!t) return;
+            if (host.getAttribute('title') !== t) host.setAttribute('title', t);
+            host._f10Tit = true;
+        }
+        else if (host._f10Tit) { host.removeAttribute('title'); host._f10Tit = false; }
+    }
+
+    // ---------- group-panel-mode ----------
+    _f10Panel()
+    {
+        const p = this._f6Panel;
+        if (!p) return;
+        const ver = (this._f10GpModo === 'always' || this._f6Grupos.length > 0 || this._f10GpArrastre);
+        // Estilo en línea (no en la hoja de F6: F8b reescribe esa hoja por posición de sus reglas).
+        if (ver) { if (p.style.display === 'none') { p.style.removeProperty('display'); if (!p.getAttribute('style')) p.removeAttribute('style'); } }
+        else p.style.display = 'none';
+    }
+    // dragstart/dragend de un encabezado agrupable. Se muestra después del dragstart: cambiar el DOM durante él
+    // cancela el arrastre en Chrome.
+    _f10GpArrastrando(on)
+    {
+        if (this._f10GpModo !== 'auto' || !this._f6Panel) return;
+        this._f10GpArrastre = !!on;
+        if (on) setTimeout(() => { if (this._f10GpArrastre) this._f10Panel(); }, 0);
+        else this._f10Panel();
+    }
+
+    // ---------- rowopen ----------
+    _f10SoloLectura()
+    {
+        if (this.ReadOnly) return true;
+        return !(this.Columns ?? []).some(c => this._f9ColEditable(c));
+    }
+    _f10DobleClic(e)
+    {
+        let el = e.target;
+        if (el && el.nodeType !== 1) el = el.parentElement;
+        if (!el?.closest || el.closest('input, select, textarea, button, a[href], .collapse-btn, .et-clickable, .et-group-toggle')) return;
+        this._f10AbrirFila(el);
+    }
+    // el: un nodo dentro de la celda (td, selector…). true si disparó rowopen.
+    _f10AbrirFila(el)
+    {
+        if (!this._f10RowOpen || !this._f10SoloLectura()) return false;
+        const tr = el?.closest?.('td')?.closest('tr');
+        if (!tr || tr._f6Grupo || tr.classList.contains('et-group-row') || tr.classList.contains('et-spacer')) return false;
+        if (!tr.parentElement || tr.parentElement !== this._f1TBodyPrincipal()) return false;
+        const index = this._getRowIndex(tr);
+        if (index == null || index < 0) return false;
+        const row = tr._etData ?? this.DataArray[index];
+        this.dispatchEvent(new CustomEvent('rowopen', { bubbles: true, composed: true, detail: { index, row, tr } }));
+        return true;
+    }
+
+    // ---------- pill (enganche de _f8Poner) ----------
+    _f10EstiloPill()
+    {
+        if (this._f10PillEl || !this._shadow) return;
+        const st = document.createElement('style');
+        st.setAttribute('data-et', 'f10-pill');
+        const E = ':not(:has(input:not([type=checkbox]), select, textarea))';
+        st.textContent = `
+            td.EdiTable-Cell.et-pill${E} .cell-content{ display:inline-block !important; width:auto !important; height:auto !important; min-height:0 !important; max-width:100%; box-sizing:border-box; padding:1px .65em; border-radius:999px; border:1px solid color-mix(in srgb, currentColor 32%, transparent); background-color:color-mix(in srgb, currentColor 13%, transparent); font-size:.85em; font-weight:600; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:middle; }
+            td.EdiTable-Cell.et-pill${E} .cell-content > .EdiTable-Selector{ display:inline; background:transparent; border:0; color:inherit; }
+            .et-info, .et-info > td{ color:var(--et-info, var(--et-t-info, #1565C0)); }`;
+        this._shadow.appendChild(st);
+        this._f10PillEl = st;
+    }
+
+    // ---------- RowCount y datachange (enganche de _f2Programar) ----------
+    _f10Programar()
+    {
+        if (!this._f1Inicializada || this._f10DcProg) return;
+        this._f10DcProg = true;
+        queueMicrotask(() => { this._f10DcProg = false; this._f10Datos(); });
+    }
+    _f10Datos()
+    {
+        const total = (this.DataArray?.length ?? 0), rows = this.RowCount;
+        const u = this._f10Ultimo;
+        if (u && u.rows === rows && u.total === total && u.arr === this.DataArray) return;
+        this._f10Ultimo = { rows, total, arr: this.DataArray };
+        this.dispatchEvent(new CustomEvent('datachange', { bubbles: true, composed: true, detail: { rows, total } }));
+    }
+    // ===== F10: fin
 
     // ===== TP: tema de la página (módulo común InduxsoftTheme) =====
     // Sin theme, palette o density propios, la tabla toma los del ancestro más cercano con data-et-theme,
