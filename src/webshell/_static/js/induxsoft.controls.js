@@ -6322,7 +6322,9 @@ function _ixgbSoltar(el)
     _ixgbMarcar(el._ixgbMarca, false);
 }
 function _ixgbReligar(el) { if (el._ixgbRaiz && !el._ixgbH) _ixgbLigar(el, el._ixgbRaiz, el._ixgbMarca, el._ixgbCssFn); }
-/** Piezas comunes del CSS con tema (tabla de apariencia uniforme de CONTROLES.md). */
+/** Piezas comunes del CSS con tema (tabla de apariencia uniforme de CONTROLES.md).
+    --ix-field-border y --ix-field-bg (opcionales, desde la página) mandan sobre el tema: la paleta llega con !important
+    al :host y no se puede cambiar desde fuera; p. ej. V12 quita el contorno de la barra de filtros (2026-11-14). */
 function _ixgbK(V)
 {
     const H = 'var(--ix-h, var(--ix-t-h))', PAD = 'var(--ix-pad, var(--ix-t-pad))', FS = 'var(--ix-fs, var(--ix-t-fs))', ROW = 'var(--ix-row, var(--ix-t-row))';
@@ -6331,7 +6333,7 @@ function _ixgbK(V)
     return {
         H, PAD, FS, ROW, font, muted, sep,
         chico: `:host([size="sm"]){ --ix-t-h:28px; --ix-t-pad:3px 8px; --ix-t-fs:13px; --ix-t-row:26px; }\n`,
-        campo: `min-height:${H}; box-sizing:border-box; background:${V('input-bg', '#fff')}; color:${V('input-fg', '#1F2328')}; border:1px solid ${V('input-border', '#8C959F')}; border-radius:${V('radius', '4px')}; outline:0; font-family:${font}; font-size:${FS}; color-scheme:var(--ix-t-cs, normal); transition:border-color .12s, box-shadow .12s;`,
+        campo: `min-height:${H}; box-sizing:border-box; background:var(--ix-field-bg, ${V('input-bg', '#fff')}); color:${V('input-fg', '#1F2328')}; border:1px solid var(--ix-field-border, ${V('input-border', '#8C959F')}); border-radius:${V('radius', '4px')}; outline:0; font-family:${font}; font-size:${FS}; color-scheme:var(--ix-t-cs, normal); transition:border-color .12s, box-shadow .12s;`,
         foco: `border-color:${accent}; box-shadow:0 0 0 3px color-mix(in srgb, ${ring} 30%, transparent);`,
         texto: `outline:0; border:0; background:transparent; color:inherit; font-family:inherit; font-size:inherit; font-weight:inherit; line-height:1.4; padding:${PAD} !important; accent-color:${accent};`,
         fecha: `outline:0; border:0; text-align:start; background:transparent; color:inherit; font-family:inherit; font-size:inherit !important; line-height:1.4; padding:2px 4px !important; width:auto; border-radius:${V('radius', '4px')}; accent-color:${accent};`,

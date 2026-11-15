@@ -108,3 +108,24 @@
     .v12-filtros-menu.abierto .v12-filtros-panel { grid-template-columns: 1fr; position: fixed; left: 8px !important; right: 8px !important; top: auto; width: auto; }
     .v12-filtros-btn .v12-filtros-txt { display: none; }
 }
+
+/* ---------- Filtros sin contorno (2026-11-14) ----------
+   Los controles de la barra de filtros de las listas no llevan contorno: se iluminan al pasar el mouse y el que tiene
+   el foco pinta su contorno con el acento. Los botones de la barra de acciones (#v12NavBar) y los campos de los
+   formularios de captura no cambian. Los componentes (shadow DOM cerrado) toman el contorno de --ix-field-border
+   y el fondo de --ix-field-bg (induxsoft.controls.js, 2026-11-14); los select de la página, de --ix-input-border. --v12-borde guarda el valor original (calculado en :root). */
+#form_filter { --ix-field-border: transparent; --ix-input-border: transparent; --v12-hover: color-mix(in srgb, var(--ixt-fg, #1B1F24) 6%, transparent); }
+#form_filter .induxsoft-form-select { outline-color: transparent; transition: background-color .12s, outline-color .12s; }
+#form_filter .induxsoft-form-select:hover { background-color: var(--v12-hover); }
+#form_filter .induxsoft-form-select:focus,
+#form_filter .induxsoft-form-select:focus-visible { outline: 1px solid var(--ixt-accent, #1D4F91); outline-offset: 0; }
+/* Buscador: un fondo tenue para que se lea como campo aunque no tenga el foco */
+#form_filter filter-text { --ix-field-bg: color-mix(in srgb, var(--ixt-fg, #1B1F24) 4%, #FFFFFF); }
+/* Botones de la barra de filtros (Filtros, descargar, limpiar): sin contorno, con fondo al pasar el mouse */
+#form_filter .btn.btn-outline-secondary:not(.v12-con-filtros) { border-color: transparent; }
+#form_filter .btn.btn-outline-secondary:not(.v12-con-filtros):hover { background-color: var(--v12-hover); color: inherit; }
+#form_filter .btn.btn-outline-secondary:focus-visible { border-color: var(--ixt-accent, #1D4F91); box-shadow: none; }
+/* El panel del menú de filtros es un formulario chico: sus campos conservan el contorno */
+#form_filter .v12-filtros-panel { --ix-field-border: var(--v12-borde); --ix-input-border: var(--v12-borde); }
+#form_filter .v12-filtros-panel .induxsoft-form-select { outline-color: var(--v12-borde); }
+#form_filter .v12-filtros-panel .induxsoft-form-select:hover { background-color: transparent; }
