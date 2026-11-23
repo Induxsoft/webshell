@@ -9,14 +9,15 @@ program ""
     @IMG_MINIS = "/$/webshell/img/minis/"
 
     // Versión de los recursos del shell en ?v= (rompe la caché); igual a "version" de pack.manifest
-    @WS_RES_VER = "1.2.5"
+    @WS_RES_VER = "1.2.9"
     @CSS_WEBSHELL = "/$/webshell/css/webshell.css?v=" + @WS_RES_VER
     @CSS_NOTIMAN = "/$/webshell/css/notiman.css"
     
     @JS_IFRAME_RESIZER = "/$/webshell/js/iframeresizer.min.js"
     @JS_IFRAME_RESIZER_CONTENT = "/$/webshell/js/iframeresizer.contentwindow.min.js"
-    @JS_TOP_SCREEN = "/$/webshell/js/top_screen.js"
-    @JS_WEBSHELL = "/$/webshell/js/webshell.js"
+    @JS_TOP_SCREEN = "/$/webshell/js/top_screen.js?v=" + @WS_RES_VER
+    @JS_WEBSHELL = "/$/webshell/js/webshell.js?v=" + @WS_RES_VER
+    @JS_TABS = "/$/webshell/js/webshell.tabs.js?v=" + @WS_RES_VER
     @JS_STATUSBAR = "/$/webshell/js/statusbar.js?v=" + @WS_RES_VER
     @JS_NOTIMAN = "/$/webshell/js/notiman.js"
     @JS_CFGFPAGE = "/$/webshell/js/cfgfpage.js"

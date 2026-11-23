@@ -165,7 +165,9 @@ module "webShell"
             main(id="main-sec")
             {
                 #!
-                url = ifstr(@url_go=="", get_home_page(), @url_go)
+                home_url = "/"
+                if not(@isPrintView) { home_url = get_home_page() }
+                url = ifstr(@url_go=="", home_url, @url_go)
                 ref split=split(url,"?")
                 url_path=""
                 params_url=""
@@ -313,6 +315,13 @@ module "webShell"
 
     script(src="#<@JS_NOTIMAN>"){$""}
     script(src="#<@JS_WEBSHELL>"){$""}
+    #!
+    // Pestañas del entorno (solo pantalla ancha; en la vista de impresión no)
+    if not(@isPrintView) {
+        #$
+        script(src="#<@JS_TABS>"){$""}
+    }
+    #$
     script(src="#<@JS_TOP_SCREEN>"){$""}
     script(src="#<@JS_STATUSBAR>"){$""}
     script(type="text/javascript")
@@ -326,6 +335,10 @@ module "webShell"
         const main = document.getElementById("main-sec");
         const footer = document.getElementById("nav_footer");
         const iframe = document.getElementById("_main_view");
+
+        // Página de inicio del usuario y vínculo directo (?go=), para las pestañas (webshell.tabs.js)
+        WebShell.homeUrl = "#<home_url>";
+        WebShell.urlGo = "#<@url_go>";
 
         //notificaciones
         api_notif.icon="#<webshell_logo>";

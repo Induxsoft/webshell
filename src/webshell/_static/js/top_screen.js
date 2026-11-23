@@ -24,6 +24,8 @@ var top_screen =
 
     load(url){
         let href = url.toString().trim()
+        // Pestañas (pantalla ancha): abre la página en su propia ventana del entorno
+        if (href && window.WebShellTabs && WebShellTabs.enabled) { WebShellTabs.open(href); return; }
         if (!this.iframe_view || !href) return;
         
         let d = this.iframe_view.contentDocument || this.iframe_view.contentWindow.document;
@@ -41,6 +43,7 @@ var top_screen =
     },
     select_action(data)
     {
+        if (data && window.WebShellTabs && WebShellTabs.enabled) { WebShellTabs.open(data.href, { title: data.title, reuse: false }); return; }
         if (data && this.iframe_view) this.iframe_view.src = data.href;
     },
 
@@ -143,7 +146,8 @@ var top_screen =
     go_to(url, target, event)
     {
         event.stopPropagation();
-        window.open(url, target);
+        if (target != "_blank" && window.WebShellTabs && WebShellTabs.enabled) WebShellTabs.open(url);
+        else window.open(url, target);
 
         if (target == "_blank")
         {
@@ -202,6 +206,8 @@ var top_screen =
     set_loading_operation()
     {
         if (!this.iframe_view) return;
+        // Con pestañas, cada pestaña lleva su línea de carga y sus paneles (webshell.tabs.js)
+        if (window.WebShellTabs && WebShellTabs.enabled) return;
         const loading_line = document.querySelector('#loading_line');
         
         this.iframe_view.onload = () =>

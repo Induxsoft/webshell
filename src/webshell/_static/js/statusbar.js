@@ -134,11 +134,14 @@
 
         var iframe = document.getElementById('_main_view');
         if (iframe) {
-            iframe.addEventListener('load', function () { alCargarVista(iframe); });
+            // Con pestañas, el iframe activo es el que tiene el id _main_view (webshell.tabs.js llama a alCargarVista)
+            iframe.addEventListener('load', function () { if (iframe.id === '_main_view') alCargarVista(iframe); });
             // Si la vista ya terminó de cargar antes de este script
             try { if (iframe.contentDocument && iframe.contentDocument.readyState === 'complete') alCargarVista(iframe); } catch (e) { }
         }
     }
+
+    window.WsStatusbar = { alCargarVista: function (f) { if (sb) alCargarVista(f); } };
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
     else init();
