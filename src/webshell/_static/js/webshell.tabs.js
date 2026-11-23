@@ -251,7 +251,7 @@
             var h = Tabs.list[i];
             if (!h.home) continue;
             activate(h.id);
-            if (h.frame && key(h.url) !== key(Tabs.homeUrl || '/')) navigateActive(Tabs.homeUrl || '/');
+            if (h.frame && h.homeKey && key(h.url) !== h.homeKey) navigateActive(h.homeKey);
             return;
         }
         var t = open(Tabs.homeUrl || '/', { home: true, reuse: false });
@@ -295,6 +295,7 @@
         if (t.stack.length > 50) t.stack.shift();
         var u = abs(href);
         t.url = u ? (u.pathname + u.search + u.hash) : href;
+        if (t.home && !t.homeKey) t.homeKey = k;   // la URL real del inicio (puede diferir de homeUrl por redirecciones)
 
         var lost = (d.title || '') === 'Lost session';
 
@@ -400,7 +401,9 @@
         try {
             doc.addEventListener('keydown', function (e) {
                 if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-                var n = parseInt(e.key, 10);
+                // Solo la fila superior: Alt + teclado numérico son los códigos Alt (Alt+164 = ñ)
+                if (!/^Digit[1-9]$/.test(e.code || '')) return;
+                var n = parseInt(e.code.slice(5), 10);
                 if (n >= 1 && n <= 9 && Tabs.list[n - 1]) { e.preventDefault(); activate(Tabs.list[n - 1].id); }
             });
         } catch (e) { }
@@ -490,6 +493,7 @@
         var t = owner();
         if (!t) return;
         dirsOf(p).forEach(function (dir) {
+            try { WS.setAdjustPanelEvent('adjust-' + dir + '-panel', dir); } catch (e) { }
             var s = panelFrame(t, dir);
             if (u) {
                 s.avail = true;
@@ -551,7 +555,6 @@
             var c = document.getElementById('webshell-close-' + dir + '-panel');
             if (o) o.onclick = function () { P.Show(sel); };
             if (c) c.onclick = function () { P.Hide(sel); };
-            try { WS.setAdjustPanelEvent('adjust-' + dir + '-panel', dir); } catch (e) { }
         });
 
         // Pestañas: las recordadas + la de la URL inicial (que usa el iframe que ya está cargando)
@@ -559,7 +562,7 @@
         try { var fl = first.contentWindow.location.href; if (fl && fl !== 'about:blank') firstUrl = fl; } catch (e) { }
         var deepLink = !!WS.urlGo;
         var stored = load();
-        var firstTab = null;
+        var firstTab = null, storedActive = null;
 
         if (stored) {
             stored.tabs.slice(0, MAX_TABS).forEach(function (s) {
@@ -569,8 +572,11 @@
                 if (!firstTab && key(s.url) === key(firstUrl)) firstTab = t;
             });
         }
+        if (stored) storedActive = Tabs.list[stored.active] || null;
+        // Sin ?go=, el iframe inicial trae el inicio: se une a la pestaña de inicio recordada aunque su URL difiera
+        if (!firstTab && !deepLink) for (var hi = 0; hi < Tabs.list.length; hi++) if (Tabs.list[hi].home) { firstTab = Tabs.list[hi]; firstTab.url = key(firstUrl); break; }
         if (!firstTab) {
-            firstTab = makeTab({ url: key(firstUrl), home: isHomeUrl(firstUrl) });
+            firstTab = makeTab({ url: key(firstUrl), home: isHomeUrl(firstUrl) || !deepLink });
             if (firstTab.home) { Tabs.list.unshift(firstTab); bar.insertBefore(firstTab.btn, bar.firstChild); }
             else { Tabs.list.push(firstTab); bar.appendChild(firstTab.btn); }
             if (Tabs.list.length > MAX_TABS) { var extra = Tabs.list.splice(firstTab.home ? MAX_TABS : 0, 1)[0]; if (extra && extra !== firstTab) extra.btn.remove(); }
@@ -578,7 +584,7 @@
         ensureFrame(firstTab, first);
 
         var act = firstTab;
-        if (!deepLink && stored && Tabs.list[stored.active]) act = Tabs.list[stored.active];
+        if (!deepLink && storedActive && Tabs.list.indexOf(storedActive) >= 0) act = storedActive;
         activate(act.id);
 
         keys(document);
