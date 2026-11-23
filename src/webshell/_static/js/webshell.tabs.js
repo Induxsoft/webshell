@@ -89,13 +89,13 @@
             'body.ws-tabs #webshell-grid-container,body.ws-tabs #webshell-main-content{min-width:0;min-height:0;overflow:hidden}' +
             '#ws_tabbar{position:relative;display:flex;align-items:flex-end;gap:2px;height:30px;min-height:30px;width:100%;min-width:0;max-width:100%;box-sizing:border-box;padding:3px 6px 0;background:var(--ixt-surface-2,#E9E9E9);border-bottom:1px solid var(--ixt-border,#C8C8C8);overflow-x:auto;overflow-y:hidden;scrollbar-width:none;user-select:none;flex:0 0 30px}' +
             '#ws_tabbar::-webkit-scrollbar{display:none}' +
-            '#ws_tabbar .ws-tab{display:inline-flex;align-items:center;gap:6px;height:27px;flex:0 1 200px;max-width:220px;min-width:72px;overflow:hidden;padding:0 4px 0 10px;border:1px solid transparent;border-bottom:0;border-radius:0;background:transparent;color:inherit;font:inherit;font-size:.8125rem;cursor:default;white-space:nowrap}' +
+            '#ws_tabbar .ws-tab{display:inline-flex;align-items:center;gap:4px;height:27px;flex:0 1 auto;max-width:220px;min-width:64px;overflow:hidden;padding:0 4px 0 10px;border:1px solid transparent;border-bottom:0;border-radius:0;background:transparent;color:inherit;font:inherit;font-size:.8125rem;cursor:default;white-space:nowrap}' +
             '#ws_tabbar .ws-tab:hover{background:color-mix(in srgb,currentColor 8%,transparent)}' +
             '#ws_tabbar .ws-tab.ws-active{background:var(--ixt-surface,#FFF);border-color:var(--ixt-border,#C8C8C8);position:relative;top:1px;font-weight:600}' +
             '#ws_tabbar .ws-tab:focus-visible{outline:2px solid var(--ixt-accent,#0266C8);outline-offset:-2px}' +
             '#ws_tabbar .ws-tab-ttl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;min-width:0;text-align:left}' +
             '#ws_tabbar .ws-tab svg,#ws_tabbar .ws-tab-x{flex:0 0 auto}' +
-            '#ws_tabbar .ws-tab.ws-active{flex-shrink:0;min-width:120px}' +
+            '#ws_tabbar .ws-tab.ws-active{flex-shrink:0}' +
             '#ws_tabbar .ws-tab-x{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:0;background:transparent;color:inherit;font-size:14px;line-height:1;opacity:.55;cursor:pointer;border-radius:0}' +
             '#ws_tabbar .ws-tab-x:hover{opacity:1;background:#C42B1C;color:#FFF}' +
             '#ws_tabbar .ws-tab.ws-loading .ws-tab-ttl{opacity:.6}' +
@@ -165,6 +165,23 @@
         var s = t.btn.querySelector('.ws-tab-ttl');
         s.textContent = t.title;
         t.btn.title = t.title;
+        fitTab(t);
+    }
+
+    // Ancho mínimo según el título: una pestaña corta («Ventas») no se recorta; las largas se encogen hasta 120 px
+    // (la activa, hasta 200 px). El ancho natural es el del texto (scrollWidth), como máximo 220 px por el CSS.
+    function fitTab(t) {
+        var go = function () {
+            try {
+                var b = t.btn;
+                b.style.minWidth = '';
+                var ttl = b.querySelector('.ws-tab-ttl');
+                var nat = b.offsetWidth - ttl.clientWidth + ttl.scrollWidth + 2;
+                if (!nat) return;
+                b.style.minWidth = Math.min(nat, Tabs.active === t ? 200 : 120) + 'px';
+            } catch (e) { }
+        };
+        if (global.requestAnimationFrame) global.requestAnimationFrame(go); else go();
     }
 
     function ensureFrame(t, existing) {
@@ -234,7 +251,10 @@
                 x.frame.id = on ? '_main_view' : 'ws_tab_' + x.id;
             }
         });
+        var prev = Tabs.active;
         Tabs.active = t;
+        if (prev && prev !== t) fitTab(prev);
+        fitTab(t);
         try {
             var bl = t.btn.offsetLeft, br = bl + t.btn.offsetWidth, bar = Tabs.bar;
             if (bl < bar.scrollLeft) bar.scrollLeft = bl - 6;
