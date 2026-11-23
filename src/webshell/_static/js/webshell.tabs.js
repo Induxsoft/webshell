@@ -19,7 +19,7 @@
     'use strict';
 
     var WS = global.WebShell;
-    var MAX_TABS = 10;
+    var MAX_TABS = 12;
     var KEY = 'ws.tabs.' + location.host;
 
     var enabled = false;
@@ -43,7 +43,36 @@
 
     // ---------------------------------------------------------------- utilidades
     function abs(u) { try { return new URL(u, location.href); } catch (e) { return null; } }
-    function key(u) { var x = abs(u); return x ? (x.pathname + x.search) : String(u || ''); }
+    // Parámetros técnicos que no distinguen una página de otra (de dónde se vino, recarga)
+    var TECH = ['_from_url_e', '---from_url', 'url', '_', 'v'];
+    function key(u) {
+        var x = abs(u);
+        if (!x) return String(u || '');
+        TECH.forEach(function (p) { x.searchParams.delete(p); });
+        x.searchParams.sort();
+        var q = x.searchParams.toString();
+        return x.pathname + (q ? '?' + q : '');
+    }
+    // Rutas CRUD-L: /!/paquete/programa/ (lista), /!/paquete/programa/_new/, /!/paquete/programa/<id>/[accion/]
+    function crud(u) {
+        var x = abs(u);
+        if (!x || x.origin !== location.origin) return null;
+        var m = x.pathname.match(/^\/!\/([^/]+)\/([^/]+)\/(?:([^/]+)\/)?(?:([^/]+)\/)?/);
+        if (!m) return null;
+        return { prog: m[1] + '/' + m[2], list: !m[3], isNew: m[3] === '_new', path: '/!/' + m[1] + '/' + m[2] + '/' };
+    }
+    // Pestaña abierta con esa página (las listas se comparan por ruta, sin filtros). "_new" nunca se reutiliza.
+    function findTab(u, except) {
+        var c = crud(u);
+        if (c && c.isNew) return null;
+        for (var i = 0; i < Tabs.list.length; i++) {
+            var t = Tabs.list[i];
+            if (t === except) continue;
+            if (c && c.list) { var tc = crud(t.url); if (tc && tc.list && tc.prog === c.prog) return t; }
+            else if (key(t.url) === key(u)) return t;
+        }
+        return null;
+    }
     function isHomeUrl(u) { return !!Tabs.homeUrl && key(u) === key(Tabs.homeUrl); }
     function isRoot(u) { var x = abs(u); return !!x && x.origin === location.origin && (x.pathname === '/' || x.pathname === '') && !x.searchParams.get('go'); }
     function goParam(u) { var x = abs(u); return (x && x.origin === location.origin && (x.pathname === '/' || x.pathname === '')) ? x.searchParams.get('go') : null; }
@@ -159,18 +188,25 @@
         if (!url) return null;
         var u = abs(url);
         if (!u) return null;
-        if (o.reuse !== false) {
-            for (var i = 0; i < Tabs.list.length; i++) {
-                if (key(Tabs.list[i].url) === key(u.href)) { activate(Tabs.list[i].id); return Tabs.list[i]; }
-            }
-        }
+        var ex = findTab(u.href);
+        if (ex) { activate(ex.id); return ex; }
         if (Tabs.list.length >= MAX_TABS) {
             alert('Hay ' + MAX_TABS + ' ventanas abiertas. Cierre alguna para abrir otra.');
             return null;
         }
         var t = makeTab({ url: u.pathname + u.search + u.hash, title: o.title, home: o.home || isHomeUrl(u.href) });
-        Tabs.list.push(t);
-        Tabs.bar.appendChild(t.btn);
+        t.opener = o.opener || null;
+        // Junto a la pestaña que la abrió (como un documento que sale de su lista)
+        var oi = o.opener ? Tabs.list.indexOf(o.opener) : -1;
+        if (oi >= 0) {
+            var after = oi + 1;
+            while (after < Tabs.list.length && Tabs.list[after].opener === o.opener) after++;
+            Tabs.list.splice(after, 0, t);
+            Tabs.bar.insertBefore(t.btn, Tabs.list[after + 1] ? Tabs.list[after + 1].btn : null);
+        } else {
+            Tabs.list.push(t);
+            Tabs.bar.appendChild(t.btn);
+        }
         activate(t.id);
         return t;
     }
@@ -179,6 +215,8 @@
         var t = byId(id);
         if (!t) return;
         if (WS.showingModal) return;
+        // Una lista marcada como vieja (se guardó un documento suyo) se recarga al traerla al frente
+        if (t.stale && t.frame && !t.loading) { t.stale = false; try { t.frame.contentWindow.location.reload(); } catch (e) { } }
         ensureFrame(t);
         Tabs.list.forEach(function (x) {
             var on = x === t;
@@ -229,6 +267,8 @@
         if (WS.showingModal) return;
         if (!force && isDirty(t) && !confirm('«' + t.title + '» tiene cambios sin guardar. ¿Cerrar la ventana de todos modos?')) return;
         disposePanels(t);
+        var tc = crud(t.url);
+        if (tc && !tc.list) markStale(tc.prog);
         var i = Tabs.list.indexOf(t);
         Tabs.list.splice(i, 1);
         t.btn.remove();
@@ -239,7 +279,7 @@
         }
         if (Tabs.active === t) {
             Tabs.active = null;
-            var next = Tabs.list[i] || Tabs.list[i - 1];
+            var next = (t.opener && Tabs.list.indexOf(t.opener) >= 0) ? t.opener : (Tabs.list[i] || Tabs.list[i - 1]);
             if (next) activate(next.id);
             else { renderPanels(); loadingLine(false); home(); }
         }
@@ -274,6 +314,60 @@
         try { t.frame.contentWindow.location.href = url; } catch (e) { open(url); }
     }
 
+    // ---------------------------------------------------------------- reglas de navegación dentro de una pestaña
+    // Devuelve true si la navegación se atendió aquí (abrir/traer otra pestaña) y la página no debe navegar.
+    function markStale(prog, except) {
+        Tabs.list.forEach(function (x) { var c = crud(x.url); if (x !== except && c && c.list && c.prog === prog) x.stale = true; });
+    }
+    function route(t, dest) {
+        if (!dest || key(dest) === key(t.url)) return false;
+        var du = abs(dest);
+        if (!du || du.origin !== location.origin) return false;
+        var cur = crud(t.url), dst = crud(dest);
+        var back = !!(cur && !cur.list && dst && dst.list && dst.prog === cur.prog);   // documento que regresa a su lista
+        // Si ya hay una pestaña con esa página: traerla al frente
+        var other = findTab(dest, t);
+        if (other) {
+            if (back) { markStale(cur.prog); close(t.id, true); }
+            activate(other.id);
+            return true;
+        }
+        if (back) { markStale(cur.prog, t); return false; }                 // la lista no está abierta: se queda en esta
+        if (t.home) { open(dest, { opener: t }); return true; }              // escritorio: cada acceso en su ventana
+        if (cur && cur.list && !(dst && dst.list && dst.prog === cur.prog)) { open(dest, { opener: t }); return true; }   // de una lista a un documento u otra página
+        if (cur && !cur.list && dst && dst.prog !== cur.prog) { open(dest, { opener: t }); return true; }                 // de un documento a otro programa
+        if (cur && !cur.list && dst && !dst.list && dst.prog === cur.prog) markStale(cur.prog);                           // guardó o procesó: su lista se recarga al volver
+        return false;
+    }
+
+    // Título de la pestaña: en registros, código y nombre/descripción; si no, el título de la vista
+    var CODES = ['codigo', 'clave', 'referencia', 'folio', 'cdocumento', 'code'];
+    var NAMES = ['descripcion', 'nombre', 'razonsocial', 'razon_social', 'name', 'description'];
+    function fieldVal(d, n) {
+        try {
+            var el = d.querySelector('[name="' + n + '"]') || d.getElementById(n);
+            if (!el) return '';
+            var v = (el.value != null && el.value !== undefined) ? el.value : el.textContent;
+            if (el.tagName === 'SELECT' && el.selectedIndex >= 0) v = el.options[el.selectedIndex].text;
+            return String(v == null ? '' : v).trim();
+        } catch (e) { return ''; }
+    }
+    function first(d, names) { for (var i = 0; i < names.length; i++) { var v = fieldVal(d, names[i]); if (v) return v; } return ''; }
+    function trunc(v, n) { return v.length > n ? v.slice(0, n - 1) + '…' : v; }
+    function pageTitle(t, d) {
+        var fb = d.getElementById('v12FormBar_title');
+        var view = ((fb && fb.textContent) || d.title || '').trim();
+        if (t.home) return view || 'Inicio';
+        var c = crud(t.url);
+        if (!c || c.list) return view || key(t.url);
+        var code = first(d, CODES), name = first(d, NAMES);
+        if (c.isNew && !code && !name) return 'Nuevo' + (view ? ' · ' + view : '');
+        if (code && name && code !== name) return code + ' ' + trunc(name, 28);
+        if (name) return trunc(name, 40);
+        if (code) return code + (view ? ' · ' + view : '');
+        return view || key(t.url);
+    }
+
     // ---------------------------------------------------------------- carga de una página en su pestaña
     function onFrameLoad(t) {
         var f = t.frame, w, d;
@@ -300,15 +394,17 @@
         var lost = (d.title || '') === 'Lost session';
 
         // Título
+        t.internal = false;
         var readTitle = function () {
-            try {
-                var fb = d.getElementById('v12FormBar_title');
-                setTitle(t, (fb && fb.textContent) || d.title || (t.home ? 'Inicio' : k));
-                save();
-            } catch (e) { }
+            try { if (t.frame.contentDocument !== d) return; setTitle(t, pageTitle(t, d)); save(); } catch (e) { }
         };
         readTitle();
         setTimeout(readTitle, 800);
+        setTimeout(readTitle, 2500);
+        try {
+            var tmr = 0;
+            d.addEventListener('change', function () { clearTimeout(tmr); tmr = setTimeout(readTitle, 300); }, true);
+        } catch (e) { }
         try {
             var tt = d.querySelector('title');
             if (tt) new w.MutationObserver(readTitle).observe(tt, { childList: true, characterData: true, subtree: true });
@@ -324,6 +420,20 @@
             (d.head || d.documentElement).appendChild(st);
         } catch (e) { }
 
+        // Navegaciones de la página (vínculos y window.location = …): reglas de pestaña
+        var hasNav = false;
+        try {
+            if (w.navigation && w.navigation.addEventListener) {
+                hasNav = true;
+                w.navigation.addEventListener('navigate', function (e) {
+                    if (t.internal || !e.cancelable || e.hashChange || e.downloadRequest || e.formData) return;
+                    if (e.navigationType !== 'push' && e.navigationType !== 'replace') return;
+                    var dest = e.destination && e.destination.url;
+                    if (route(t, dest)) e.preventDefault();
+                });
+            }
+        } catch (e) { hasNav = false; }
+
         // Clics: _top/_parent y /?go=
         try {
             d.addEventListener('click', function (e) {
@@ -335,13 +445,9 @@
                 var tg = (a.getAttribute('target') || '').toLowerCase();
                 if (tg === '_top' || tg === '_parent') { e.preventDefault(); routeTop(t, a.href); return; }
                 if ((tg === '' || tg === '_self') && goParam(a.href)) { e.preventDefault(); open(goParam(a.href)); return; }
-                // En el inicio (escritorio), cada acceso directo abre su propia ventana
-                if (t.home && (tg === '' || tg === '_self') && !e.ctrlKey && !e.metaKey && !e.shiftKey && !a.hasAttribute('download')) {
-                    var au = abs(a.href);
-                    if (au && au.origin === location.origin && key(au.href) !== key(href)) {
-                        e.preventDefault();
-                        open(au.href, { title: (a.getAttribute('title') || a.textContent || '').trim() });
-                    }
+                // Sin Navigation API: las reglas de pestaña solo alcanzan a los vínculos
+                if (!hasNav && (tg === '' || tg === '_self') && !e.ctrlKey && !e.metaKey && !e.shiftKey && !a.hasAttribute('download')) {
+                    if (route(t, a.href)) e.preventDefault();
                 }
             }, false);
         } catch (e) { }
@@ -362,6 +468,7 @@
                 if (t.stack.length > 1) {
                     t.stack.pop();
                     t.back = true;
+                    t.internal = true;
                     w.location.replace(t.stack[t.stack.length - 1]);
                 } else close(t.id);
             };
