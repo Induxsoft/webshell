@@ -59,7 +59,7 @@
         if (!x || x.origin !== location.origin) return null;
         var m = x.pathname.match(/^\/!\/([^/]+)\/([^/]+)\/(?:([^/]+)\/)?(?:([^/]+)\/)?/);
         if (!m) return null;
-        return { prog: m[1] + '/' + m[2], list: !m[3], isNew: m[3] === '_new', path: '/!/' + m[1] + '/' + m[2] + '/' };
+        return { prog: m[1] + '/' + m[2], list: !m[3], isNew: m[3] === '_new', path: '/!/' + m[1] + '/' + m[2] + '/', view: x.searchParams.get('_view') || '' };
     }
     // Pestaña abierta con esa página (las listas se comparan por ruta, sin filtros). "_new" nunca se reutiliza.
     function findTab(u, except) {
@@ -68,7 +68,7 @@
         for (var i = 0; i < Tabs.list.length; i++) {
             var t = Tabs.list[i];
             if (t === except) continue;
-            if (c && c.list) { var tc = crud(t.url); if (tc && tc.list && tc.prog === c.prog) return t; }
+            if (c && c.list) { var tc = crud(t.url); if (tc && tc.list && tc.prog === c.prog && tc.view === c.view) return t; }
             else if (key(t.url) === key(u)) return t;
         }
         return null;
@@ -219,6 +219,7 @@
         }
         var t = makeTab({ url: u.pathname + u.search + u.hash, title: o.title, home: o.home || isHomeUrl(u.href) });
         t.opener = o.opener || null;
+        t.openTitle = o.title || '';
         // Junto a la pestaña que la abrió (como un documento que sale de su lista)
         var oi = o.opener ? Tabs.list.indexOf(o.opener) : -1;
         if (oi >= 0) {
@@ -353,16 +354,21 @@
         if (!dest || key(dest) === key(t.url)) return false;
         var du = abs(dest);
         if (!du || du.origin !== location.origin) return false;
+        // El shell completo nunca se carga dentro de una pestaña: "/" la cierra y "/?go=" abre la página en su pestaña
+        if (isRoot(dest)) { close(t.id); return true; }
+        if (goParam(dest)) { open(goParam(dest), { opener: t }); return true; }
         var cur = crud(t.url), dst = crud(dest);
-        var back = !!(cur && !cur.list && dst && dst.list && dst.prog === cur.prog);   // documento que regresa a su lista
+        // documento que regresa a su lista, o a la pestaña que lo abrió (p. ej. el kárdex que vuelve a inventario)
+        var opener = (t.opener && Tabs.list.indexOf(t.opener) >= 0) ? t.opener : null;
+        var back = !!(cur && !cur.list && dst && dst.list && (dst.prog === cur.prog || (opener && key(opener.url).split('?')[0] === key(dest).split('?')[0])));
         // Si ya hay una pestaña con esa página: traerla al frente
         var other = findTab(dest, t);
         if (other) {
-            if (back) { markStale(cur.prog); close(t.id, true); }
+            if (back) { markStale(dst.prog); close(t.id, true); }
             activate(other.id);
             return true;
         }
-        if (back) { markStale(cur.prog, t); return false; }                 // la lista no está abierta: se queda en esta
+        if (back) { markStale(dst.prog, t); return false; }                 // la lista no está abierta: se queda en esta
         if (t.home) { open(dest, { opener: t }); return true; }              // escritorio: cada acceso en su ventana
         if (cur && cur.list && !(dst && dst.list && dst.prog === cur.prog)) { open(dest, { opener: t }); return true; }   // de una lista a un documento u otra página
         if (cur && !cur.list && dst && dst.prog !== cur.prog) { open(dest, { opener: t }); return true; }                 // de un documento a otro programa
@@ -385,8 +391,8 @@
     function first(d, names) { for (var i = 0; i < names.length; i++) { var v = fieldVal(d, names[i]); if (v) return v; } return ''; }
     function trunc(v, n) { return v.length > n ? v.slice(0, n - 1) + '…' : v; }
     function pageTitle(t, d) {
-        var fb = d.getElementById('v12FormBar_title');
-        var view = ((fb && fb.textContent) || d.title || '').trim();
+        var fb = d.getElementById('v12FormBar_title') || d.querySelector('h5.tex-no-break') || d.querySelector('h1,h2,h3,h4,h5');
+        var view = ((fb && fb.textContent) || d.title || t.openTitle || '').trim();
         if (t.home) return view || 'Inicio';
         var c = crud(t.url);
         if (!c || c.list) return view || key(t.url);
@@ -394,6 +400,7 @@
         if (c.isNew && !code && !name) return 'Nuevo' + (view ? ' · ' + view : '');
         if (code && name && code !== name) return code + ' ' + trunc(name, 28);
         if (name) return trunc(name, 40);
+        if (code && view && view.indexOf(code) >= 0) return view;     // la vista ya trae el folio (p. ej. «C00000051»)
         if (code) return code + (view ? ' · ' + view : '');
         return view || key(t.url);
     }
@@ -418,7 +425,26 @@
         else if (!t.stack.length || t.stack[t.stack.length - 1] !== k) t.stack.push(k);
         if (t.stack.length > 50) t.stack.shift();
         var u = abs(href);
+        var prevUrl = t.url;
         t.url = u ? (u.pathname + u.search + u.hash) : href;
+        // Un documento que el servidor regresó a su lista (redirección tras guardar): si esa lista ya está abierta,
+        // se cierra esta pestaña y la lista pasa al frente en la URL nueva (conserva _select)
+        var pc = crud(prevUrl), nc = crud(href);
+        if (pc && !pc.list && nc && nc.list && !t.home) {
+            var op = (t.opener && Tabs.list.indexOf(t.opener) >= 0) ? t.opener : null;
+            var same = nc.prog === pc.prog || (op && key(op.url).split('?')[0] === key(href).split('?')[0]);
+            var other = same ? findTab(href, t) : null;
+            if (other) {
+                var dest = t.url;
+                setTimeout(function () {
+                    close(t.id, true);
+                    activate(other.id);
+                    other.stale = false;
+                    try { other.frame.contentWindow.location.href = dest; } catch (e) { }
+                }, 0);
+                return;
+            }
+        }
         if (t.home && !t.homeKey) t.homeKey = k;   // la URL real del inicio (puede diferir de homeUrl por redirecciones)
 
         var lost = (d.title || '') === 'Lost session';
