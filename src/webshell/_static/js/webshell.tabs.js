@@ -84,12 +84,18 @@
     // ---------------------------------------------------------------- estilos
     function injectStyles() {
         var css =
-            '#ws_tabbar{display:flex;align-items:flex-end;gap:2px;min-height:30px;padding:3px 6px 0;background:var(--ixt-surface-2,#E9E9E9);border-bottom:1px solid var(--ixt-border,#C8C8C8);overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;user-select:none;flex:0 0 auto}' +
-            '#ws_tabbar .ws-tab{display:inline-flex;align-items:center;gap:6px;height:27px;max-width:220px;min-width:90px;padding:0 4px 0 10px;border:1px solid transparent;border-bottom:0;border-radius:0;background:transparent;color:inherit;font:inherit;font-size:.8125rem;cursor:default;white-space:nowrap}' +
+            /* La barra nunca ensancha la página: las pestañas se encogen (como en Chrome) y, si aun así no caben, se desplazan dentro de la barra */
+            'body.ws-tabs{grid-template-columns:minmax(0,1fr)}' +
+            'body.ws-tabs #webshell-grid-container,body.ws-tabs #webshell-main-content{min-width:0;min-height:0;overflow:hidden}' +
+            '#ws_tabbar{position:relative;display:flex;align-items:flex-end;gap:2px;height:30px;min-height:30px;width:100%;min-width:0;max-width:100%;box-sizing:border-box;padding:3px 6px 0;background:var(--ixt-surface-2,#E9E9E9);border-bottom:1px solid var(--ixt-border,#C8C8C8);overflow-x:auto;overflow-y:hidden;scrollbar-width:none;user-select:none;flex:0 0 30px}' +
+            '#ws_tabbar::-webkit-scrollbar{display:none}' +
+            '#ws_tabbar .ws-tab{display:inline-flex;align-items:center;gap:6px;height:27px;flex:0 1 200px;max-width:220px;min-width:72px;overflow:hidden;padding:0 4px 0 10px;border:1px solid transparent;border-bottom:0;border-radius:0;background:transparent;color:inherit;font:inherit;font-size:.8125rem;cursor:default;white-space:nowrap}' +
             '#ws_tabbar .ws-tab:hover{background:color-mix(in srgb,currentColor 8%,transparent)}' +
             '#ws_tabbar .ws-tab.ws-active{background:var(--ixt-surface,#FFF);border-color:var(--ixt-border,#C8C8C8);position:relative;top:1px;font-weight:600}' +
             '#ws_tabbar .ws-tab:focus-visible{outline:2px solid var(--ixt-accent,#0266C8);outline-offset:-2px}' +
-            '#ws_tabbar .ws-tab-ttl{overflow:hidden;text-overflow:ellipsis;flex:1;text-align:left}' +
+            '#ws_tabbar .ws-tab-ttl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;min-width:0;text-align:left}' +
+            '#ws_tabbar .ws-tab svg,#ws_tabbar .ws-tab-x{flex:0 0 auto}' +
+            '#ws_tabbar .ws-tab.ws-active{flex-shrink:0;min-width:120px}' +
             '#ws_tabbar .ws-tab-x{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:0;background:transparent;color:inherit;font-size:14px;line-height:1;opacity:.55;cursor:pointer;border-radius:0}' +
             '#ws_tabbar .ws-tab-x:hover{opacity:1;background:#C42B1C;color:#FFF}' +
             '#ws_tabbar .ws-tab.ws-loading .ws-tab-ttl{opacity:.6}' +
@@ -229,7 +235,11 @@
             }
         });
         Tabs.active = t;
-        try { t.btn.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) { }
+        try {
+            var bl = t.btn.offsetLeft, br = bl + t.btn.offsetWidth, bar = Tabs.bar;
+            if (bl < bar.scrollLeft) bar.scrollLeft = bl - 6;
+            else if (br > bar.scrollLeft + bar.clientWidth) bar.scrollLeft = br - bar.clientWidth + 6;
+        } catch (e) { }
         renderPanels();
         loadingLine(t.loading);
         statusbar(t);
@@ -654,6 +664,11 @@
         bar.setAttribute('aria-label', 'Ventanas abiertas');
         grid.insertBefore(bar, grid.firstChild);
         Tabs.bar = bar;
+        bar.addEventListener('wheel', function (e) {
+            if (bar.scrollWidth <= bar.clientWidth) return;
+            bar.scrollLeft += (e.deltaY || e.deltaX);
+            e.preventDefault();
+        }, { passive: false });
 
         // Botones de los paneles (una sola vez; trabajan sobre la pestaña activa)
         DIRS.forEach(function (dir) {
